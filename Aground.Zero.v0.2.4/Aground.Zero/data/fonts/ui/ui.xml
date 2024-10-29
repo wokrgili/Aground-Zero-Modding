@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<animation id="hidden"><frame visible="false" /></animation>
+	<animation id="single" count="1" />
+
+	<include id="icons.xml" />
+	<tile id="export_save" sheet="icons.1" />
+	<tile id="delete_save" sheet="icons.1" x="10" />
+	<tile id="gui.power" sheet="icons.2" x="0" />
+	<tile id="gui.health" sheet="icons.2" x="1" />
+	<tile id="gui.oxygen" sheet="icons.2" x="2" />
+	<tile id="gui.hunger" sheet="icons.2" x="3" />
+	<tile id="gui.coins" sheet="icons.2" x="4" />
+	<animation id="export_save" count="10" />
+	<animation id="delete_save" equals="export_save" />
+
+	<lang id="en_US" name="English">
+		<section id="common"><text id="mods">Mods</text><text id="requires">Requires:</text><text id="menu">Menu</text></section>
+	</lang>
+
+	<procedure id="defaultModInfo" height="Math.ceil(y)">
+		<formattedText text="this.author" width="width" /><script>y=lastTextHeight</script>
+		<formattedText text="this.version" y="y" width="width" color="dbc898" /><script>y+=lastTextHeight</script>
+		<formattedText text="this.description" y="y" size="22" width="width" color="cccccc" /><script>y+=lastTextHeight; i = 0;</script>
+		<section if="this.requires.length > 0">
+			<formattedText section="common" id="requires" y="y" width="width" color="ffaaaa" /><script>y+=lastTextHeight</script>
+			<repeat count="this.requires.length">
+				<formattedText text="this.requires[i++]" y="y" width="width" color="cccccc" /><script>y+=lastTextHeight</script>
+			</repeat>
+		</section>
+	</procedure>
+	<procedure id="modRenderer" width="400" height="30" pad_top="14">
+		<text text="item.name" width="392" x="4" align="left" color="item.error?0xff2222:0xffffff" />
+		<append>
+			<tile id="window.title" x="41" y="-14" />
+			<text section="common" id="mods" color="dbc898" width="400" x="0" y="-12" />
+		</append>
+	</procedure>
+
+	<include id="gui.xml" />
+
+	<windowUI id="default" sheet="gui.png">
+		<outerBounds x="0" y="24" width="302" height="143" />
+		<innerBounds x="4" y="4" width="294" height="135" />
+		<centerBounds x="72" y="20" width="158" height="103" />
+	</windowUI>
+	<windowUI id="details" sheet="gui.png">
+		<outerBounds x="306" y="24" width="56" height="58" />
+		<innerBounds x="5" y="5" width="46" height="48" />
+		<centerBounds x="16" y="16" width="24" height="26" />
+	</windowUI>
+	<windowUI id="popup" equals="details" />
+	<windowUI id="box" sheet="gui.png">
+		<outerBounds x="306" y="86" width="48" height="48" />
+		<innerBounds x="0" y="0" width="48" height="48" />
+		<centerBounds x="8" y="8" width="32" height="32" />
+	</windowUI>
+
+	<windowUI id="button" sheet="gui.png">
+		<outerBounds x="0" y="171" width="152" height="40" />
+		<innerBounds x="6" y="4" width="140" height="32" />
+		<centerBounds x="20" y="16" width="112" height="8" />
+	</windowUI>
+	<windowUI id="button.hover" sheet="gui.png">
+		<outerBounds x="0" y="215" width="152" height="40" />
+		<innerBounds x="6" y="4" width="140" height="32" />
+		<centerBounds x="20" y="16" width="112" height="8" />
+	</windowUI>
+	<windowUI id="button.off" sheet="gui.png">
+		<outerBounds x="156" y="171" width="152" height="40" />
+		<innerBounds x="6" y="4" width="140" height="32" />
+		<centerBounds x="20" y="16" width="112" height="8" />
+	</windowUI>
+	<windowUI id="button.press" sheet="gui.png">
+		<outerBounds x="156" y="215" width="152" height="40" />
+		<innerBounds x="6" y="4" width="140" height="32" />
+		<centerBounds x="20" y="16" width="112" height="8" />
+	</windowUI>
+	<buttonUI id="none" />
+	<buttonUI id="default" default="button" hover="button.hover" disabled="button.off" pressed="button.press" color="dbc898" dropShadow="2" dropShadowColor="010101"/>
+	<buttonUI id="item" type="solid" hover="cc555577" />
+	<buttonUI id="target" type="solid" hover="cc555577" blend="screen" />
+	<buttonUI id="dirbutton" equals="item" />
+	<buttonUI id="small" color="cccccc" size="16">
+		<child type="solid" hover="cc555577" />
+		<child default="box" hover="box" pressed="box" disabled="box" />
+	</buttonUI>
+	<buttonUI id="tab_on" default="button" hover="button.hover" disabled="button" pressed="button" size="17" color="dbc898" dropShadow="2" dropShadowColor="010101" />
+	<buttonUI id="tab_off" default="button.off" hover="button.hover" disabled="button.off" pressed="button.press" size="16" color="cccccc" dropShadow="2" dropShadowColor="010101" />
+	<buttonUI id="spinnerbutton" equals="default" />
+
+	<windowUI id="scrollbar" sheet="gui.png">
+		<outerBounds x="322" y="0" width="10" height="16" />
+		<innerBounds x="0" y="0" width="10" height="16" />
+		<centerBounds x="0" y="7" width="0" height="2" />
+	</windowUI>
+	<windowUI id="scrollknob" sheet="gui.png">
+		<outerBounds x="348" y="171" width="10" height="31" />
+		<innerBounds x="0" y="0" width="10" height="31" />
+		<centerBounds x="0" y="13" width="0" height="5" />
+	</windowUI>
+
+	<scrollUI id="default" bar="scrollbar" knob="scrollknob" hover_brightness="1.3" press_brightness="0.7" />
+
+	<buttonUI id="closebutton" equals="default" />
+
+	<tile id="checkbox.off" sheet="gui.3" x="0" />
+	<tile id="checkbox.on" sheet="gui.3" x="1" />
+	<tile id="arrow" sheet="gui.11" offsetY="-8" />
+
+	<tile id="divider" sheet="gui.4" />
+	<tile id="window.title" sheet="gui.5" />
+	<tile id="point.off" sheet="gui.6" /><tile id="point.on" sheet="gui.6" x="1" />
+
+	<tile id="progress" sheet="gui.5" x="1" />
+	<tile id="progress_bg" sheet="gui.5" x="2" />
+	
+	<windowUI id="progress" sheet="gui.png">
+		<outerBounds x="0" y="264" width="318" height="20" />
+		<innerBounds x="0" y="0" width="318" height="20" />
+		<centerBounds x="64" y="0" width="190" height="0" />
+	</windowUI>
+	<windowUI id="progress_bg" sheet="gui.png">
+		<outerBounds x="0" y="287" width="318" height="20" />
+		<innerBounds x="0" y="0" width="318" height="20" />
+		<centerBounds x="64" y="0" width="190" height="0" />
+	</windowUI>
+	<progressUI id="default" bg="progress_bg" progress="progress" min="1" max="317" width="318" bg_white="255" text_multiplier="2" text_size="0.9" text_offset="2" />
+	<progressUI id="bar" type="tile" bg="progress_bg" progress="progress" min="1" max="317" width="318" bg_white="255" text_multiplier="2" text_size="0.9" text_offset="3" />
+
+	<tilesheet id="logo.png" width="1171" height="857" />
+	<tile id="logo" sheet="logo.png" />
+	<tilesheet id="ffg.png" width="638" height="230" />
+	<tile id="ffg_logo" sheet="ffg.png" />
+	<tilesheet id="steam.png" width="18" height="18" />
+	<tile id="steam" sheet="steam.png" />
+
+	<tilesheet id="reticle.png" width="13" height="13" />
+	<tile id="reticle" sheet="reticle.png" />
+
+	<lerp id="alpha_fade"><track type="alpha"><key frame="0" alpha="0" /><key frame="50" alpha="0" /><key frame="100" alpha="1" /><key frame="200" alpha="1" /><key frame="250" alpha="0" /></track></lerp>
+	<window id="dialogue" ui="none" width="600" height="16+window.dialogueHeight()" xOffset="window.params.pai == 'true'?256:0" valign="0.175" animate="false">
+		<dialogue color="dbc898" width="584" x="8" y="8" align="left" />
+		<set id="ht" value="16+window.dialogueHeight()" />
+		<section if="speaker != null">
+			<tile id="arrow" scaleX="3" name="arrow" />
+			<script>
+			window.params.arrow = arrow; var wnd = window; arrow = null;
+			window.params.updateArrowPos = function(e){
+				var a = wnd.params.arrow; if(container.camera == null){trace("WARNING: Dialogue box not cleaned up!"); return;}
+				var p = container.camera.getTransform().mul(wnd.speaker.getPosition(), false), w = Math.abs(p.w);
+				var p = new Point2D((0.5*p.x/w+0.5)*container.getWidth(), (0.5-0.5*p.y/w)*container.getHeight()); container.localToGlobal(p, false);
+				var screen = container.globalToLocal(p, false);
+				screen.x -= (container.getWidth()-600)*0.5; screen.y -= (container.getHeight()-ht)*0.175;
+				var fromX = screen.x > 300?600-16:16, fromY = screen.y > ht?ht-4:4;
+				a.x = fromX; a.y = fromY; a.rotation = Math.atan2(screen.y-fromY, screen.x-fromX);
+			}</script>
+		</section>
+		<border x="0" y="0" ui="details" width="600" height="ht" /><rearrange from="0" to="numChildren" />
+		<container x="-128" y="(window.dialogueHeight()-128)*0.5" if="window.params.pai == 'true'"><script>if(window.params.expression == null) window.params.expression = "neutral"</script><run xml="help" event="icon" /></container>
+		<script>
+		if(window.params.name != null) window.params.name = getText(window.params.name);
+		else if(window.params.pai == 'true'){window.params.name = getText('names.pai'); if(window.params.talk_sfx == null) window.params.talk_sfx = PAI_TALK;}
+		else if(speaker != null) window.params.name = speaker.getSpeakerName();
+		var o = getPlayerForScreen(container); if(o != null) addHistory(o, window.mutable, window.params.name == null?null:window.params.name.get());
+		if(window.params.talk_sfx != null){
+			var wnd = window; playSound(window.params.talk_sfx, true, 1, function(s){wnd.params.sfx = s;});
+		}
+		</script>
+		<section if="window.params.name != null">
+			<tile id="window.title" x="20" y="-16" />
+			<text text="window.params.name" size="20" color="6fdb5d" width="318" x="20" y="-14" />
+		</section>
+		<container x="16" y="ht+2" lerp="alpha_fade">
+			<formattedText section="common" id="ctc" size="16" width="600-16" align="right" />
+		</container>
+		<onInit>
+			<script>var d = this.getChildAt(this.numChildren()-2); d.frameSpeed = 0; d.visible = false; this.transform.center_x = this.size.x*0.5; this.x += this.size.x*0.5; this.transform.center_y = this.size.y*0.5; this.y += this.size.y*0.5; this.size.set(0,0); this.tracks = null;</script>
+			<lerp object="container.gui.help" alpha="0" x="-64" seconds="0.25" modal="false" if="this.params.pai == 'true'" />
+			<lerp object="this" alpha="1" scale="2" seconds="0.25"><from alpha="0" scale="0.5" /></lerp> 
+		</onInit>
+		<added><script if="this.speaker != null">var s = container.stage; this.params.stage = s; s.addEventListener("update", this.params.updateArrowPos); this.params.updateArrowPos(null);</script></added>
+		<removed><script if="this.params.stage != null">this.params.stage.removeEventListener("update", this.params.updateArrowPos);</script></removed>
+		<onClose>
+			<script if="this.params.sfx != null">this.params.sfx.stop(); this.params.sfx = null;</script>
+			<lerp object="container.gui.help" alpha="1" x="0" seconds="0.25" modal="false" if="this.params.pai == 'true'" />
+			<lerp object="this" alpha="0" scale="0.5" seconds="0.25" if="this.tracks == null" />
+		</onClose>
+		<onTextComplete>
+			<script if="this.params.sfx != null">this.params.sfx.stop(); this.params.sfx = null;</script>
+			<script if="this.params.choice == null">var d = this.getChildAt(this.numChildren()-2); d.frameSpeed = 1; d.visible = true;</script>
+		</onTextComplete>
+	</window>
+
+	<transition id="fade" type="fade" seconds="1" />
+	<transition id="fade_white" type="fade" color="ffffff" seconds="1" />
+
+	<script>
+	OPTIONS = [];
+	OPTIONS.push(new FloatValue("bgm_vol", settings.get("bgm_vol")));
+	OPTIONS.push(new FloatValue("sfx_vol", settings.get("sfx_vol")));
+	OPTIONS.push(new BoolValue("mute", settings.get("mute")));
+	OPTIONS.push(new BoolValue("mute_unfocused", settings.get("mute_unfocused")));
+	OPTIONS.push(new BoolValue("fullscreen", settings.get("fullscreen")));
+	OPTIONS.push(languageOption());
+	OPTIONS.push("graphics");
+	OPTIONS.push("controls");
+	OPTIONS.push(new FloatValue("camera_smooth", settings.get("camera_smooth"), 0.1, 0.9));
+	OPTIONS.push(new FloatValue("mouse_sensitivity", settings.get("mouse_sensitivity"), 0.025, 0.5));
+	OPTIONS.push(new FloatValue("look_sensitivity", settings.get("look_sensitivity"), 0.5, 16));
+	OPTIONS.push(new BoolValue("invert_y", settings.get("invert_y")));
+	OPTIONS.push(new BoolValue("auto_eat", settings.get("auto_eat")));
+	OPTIONS.push(new BoolValue("item_moving", settings.get("item_moving")));
+	OPTIONS.push(new BoolValue("show_arrow", settings.get("show_arrow")));
+	OPTIONS.push(new BoolValue("show_hints", settings.get("show_hints")));
+	CONTROLS = ["left","right","up","down", "select","alternate","inventory","jump", "rotate_left","rotate_right","cancel","pause",
+		"look_left","look_right","look_up","look_down", "tool1","tool2","tool3","tool4",
+		"tool5","tool6","tool7","tool8", "tool9","tool10","next_tool","prev_tool", "help","history","mute"];
+	GRAPHICS = [];
+	
+	GRAPHICS.push(new ArrayOptionValue("quality", settings.get("shrink"), ["options.high","options.medium","options.low"]));
+	GRAPHICS.push(new FloatValue("fov", settings.get("fov"), 75, 110));
+	GRAPHICS.push(new BoolValue("shadows", settings.get("shadows")));
+	GRAPHICS.push(new BoolValue("fxaa", settings.get("fxaa")));
+	GRAPHICS.push(new BoolValue("dust", settings.get("dust")));
+	GRAPHICS.push(new BoolValue("show_tools", settings.get("show_tools")));
+	GRAPHICS.push(new BoolValue("health_bar", settings.get("health_bar")));
+	GRAPHICS.push(new BoolValue("mine_reticle", settings.get("mine_reticle")));
+	GRAPHICS.push(new FloatValue("brightness", settings.get("brightness"), -70, 70));
+	GRAPHICS.push(new FloatValue("contrast", settings.get("contrast"), -70, 70));
+	GRAPHICS.push(new FloatValue("lines", settings.get("lines"), 0, 2));
+	GRAPHICS.push(new FloatValue("bloom", settings.get("bloom"), 0, 1));
+	//TODO: language
+	function getOptionTooltip(option){return null;}
+	setKeyColor(0xffffff);
+
+	function adjustQuality(e){
+		switch(settings.get("shrink").getInt()){
+			case 0: settings.get("shadows").setBool(true); settings.get("fxaa").setBool(true); settings.get("dust").setBool(true);
+			case 1: settings.get("shadows").setBool(false); settings.get("fxaa").setBool(true); settings.get("dust").setBool(true);
+			case 2: settings.get("shadows").setBool(false); settings.get("fxaa").setBool(false); settings.get("dust").setBool(false);
+		}
+	}
+	</script>
+	<window id="controls" width="800" height="528" closeButton="true">
+		<script>window.params.device = new Mutable();</script>
+		<tile id="window.title" x="241" y="-14" />
+		<text section="options" id="controls" size="20" color="dbc898" width="800" x="0" y="-12" />
+		<list rows="8" cols="4" x="8" y="30">
+			<renderer type="controls" width="194" paddingX="2" paddingY="12" ui="item" />
+			<init>for(o in CONTROLS) addItem(o); window.params.list = list; window.params.device.set((list.renderer.isKeyboard?getText("common.keyboard"):getText("common.gamepad")).get());</init>
+		</list>
+		<button x="16" y="518" section="common" id="ok" width="180" height="30">
+			<onSelect>
+				<script>window.params.list.renderer.accept(); window.close();</script>
+			</onSelect>
+		</button>
+		<button x="212" y="518" section="common" id="cancel" width="180" height="30">
+			<onSelect>
+				<script>window.close();</script>
+			</onSelect>
+		</button>
+		<button x="408" y="518" section="common" id="reset" width="180" height="30">
+			<onSelect>
+				<script>window.params.list.renderer.reset()</script>
+			</onSelect>
+		</button>
+		<formattedText section="controls" id="device" color="cccccc" x="604" y="440" width="180" />
+		<button ui="small" x="604" y="488" text="window.params.device" width="180" height="30">
+			<onSelect>
+				<script>var list = window.params.list; list.renderer.nextDevice(); window.params.device.set((list.renderer.isKeyboard?getText("common.keyboard"):getText("common.gamepad")).get());</script>
+			</onSelect>
+		</button>
+	</window>
+	<window id="graphics" width="560" height="36*GRAPHICS.length+28+16" closeButton="true" oneColumn="true">
+		<script>if(!settings.get("fov").isFloat()) settings.get("fov").setFloat(95);
+		if(!settings.get("shrink").isInt()) settings.get("shrink").setInt(0);
+		if(!settings.get("shadows").isBool()) settings.get("shadows").setBool(true);
+		if(!settings.get("fxaa").isBool()) settings.get("fxaa").setBool(true);
+		if(!settings.get("dust").isBool()) settings.get("dust").setBool(true);
+		if(!settings.get("lines").isFloat()) settings.get("lines").setFloat(1);
+		if(!settings.get("bloom").isFloat()) settings.get("bloom").setFloat(0.5);
+		if(!settings.get("brightness").isFloat()) settings.get("brightness").setFloat(10);
+		if(!settings.get("contrast").isFloat()) settings.get("contrast").setFloat(10);
+		</script>
+		<tile id="window.title" x="121" y="-14" />
+		<text section="options" id="graphics" size="20" color="dbc898" width="560" x="0" y="-12" />
+		<list rows="GRAPHICS.length" cols="1" x="8" y="30">
+		    <renderer type="option" section="options" width="544" paddingY="12" ui="item">
+				<onHover><script>window.details.x = button.x; window.details.setStringPos(getOptionTooltip(item), button.y+36);</script></onHover>
+			</renderer>
+            <init>for(o in GRAPHICS) addItem(o);</init>
+		</list>
+		<added><script>settings.get("shrink").addEventListener("updated", adjustQuality);</script></added>
+		<removed><script>settings.get("shrink").removeEventListener("updated", adjustQuality);</script></removed>
+	</window>
+	<window id="options" width="560" height="36*OPTIONS.length+28+16" closeButton="true" oneColumn="true">
+		<script>if(!settings.get("camera_smooth").isFloat()) settings.get("camera_smooth").setFloat(0.5);
+		if(!settings.get("mouse_sensitivity").isFloat()) settings.get("mouse_sensitivity").setFloat(0.1);
+		if(!settings.get("look_sensitivity").isFloat()) settings.get("look_sensitivity").setFloat(6);
+		if(!settings.get("invert_y").isBool()) settings.get("invert_y").setBool(false);
+		if(!settings.get("health_bar").isBool()) settings.get("health_bar").setBool(true);
+		if(!settings.get("show_tools").isBool()) settings.get("show_tools").setBool(true);
+		if(!settings.get("auto_eat").isBool()) settings.get("auto_eat").setBool(true);
+		if(!settings.get("mine_reticle").isBool()) settings.get("mine_reticle").setBool(false);
+		if(!settings.get("mute_unfocused").isBool()) settings.get("mute_unfocused").setBool(true);
+		if(!settings.get("show_hints").isBool()) settings.get("show_hints").setBool(true);
+		if(!settings.get("item_moving").isBool()) settings.get("item_moving").setBool(false);
+		if(!settings.get("show_arrow").isBool()) settings.get("show_arrow").setBool(true);
+		</script>
+		<tile id="window.title" x="121" y="-14" />
+		<text section="common" id="options" size="20" color="dbc898" width="560" x="0" y="-12" />
+		<list rows="OPTIONS.length" cols="1" x="8" y="30">
+		    <renderer type="option" section="options" width="544" paddingY="12" ui="item">
+				<onSelect>
+					<window id="controls" if="item == 'controls'" />
+					<window id="graphics" if="item == 'graphics'" />
+				</onSelect>
+				<onHover><script>window.details.x = button.x; window.details.setStringPos(getOptionTooltip(item), button.y+36);</script></onHover>
+			</renderer>
+            <init>for(o in OPTIONS) addItem(o);</init>
+		</list>
+		<onClose><script>settings.flush();</script></onClose>
+	</window>
+
+	<window id="input" width="532" height="y+46" closeable="true" valign="0.25">
+		<formattedText text="eval(window.params.title)" color="cccccc" width="500" x="16" y="16" />
+		<script>y = 24+Math.ceil(lastTextHeight);</script>
+		<border ui="box" x="16" y="y" width="500" height="30" />
+		<input x="20" y="y+4" width="500-8" text="eval(window.params.initial)" bg="0" align="left" max_length="window.params.max_length == null?40:eval(window.params.max_length)" param="text" />
+		<script>y += 46; window.params.text.addEventListener("action", function(e){var w = e.source.parent; enterChild("text", w.params.text.getText()); w.close();});</script>
+		<button x="22" y="y" section="common" id="ok" width="200" height="30">
+			<onSelect>
+				<script>enterChild("text", window.params.text.getText()); window.close();</script>
+			</onSelect>
+		</button>
+		<button x="310" y="y" section="common" id="cancel" width="200" height="30">
+			<onSelect><script>window.close();</script></onSelect>
+		</button>
+		<onOpened><script>this.params.text.onClick(); this.params.text.selectAll();</script></onOpened>
+	</window>
+</data>
