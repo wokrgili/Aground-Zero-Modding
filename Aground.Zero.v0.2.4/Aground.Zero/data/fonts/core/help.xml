@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<script>
+	PAI_TALK = "talking3";
+	PAI_EXP = new StringMap(); PAI_EXP.set("neutral", [-50,25,0]); PAI_EXP.set("sleep", [-50,25,0]);
+	PAI_EXP.set("happy", [0,0,0]); PAI_EXP.set("smile", [0,0,0]);
+	PAI_EXP.set("sad", [100,0,0,20]); PAI_EXP.set("angry", [-110,0,0,20]);
+
+	function sortPriority(a, b){return Utils.sign(b.priority-a.priority);}
+	function getHelpByCategory(c, ?state){
+		var id = c == null?null:c.id; var ar = getDataArray("help").filter(function(c){c.category == id &amp;&amp; (state == null || c.visible(state));}); ar.sort(sortPriority); return ar;
+	}
+	function getGlobalQuestComplete(state){
+		for(q in state.completeQuests) if(q.quest.global) return q;
+	}
+	</script>
+	<data type="help">
+	this.category = this.xml.get("category"); this.name = this.xml.exists("name")?this.xml.get("name"):'help.'+this.id; this.dialogue = this.xml.get("dialogue");
+	this.visible = function(state){return true;}; this.priority = this.xml.exists("priority")?eval(this.xml.get("priority")):0;
+	</data>
+	<help id="what_to_do" priority="10">
+		<choose>
+			<dialogue section="pai" id="intro12" pai="true" expression="smile" if="object.hasQuest('mine')" />
+			<dialogue text="getText('help.talking{name:'+(qc == null?state.host:qc.player).vars.get('getName')().get()+'}')" pai="true" expression="angry" if="qc = getGlobalQuestComplete(state); return qc != null || !object.questComplete('mine')" />
+			<dialogue section="pai" id="intro14.1" pai="true" expression="smile" if="object.hasQuest('craft_steel')" />
+			<section if="object.hasQuest('place_generator')">
+				<script>item_id = "build";</script><run procedure="highlight_item" />
+				<dialogue section="pai" id="intro15" pai="true" expression="smile" />
+				<run procedure="unhighlight_item" />
+			</section>
+			<dialogue section="pai" id="intro19" pai="true" expression="happy" if="object.hasQuest('build_generator')" />
+			<section if="object.hasQuest('build_battery')">
+				<script>item_id = "build";</script><run procedure="highlight_item" />
+				<dialogue section="pai" id="intro22" pai="true" />
+				<run procedure="unhighlight_item" />
+			</section>
+			<dialogue section="pai" id="connect_hint" pai="true" if="object.hasQuest('connect_generator')" />
+			<dialogue section="pai" id="bunker_hint" pai="true" if="!object.hasQuest('bunker') && !object.questComplete('bunker')" />
+			<dialogue section="pai" id="bunker3" pai="true" expression="smile" if="object.hasQuest('bunker')" />
+			<dialogue section="pai" id="bunker5" pai="true" expression="smile" if="object.hasQuest('build_bunker')" />
+			<dialogue section="pai" id="bunker" pai="true" expression="happy" if="object.hasQuest('rescue_survivor')" />
+			<dialogue section="pai" id="research3" pai="true" expression="happy" if="object.hasQuest('build_research')" />
+			<dialogue section="pai" id="research4" pai="true" expression="smile" if="object.hasQuest('craft_chip')" />
+			<section if="object.hasQuest('mine1')">
+				<script>item_id = "chip";</script><run procedure="highlight_item" />
+				<dialogue section="pai" id="research5" pai="true" />
+				<run procedure="unhighlight_item" />
+				<dialogue section="pai" id="upgrade_tip" pai="true" />
+			</section>
+			<dialogue section="pai" id="teleportal3.1" pai="true" expression="happy" if="object.hasQuest('teleportal')" />
+			<dialogue section="pai" id="teleportal6" pai="true" expression="smile" if="!object.hasQuest('mine2') && !object.questComplete('mine2')" />
+			<run procedure="what_to_do_full" />
+		</choose>
+	</help>
+	<procedure id="pai_tip"><script>__p = getPlayerForScreen(container);</script><section if="return __p != null && __p.vars.get('pai_tip') != true">
+		<script>var help = container.gui.help; help.getChildAt(0).playAnimation("PAI."+callXML.get('expression')); __p.vars.set('pai_tip', true); pai_alpha = help.alpha; pai_x = help.x</script>
+		<lerp object="container.gui.help" alpha="1" x="0" seconds="0.25" modal="false" />
+		<applyLerp object="container.gui.help.getChildAt(0)" hsv="PAI_EXP.get(callXML.get('expression'))" />
+		<lerp object="container.gui.help" seconds="0.5"><from colorAdd="000000" y="-64" /><to colorAdd="333333" y="-69" /></lerp>
+		<show tooltip="popup" text="getText(callXML.get('text'))" hold="220" align="left" x="70" y="container.getHeight()-160" absolute="true" formatted="true" />
+		<invokeLater seconds="4">
+			<applyLerp object="container.gui.help.getChildAt(0)" hsv="PAI_EXP.get('sleep')" />
+			<script>container.gui.help.getChildAt(0).playAnimation("PAI.sleep"); container.gui.help.clearLerp(); __p.vars.set('pai_tip', false);</script><applyLerp object="container.gui.help" colorAdd="000000" y="-64" />
+			<lerp object="container.gui.help" alpha="pai_alpha" x="pai_x" seconds="0.25" modal="false" />
+		</invokeLater>
+	</section></procedure>
+	<onScreen id="pai_help">
+		<section if="getGlobal('pai_help') != true && (player.hasQuest('mine') || player.questComplete('mine'))">
+			<script>setGlobal('pai_help', true);</script><run procedure="pai_tip" expression="smile" text="help.notify" />
+		</section>
+	</onScreen>
+	<help id="tools" priority="5" />
+	<help id="utilities" priority="5" />
+	<help id="structures" priority="4" />
+	<help id="survival" priority="3" />
+	<help id="controls" priority="2">
+		<choose>
+			<dialogue text="getText('pai>intro8.keyboard{intro:false}')" pai="true" if="isKeyboard()" />
+			<dialogue text="getText('pai>intro8.gamepad{intro:false}')" pai="true"  />
+		</choose>
+		<set id="stY" value="gui.tools.y" /><lerp object="gui.tools" seconds="0.5"><from colorAdd="000000" y="stY" /><to colorAdd="333333" y="stY-5" /></lerp>
+		<choose>
+			<dialogue section="pai" id="intro10.keyboard" pai="true" if="isKeyboard()" />
+			<dialogue section="pai" id="intro10.gamepad" pai="true"  />
+		</choose>
+		<script>gui.tools.clearLerp();</script><applyLerp object="gui.tools" colorAdd="000000" y="stY" />
+		<choose>
+			<section if="isKeyboard()"><dialogue section="help" id="controls1.keyboard" pai="true" /><dialogue section="help" id="controls2.keyboard" pai="true" /></section>
+			<section><dialogue section="help" id="controls1.gamepad" pai="true" /><dialogue section="help" id="controls2.gamepad" pai="true" /></section>
+		</choose>
+	</help>
+	<window id="toggle_indicators" width="560" height="404" closeButton="true" oneColumn="true">
+		<tile id="window.title" x="121" y="-14" />
+		<text section="help" id="indicators" size="20" color="dbc898" width="560" x="0" y="-12" />
+		<list scroll="true" rows="10" cols="1" x="8" y="30">
+			<renderer width="544" height="36">
+				<check on="checkbox.on" off="checkbox.off" mutable="item.storage.get('indicator')" scale="0.5" x="0" y="0" />
+				<sprite value="item.vars.get('getIndicator')().createSprite()" x="24" y="-4" scale="0.25" />
+				<text text="item.vars.get('getName')()" color="dbc898" width="484" x="60" y="0" align="left" />
+				<onSelect><script>var d = item.storage.get('indicator'); d.setBool(!d.getBool());</script></onSelect>
+			</renderer>
+			<init>var me = getPlayerForScreen(container); for(a in state.areas) for(s in a.objects) if(s != me){
+				var f = s.vars.get('getIndicator'), i = (f == null)?null:f(); if(i != null &amp;&amp; s.storage.get('indicator').isBool()) addItem(s);
+			}</init>
+		</list>
+	</window>
+	<help id="indicators" priority="1">
+		<window id="toggle_indicators" />
+	</help>
+	<help id="mine" category="tools">
+		<script>item_id = "mine";</script><run procedure="highlight_item" />
+		<dialogue section="pai" id="intro11" pai="true" />
+		<run procedure="unhighlight_item" />
+		<dialogue text="getText('pai.intro13{intro:false}')" pai="true" />
+	</help>
+	<help id="craft" category="tools">
+		<dialogue section="help" id="craft1" pai="true" />
+		<script>item_id = "craft";</script><run procedure="highlight_item" />
+		<dialogue section="help" id="craft2" pai="true" expression="smile" />
+		<run procedure="unhighlight_item" />
+	</help>
+	<help id="build" category="tools">
+		<dialogue section="help" id="build1" pai="true" />
+		<script>item_id = "build";</script><run procedure="highlight_item" />
+		<dialogue section="help" id="build2" pai="true" />
+		<run procedure="unhighlight_item" />
+		<dialogue section="help" id="build3" pai="true" />
+		<dialogue section="help" id="build4" pai="true" />
+		<dialogue section="pai" id="intro17" pai="true" />
+		<dialogue section="pai" id="intro18" pai="true" />
+	</help>
+	<help id="shovel" category="tools">
+		<dialogue section="help" id="shovel1" pai="true" />
+		<script>item_id = "shovel";</script><run procedure="highlight_item" />
+		<dialogue section="help" id="shovel2" pai="true" />
+		<run procedure="unhighlight_item" />
+		<dialogue section="help" id="shovel3" pai="true" />
+	</help>
+	<help id="laser_gun" category="tools">
+		<dialogue section="help" id="laser_gun1" pai="true" expression="smile" />
+		<script>item_id = "laser_gun";</script><run procedure="highlight_item" />
+		<dialogue section="help" id="laser_gun2" pai="true" />
+		<run procedure="unhighlight_item" />
+		<dialogue section="help" id="laser_gun3" pai="true" />
+		<dialogue section="help" id="laser_gun4" pai="true" expression="angry" />
+	</help>
+	<help id="cables" category="utilities">
+		<dialogue section="help" id="cables1" pai="true" />
+		<dialogue section="help" id="cables2" pai="true" />
+		<dialogue section="help" id="cables3" pai="true" />
+	</help>
+	<help id="belts" category="utilities">
+		<dialogue section="help" id="belts1" pai="true" />
+		<dialogue section="help" id="belts2" pai="true" />
+		<dialogue section="help" id="belts3" pai="true" />
+		<dialogue section="help" id="belts4" pai="true" />
+	</help>
+	<help id="ladders" category="utilities">
+		<dialogue section="help" id="ladder1" pai="true" expression="smile" />
+		<dialogue section="help" id="ladder2" pai="true" />
+	</help>
+	<help id="chips" category="utilities">
+		<script>item_id = "chip";</script><run procedure="highlight_item" />
+		<dialogue section="pai" id="research5" pai="true" />
+		<run procedure="unhighlight_item" />
+		<dialogue section="pai" id="research6" pai="true" />
+	</help>
+	<help id="hunger" category="survival" name="common.hunger">
+		<script>gui.vars.get('hunger').setAdd(-10000);</script>
+		<dialogue section="pai" id="hunger1" pai="true" expression="smile" />
+		<script>gui.vars.get('hunger').setAdd(0); item_id = "craft";</script><run procedure="highlight_item" />
+		<dialogue section="pai" id="hunger2" pai="true" expression="sad" />
+		<run procedure="unhighlight_item" />
+		<dialogue section="pai" id="hunger3" pai="true" />
+	</help>
+	<help id="power" category="survival" name="common.power">
+		<script>gui.vars.get('power').setAdd(-10000);</script>
+		<dialogue text="getText('pai.power1{intro:false}')" pai="true" />
+		<dialogue section="pai" id="power2" pai="true" />
+		<script>gui.vars.get('power').setAdd(0); item_id = "mine";</script><run procedure="highlight_item" />
+		<dialogue section="pai" id="power3" pai="true" />
+		<run procedure="unhighlight_item" />
+	</help>
+	<help id="survivors" category="survival">
+		<dialogue section="help" id="survivors1" pai="true" />
+		<dialogue section="help" id="survivors2" pai="true" />
+		<dialogue section="help" id="survivors3" pai="true" />
+		<dialogue section="help" id="survivors4" pai="true" />
+	</help>
+	<help id="bombardment" category="survival">
+		<dialogue section="help" id="bombardment1" pai="true" />
+		<dialogue section="help" id="bombardment2" pai="true" />
+		<dialogue section="help" id="bombardment3" pai="true" expression="sad" />
+		<dialogue section="help" id="bombardment4" pai="true" expression="smile" />
+	</help>
+	<help id="structure" category="structures">
+		<init>
+		this.name = this.xml.exists("name")?this.xml.get("name"):'structure.'+this.id;
+		this.visible = function(state){var ar = state.storage.get('blueprints').getArray(); return ar != null &amp;&amp; ar.indexOf(this.id+"_blueprint") != -1;}
+		</init>
+	</help>
+	<help id="generator" extends="structure">
+		<dialogue section="pai" id="intro20" pai="true" />
+		<dialogue section="help" id="generator1" pai="true" />
+	</help>
+	<help id="battery" extends="structure">
+		<dialogue section="help" id="battery1" pai="true" />
+		<dialogue section="help" id="battery2" pai="true" expression="smile" />
+		<dialogue section="help" id="battery3" pai="true" />
+	</help>
+	<help id="hydroponics" extends="structure">
+		<dialogue section="pai" id="intro21" pai="true" />
+	</help>
+	<help id="factory" extends="structure">
+		<dialogue section="pai" id="factory_tip2" pai="true" />
+	</help>
+	<help id="lab" extends="structure">
+		<dialogue section="pai" id="research4" pai="true" expression="smile" />
+	</help>
+	<help id="kitchen" extends="structure">
+		<dialogue section="help" id="kitchen1" pai="true" expression="smile" />
+		<dialogue section="help" id="kitchen2" pai="true" />
+	</help>
+	<help id="rig" extends="structure">
+		<dialogue section="help" id="rig1" pai="true" />
+		<dialogue section="help" id="rig2" pai="true"  expression="smile" />
+	</help>
+	<help id="storehouse" extends="structure">
+		<dialogue section="help" id="storehouse1" pai="true" />
+	</help>
+	<help id="bunker" extends="structure">
+		<dialogue section="help" id="bunker1" pai="true" />
+		<dialogue section="help" id="bunker2" pai="true" expression="happy" />
+		<dialogue section="help" id="bunker3" pai="true" expression="smile" />
+	</help>
+	<help id="cryopod" extends="structure">
+		<dialogue section="help" id="cryopod1" pai="true" />
+		<dialogue section="help" id="cryopod2" pai="true" />
+	</help>
+	<help id="teleportal" extends="structure">
+		<dialogue section="help" id="teleportal1" pai="true" />
+		<dialogue section="help" id="teleportal2" pai="true" />
+		<dialogue section="help" id="teleportal3" pai="true" expression="smile" />
+	</help>
+
+	<procedure id="return_to_start">
+		<script modal="true">
+		me = getPlayerForScreen(container); var v = me.vars.get("vehicle"); if(v != null) v.vars.get("unmountInstant")(container, me);
+		container.gui.locked = true; me.lerp(new ModelScaleKeyframe(0.125,0.125,0.125), 30, me.remove);
+		me.remove(); container.getChildAt(0).lerp(new DarkenKeyframe(0), 30, onComplete);
+		</script>
+		<script modal="true">
+		me.setPosition(state.campaign.x, state.campaign.y, state.campaign.z); var a = state.getArea(state.campaign.area);
+		if(a != null){
+			adjustPos(me, a); a.add(me); me.lerp(new ModelScaleKeyframe(1,1,1), 30);
+			container.getChildAt(0).lerp(new DarkenKeyframe(1), 30, onComplete);
+		}</script><script>container.gui.locked = false;</script>
+	</procedure>
+	<help id="stuck">
+		<menu section="common">
+			<dialogue section="help" id="stuck1" pai="true" expression="sad" />
+			<choice id="yes"><run procedure="return_to_start" /></choice>
+			<choice id="no" />
+		</menu>
+	</help>
+
+	<procedure id="help">
+		<icon size="128">
+			<choose>
+				<tile id="PAI" animation="'PAI.'+window.params.expression" fps="5" hsv="PAI_EXP.get(window.params.expression)" if="exists('window') && window != null && window.params.expression != null" />
+				<tile id="PAI" animation="PAI.sleep" fps="5" hsv="PAI_EXP.get('sleep')" />
+			</choose>
+			<tile id="PAI.frame" hsv="var o = getPlayerForScreen(container); if(o == null) return null; var d = getData('customOption', o.storage.get('suit').getString()); if(d == null) return null; var ar = d.hsv.copy(); ar[0] -= 205; ar[3] = ar[2] = Math.max(0,ar[2]-60); return ar;" />
+		</icon>
+		<blockingEvent wait="false">
+			<script>done = false; category = null;</script>
+			<while cond="!done">
+				<run xml="category.xml" if="category != null" /><script>len = getHelpByCategory(category, state).length</script>
+				<menu section="help" cols="len >= 10?2:1" width="len >= 10?350:500">
+					<dialogue text="getText(category == null?'help.intro':category.dialogue)" pai="true" expression="happy" if="category == null || category.dialogue != null" />
+					<choice id="value.name" values="getHelpByCategory(category, state).iterator()"><script>category = value;</script></choice>
+					<choice id="nevermind"><script>done = true</script></choice>
+					<close><script>done = true</script></close>
+				</menu>
+			</while>
+			<onSkip>
+				<run procedure="pai_tip" expression="neutral" text="help.wait" />
+			</onSkip>
+		</blockingEvent>
+	</procedure>
+</data>

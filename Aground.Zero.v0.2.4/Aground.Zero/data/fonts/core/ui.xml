@@ -1,0 +1,939 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <titleOption id="community">
+        <script>container.stage.loadURL(STEAM?"https://steamcommunity.com/app/1795570/discussions/":"https://discord.gg/fancyfish");</script>
+    </titleOption>
+    <titleOption id="credits">
+        <newGame campaign="credits" />
+    </titleOption>
+	<titleOption id="achievements">
+        <window id="achievements" object="achievements" />
+    </titleOption>
+	<menuOption id="achievements">
+        <window id="achievements" object="state" />
+    </menuOption>
+
+	<include id="history.xml" />
+	<script>ITEM_TYPES = ["tool", "utility", "food", "processed", "material"];
+	function getItemSortValue(i){
+		var t = ITEM_TYPES.indexOf(i.xml.get("type")); t = ITEM_TYPES.length-t;
+		return (t*1000+(i.action == null?0:i.action.priority))*1000+i.priority;
+	}
+	function sortItems(a, b){
+		return Utils.sign(getItemSortValue(b.info)-getItemSortValue(a.info));
+	}
+	function sortItemIds(a, b){
+		return Utils.sign(getItemSortValue(getItem(b))-getItemSortValue(getItem(a)));
+	}
+	function sortInventory(inv){
+		var ar = []; for(i in inv) if(i.info != null){ar.push(i.clone()); i.clear();}
+		ar.sort(sortItems); for(i in ar) inv.addItem(i);
+	}
+	function addInventoryRecipe(inv, recipe, item, intoEmpty){
+		if(item.info == null) return false;
+		var len = recipe.requirements.length; for(i in 0...len){
+			var r = recipe.requirements[i]; if(r.id == item.info.id){
+				var v = inv.getItem(i, 0); if(v.info == null){v.copy(item); item.clear(); return true;} else if(v.is(item)) return v.add(item);
+			}
+		} var w = inv.getWidth(); if(intoEmpty) for(i in len...w){
+			var v = inv.getItem(i, 0); if(v.info == null){v.copy(item); item.clear(); return true;} else if(v.is(item)) return v.add(item);
+		} return false;
+	}
+	function getCollectPriorityRecipe(inv, recipe, item){
+		if(!inv.canAddItem(item)) return 0;
+		var len = recipe.requirements.length; for(i in 0...len){
+			var r = recipe.requirements[i]; if(r.id == item.info.id){
+				var v = inv.getItem(i, 0); if(v.info == null) return 10; else if(v.is(item) &amp;&amp; v.canAdd(item)) return v.count &lt; r.count*2?10:2-v.count*0.000001;
+			}
+		} return 0;
+	}
+	function addInventoryCraft(inv, from, recipe){
+		for(i in from) if(addInventoryRecipe(inv, recipe, i, false)) i.clear();
+	}
+	function sortInventoryCraft(inv, recipe){
+		if(recipe == null) return; var ct = 0;
+		var ar = []; for(i in inv){if(i.info != null &amp;&amp; (ct >= recipe.requirements.length || recipe.requirements[ct].id != i.info.id)){ar.push(i.clone()); i.clear();} ct++;}
+		ar.reverse(); for(i in ar) if(!addInventoryRecipe(inv, recipe, i, false)) inv.addItemEnd(i);
+		
+	}</script>
+	<procedure id="sort_button">
+		<script>_sort_x = eval(callXML.get('x')); _sort_y = eval(callXML.get('y')); _sort_inv = eval(callXML.get('inventory'));</script>
+		<button section="common" id="sort" x="_sort_x" y="_sort_y" width="100">
+			<onSelect><script>sortInventory(_sort_inv)</script></onSelect>
+		</button>
+	</procedure>
+	<procedure id="sort_craft">
+		<script>_sort_x = eval(callXML.get('x')); _sort_y = eval(callXML.get('y')); _sort_inv = eval(callXML.get('inventory')); _sort_r = eval(callXML.get('recipe'));</script>
+		<button section="common" id="sort" x="_sort_x" y="_sort_y" width="100">
+			<onSelect><script>sortInventoryCraft(_sort_inv, getData('recipe', _sort_r.get()))</script></onSelect>
+		</button>
+	</procedure>
+	<procedure id="add_craft">
+		<script>_add_x = eval(callXML.get('x')); _add_y = eval(callXML.get('y')); _add_inv = eval(callXML.get('inventory')); _add_from = eval(callXML.get('from')); _add_r = eval(callXML.get('recipe'));</script>
+		<button section="common" id="add_all" x="_add_x" y="_add_y" width="100">
+			<onSelect><script>addInventoryCraft(_add_inv, _add_from, getData('recipe', _add_r.get()))</script></onSelect>
+		</button>
+	</procedure>
+	<window id="inventory" width="672" height="64*window.params.inventory.getHeight()+78" closeButton="true">
+		<script>window.params.inventory = eval(window.params.inventory); var wnd = window; function checkCloseInventory(e){if(e.object == 'inventory') wnd.close();}</script>
+		<text text="getText(window.params.title==null?'structure.inventory':window.params.title)" width="672" y="16" align="center" />
+		<inventory inventory="window.params.inventory" x="16" y="46" itemUI="small" />
+		<run procedure="sort_button" inventory="window.params.inventory" x="540" y="-16" />
+		<button section="common" id="menu" x="572" y="64*window.params.inventory.getHeight()+70" width="100">
+			<onSelect><window type="menu" /></onSelect>
+		</button>
+		<added><script>container.controls.addEventListener("release", checkCloseInventory, container.controls.currentPriority()+1);</script></added>
+		<removed><script>container.controls.removeEventListener("release", checkCloseInventory);</script></removed>
+	</window>
+
+	<window id="transfer_inventory" width="672" height="y+58" closeButton="true">
+		<script>window.params.from = eval(window.params.from); window.params.to = eval(window.params.to); window.params.npcTake = eval(window.params.npcTake);</script>
+		<text text="eval(window.params.from_title)" width="672" y="16" align="center" />
+		<inventory inventory="window.params.from" x="16" y="46" itemUI="small" /><set id="y" value="58+window.params.from.getHeight()*64" />
+		<text text="eval(window.params.to_title)" width="672" y="y" align="center" />
+		<inventory inventory="window.params.to" x="16" y="y+30" itemUI="small" enabled="no_collect" /><script>y += window.params.to.getHeight()*64;</script>
+		<run procedure="sort_button" inventory="window.params.from" x="540" y="-16" />
+		<section if="window.params.priority != null">
+			<button section="structure" id="set_priority" width="400" x="136" y="y+38">
+				<onSelect><script>p = eval(window.params.priority); def = eval(window.params.defaultPriority);</script><window id="set_priority" priority="p" defaultPriority="def" /></onSelect>
+			</button><script>y += 38;</script>
+		</section>
+		<section if="window.params.npcTake != null">
+			<button ui="item" x="16" y="y+38" width="640" height="30">
+				<text section="structure" id="npc_take"  width="600" x="30" y="0" align="left" />
+				<check on="checkbox.on" off="checkbox.off" mutable="window.params.npcTake" scale="0.5" x="0" y="0" />
+				<onSelect><script>window.params.npcTake.set(!window.params.npcTake.get())</script></onSelect>
+			</button><script>y += 30;</script>
+		</section>
+		<section if="window.params.request != null">
+			<script>req = eval(window.params.request);</script>
+			<button section="structure" id="request_items" x="414" y="y+58" width="250">
+				<onSelect>
+					<script>
+					ar = []; var incoming = req.followIncomingBelts(null, null, Area.allowsRequestItem);
+					for(n in incoming) if(n.object != null) for(i in n.object.inventory) if(i.info != null &amp;&amp; i.storage.isEmpty() &amp;&amp; ar.indexOf(i.info.id) == -1) ar.push(i.info.id);
+					ar.sort(sortItemIds);
+					</script>
+					<window id="select_item" title="structure.request_items" items="ar">
+						<script>req.requestItems([makeItem(selected.info.id, 99)]);</script>
+					</window>
+				</onSelect>
+				<onHover><script>window.details.x = button.x+(250-window.details.width)/2; window.details.setStringPos(hover?getText('structure.request_items_desc').get():null, button.y, 32);</script></onHover>
+			</button>
+		</section>
+	</window>
+
+	<window id="set_priority" width="650" height="400" closeButton="true">
+		<script>window.params.priority = eval(window.params.priority); window.details.width = 618;</script>
+		<tile id="window.title" x="166" y="-14" />
+		<text section="structure" id="set_priority" size="20" color="dbc898" width="650" x="0" y="-12" />
+		<list scroll="true" rows="10" cols="1" x="16" y="16">
+		    <renderer type="option" section="item.types" width="618" paddingY="12" ui="item" split="0.66">
+				<onHover><script>var p = (item == null)?null:window.params.priority.get(item).getFloat();
+				window.details.x = button.x+16; window.details.setStringPos(p == null?null:getText("structure>priority_"+((p > 0)?(p>4?"high":"low"):"none")).get(), button.y+36);</script></onHover>
+			</renderer>
+            <init>var ar = [0,3,5], def = eval(window.params.defaultPriority);
+			for(id in ITEM_TYPES){
+				var m = window.params.priority.get(id); if(!m.isFloat()) m.setFloat(def);
+				var f2i = floatToInt(m, function(f){if(f > 0) return (f > 4)?2:1; else return 0;});
+				f2i.addEventListener("updated", function(e){m.setFloat(ar[f2i.get()]);});
+				var d = new ArrayOptionValue(id, f2i, ["common.none","options.low","options.high"]);
+				addItem(d);
+			}</init>
+		</list>
+	</window>
+
+	<window id="vehicle_inventory" width="672" height="y+58" closeButton="true">
+		<script>window.params.from = eval(window.params.from); window.params.to = eval(window.params.to); var wnd = window; function checkCloseInventory(e){if(e.object == 'inventory') wnd.close();}</script>
+		<text text="eval(window.params.from_title)" width="672" y="16" align="center" />
+		<inventory inventory="window.params.from" x="16" y="46" itemUI="small" /><set id="y" value="58+window.params.from.getHeight()*64" />
+		<text text="eval(window.params.to_title)" width="672" y="y" align="center" />
+		<inventory inventory="window.params.to" x="16" y="y+30" itemUI="small" enabled="no_collect" /><script>y += window.params.to.getHeight()*64;</script>
+		<run procedure="sort_button" inventory="window.params.from" x="540" y="-16" />
+		<button section="common" id="menu" x="572" y="y+50" width="100">
+			<onSelect><window type="menu" /></onSelect>
+		</button>
+		<added><script>container.controls.addEventListener("release", checkCloseInventory, container.controls.currentPriority()+1);</script></added>
+		<removed><script>container.controls.removeEventListener("release", checkCloseInventory);</script></removed>
+	</window>
+
+	<procedure id="inventory.list">
+		<list scroll="true" rows="rows" cols="1" x="16" y="y">
+			<renderer width="width" height="64" enabled="function(s){return inventory == null || s.hasRequirements(inventory);}">
+				<choose>
+					<section if="item.object != null">
+						<image image="makeObjectIcon(item.object, 64, 64)" /><text text="getText(item.object.params.name)" width="width-70" x="64" y="22" size="20" align="left" />
+					</section>
+					<section>
+						<script>ct = 0; _w = Math.floor(width/item.creates.length);</script><repeat count="item.creates.length">
+							<script>_item = item.getCreateInfo(ct)</script><item item="_item" x="_w*ct" y="0" />
+							<text text="_item.getName()" width="_w-70" x="_w*ct+64" y="22" size="20" align="left" />
+							<script>ct++; _item = null;</script>
+						</repeat>
+					</section>
+				</choose>
+				<onSelect><run xml="window.xml" event="selectItem" /></onSelect>
+				<onHover><script>
+					if(item == null || (item.creates.length == 0 &amp;&amp; item.requirements.length == 0)){window.details.setString(null); return;}
+                    window.details.width = 452; window.details.x = button.x+button.parent.parent.x+8;
+					var b = new StringBuf();
+					var req = item.requirements; if(req.length > 0) b.add("[text=structure.ingredients]\n"); var first = true;
+					for(r in req){
+						if(first) first = false; else b.add(inventory == null?", ":"\n"); var total = inventory == null?-1:inventory.getCountById(r.id);
+						if(inventory != null &amp;&amp; r.count > total) b.add("[color=990000]"); b.add("[item="); b.add(r.id); b.add("] x"); b.add(r.count);
+						if(total >= 0){b.add(" ("); b.add(total); b.add(")");} if(r.count > total) b.add("[/color]"); 
+					} var base = 60; if(exists('this') &amp;&amp; this.vars.exists("speed")) base *= this.vars.get("speed");
+					if(req.length > 0) b.add("\n"); b.add("[color=cccccc][text=structure.craft_time] [text=structure.craft_seconds{sec:"); b.add(Std.string(Math.round(item.cost*item.timePerCost/base))); b.add("}]");
+					if(item.creates.length == 1){
+						window.details.setInfoPos(item.getCreateInfo(0), button.y+button.parent.y+button.parent.parent.y, 66, additionalString(b.toString()));
+					} else window.details.setStringPos(b.toString(), button.y+button.parent.y+button.parent.parent.y, 66);
+                </script></onHover>
+			</renderer>
+			<init>window.params.items = []; var ar = eval(window.params.recipes); if(ar != null) for(i in ar){window.params.items.push(i); addItem(i);} window.params.inv_list = list;</init>
+		</list>
+	</procedure>
+	<window id="select_recipe" width="500" height="510" closeButton="true">
+		<text text="getText(window.params.title)" width="500" y="16" align="center" />
+		<script>inventory = eval(window.params.inventory); y = 46; rows = 7; width = 468;</script>
+		<selectItem><choose>
+			<script if="inventory == null || item.hasRequirements(inventory)">enterChild("recipe", item); window.close();</script>
+			<section><sound id="warning" /><show tooltip="popup" text="getText('warning.no_ingredients')" hold="40" x="0.5" y="0.5" color="ff2222" /></section>
+		</choose></selectItem>
+		<run procedure="inventory.list" />
+	</window>
+
+	<script>
+	function flashRed(req){
+		var holdRed = null;
+		function repeat(){req.lerp(new ColorKeyframe(0.3,0.3,0.3,0.7,0,0), 10, holdRed);}
+		function holdUnred(){req.lerp(new ColorKeyframe(), 20, repeat);}
+		function unflashRed(){req.lerp(new ColorKeyframe(), 10, holdUnred);}
+		holdRed = function(){req.lerp(new ColorKeyframe(0.3,0.3,0.3,0.7,0,0), 20, unflashRed);}
+		req.lerp(new ColorKeyframe(0.3,0.3,0.3,0.7,0,0), 10, holdRed);
+	}
+	</script>
+	<lerp id="target_arrow_horiz">
+		<track type="alpha"><key frame="0" alpha="0.5" /><key frame="25" alpha="0.9" /><key frame="50" alpha="0.5" /><key frame="75" alpha="0.9" /><key frame="100" alpha="0.5" /></track>
+		<track type="position"><key frame="0" x="0" /><key frame="25" x="-10" /><key frame="75" x="10" /><key frame="100" x="0" /></track>
+	</lerp>
+	<procedure id="tutorial.overlay">
+		<container lerp="target_arrow_horiz">
+			<tile id="target_arrow" x="2" y="tutorial_y-16" scale="0.25" offsetX="-0.5" offsetY="-0.5" color="ff7f00" />
+		</container>
+		<formattedText text="tutorial_text" x="-250" y="tutorial_y-20" width="250" size="22" align="left" color="dbc898" />
+		<border ui="details" x="-250" y="tutorial_y-20" width="250" height="lastTextHeight" />
+		<rearrange from="numChildren-2" to="numChildren" />
+	</procedure>
+	<window id="base_craft" width="672" height="bot" closeButton="true">
+		<script if="window.params.m == null">window.params.m = eval(window.params.recipe); window.params.title = eval(window.params.title);
+		window.params.req = eval(window.params.requirements); window.params.r = getData('recipe', window.params.m.get()); window.params.requirements = [];
+		window.params.progress = eval(window.params.progress); window.params.to = eval(window.params.to);
+		var win = window; function updateCraftingRequirements(e){
+			var i = 0; for(r in win.params.r.requirements){
+				var item = win.params.req.getItem(i, 0); var req = win.params.requirements[i];
+				if(item.count &lt; r.count || item.info == null || item.info.id != r.id){
+					if(item.info == null){req.alpha = 0.5; req.colorTransform.setMultiplier(1); req.colorTransform.redAdd = 0; flashRed(req);}
+					else {req.clearLerp(); req.alpha = 0.5; req.colorTransform.setMultiplier(0.3); req.colorTransform.redAdd = 0.7;}
+				} else {req.clearLerp(); req.alpha = 0;} i++;
+			}
+		} window.params.enabled = eval(window.params.enabled); window.params.allowRequest = eval(window.params.allowRequest);
+		if(window.params.allowRequest != null &amp;&amp; !window.params.allowRequest.isBool()) window.params.allowRequest.setBool(true);
+		var wnd = window; function updateRecipe(e){
+			wnd.params.r = getData('recipe', wnd.params.m.get()); Utils.clear(wnd.params.requirements);
+			var p = getDisplayPoint(wnd.clickables.getSelected(),20,10); wnd.update(); wnd.clickables.setSelectedPoint(p.x, p.y); updateCraftingRequirements(null);
+		}
+		</script>
+		<text text="getText(window.params.ingredients == null?'structure.ingredients':window.params.ingredients)" width="640" x="16" y="y" align="left" />
+		<inventory inventory="window.params.req" x="16" y="y+30" itemUI="small" />
+		<repeat count="window.params.r.requirements.length">
+			<script>req = window.params.r.requirements[window.params.requirements.length]</script>
+			<item item="makeItem(req.id)" x="16+64*window.params.requirements.length" y="y+30" alpha="0.5" name="_item" />
+			<text text="getText('structure.count{count:'+req.count+'}')" x="16+64*window.params.requirements.length" y="y+30+68" alpha="0.5" width="64" size="18" />
+			<script>window.params.requirements.push(_item); _item = null;</script>
+		</repeat><script>y += 20</script>
+		<run procedure="add_craft" inventory="window.params.req" recipe="window.params.m" from="window.params.to" x="540" y="-16" />
+		<run procedure="sort_craft" inventory="window.params.req" recipe="window.params.m" x="424" y="-16" if="window.params.req.getWidth() > 1" />
+		<progressBar value="window.params.progress" max="1000000" width="640" height="20" color="229922" showText="false" x="16" y="y+98" />
+		<text text="eval(window.params.to_title)" width="672" y="y+121" align="center" />
+		<inventory inventory="window.params.to" x="16" y="y+146" itemUI="small" enabled="no_collect" /><set id="bot" value="y+146+window.params.to.getHeight()*64+18" />
+		<section if="window.params.enabled != null">
+			<tile id="divider" scaleX="4.6" x="67" y="bot" />
+			<button text="boolText(window.params.enabled, getText('common.pause'), getText('common.resume'))" x="116" y="bot+6" width="440" height="30">
+				<onSelect><script>window.params.enabled.set(!window.params.enabled.get())</script></onSelect>
+			</button><script>bot += 44;</script>
+		</section>
+		<append><section if="window.params.allowRequest != null">
+			<button ui="item" x="16" y="bot" width="640" height="20">
+				<check on="checkbox.on" off="checkbox.off" mutable="window.params.allowRequest" scale="0.5" x="0" y="0" />
+				<text section="structure" id="allow_request" width="610" x="30" y="0" align="left" />
+				<onSelect><script>window.params.allowRequest.set(!window.params.allowRequest.get())</script></onSelect>
+				<onHover><script>window.details.x = button.x+(640-window.details.width)/2; window.details.setStringPos(hover?getText('structure.allow_request_desc').get():null, button.y, 32);</script></onHover>
+			</button><script>bot += 28</script>
+		</section></append>
+		<added><script>for(i in 0...this.params.req.getWidth()) this.params.req.getItem(i, 0).addEventListener("updated", updateCraftingRequirements); updateCraftingRequirements(null);</script></added>
+		<removed><script>for(i in 0...this.params.req.getWidth()) this.params.req.getItem(i, 0).removeEventListener("updated", updateCraftingRequirements);</script></removed>
+		<added><script>this.params.m.addEventListener("updated", updateRecipe);</script></added>
+		<removed><script>this.params.m.removeEventListener("updated", updateRecipe);</script></removed>
+	</window>
+	<window id="crafting" extends="base_craft">
+		<script if="window.params.m == null">recipes = eval(window.params.recipes); window.params.limit = eval(window.params.limit);</script>
+		<script>y = 148;</script>
+		<append>
+			<text text="window.params.title" width="672" y="16" align="center" />
+			<text section="structure" id="craft" width="640" x="16" y="y-122" align="left" />
+			<script>bw = window.params.limit == null?640:470;</script>
+			<button x="16" y="y-92" width="bw" height="64">
+				<script>i = 0; _w = Math.floor(bw/window.params.r.creates.length);</script><repeat count="window.params.r.creates.length">
+					<script>_item = window.params.r.getCreateInfo(i)</script><item item="_item" x="_w*i" y="0" />
+					<text text="_item.getName()" width="_w-70" x="_w*i+64" y="22" size="20" align="left" />
+					<script>i++; _item = null;</script>
+				</repeat>
+				<onSelect><window id="select_recipe" title="structure.craft_title" recipes="recipes"><script>window.params.m.setString(recipe.id); if(window.params.limit != null) window.params.limit.set(-1);</script></window></onSelect>
+				<tile id="target_arrow" color="33aaff" colorScale="1.5" scale="0.25" x="bw-16" y="16" rotation="PI/2" />
+			</button>
+			<section if="window.params.limit != null">
+				<formattedText section="structure" id="limit" x="16+490" y="y-112" width="150" size="24" />
+				<spinner x="16+490" y="y-92+30" width="150" height="30" value="window.params.limit" min="-1" max="9999" />
+			</section>
+		</append>
+		<append><section if="settings.get('show_hints').getBool() != false"><script>tutorial_text = getText('help.progress'); tutorial_y = y+98+10;</script><run procedure="tutorial.overlay" /></section></append>
+	</window>
+	<window id="growing" width="672" height="582+(window.params.enabled == null?0:38)" closeButton="true">
+		<script if="window.params.m == null">
+		window.params.m = eval(window.params.recipe); recipes = eval(window.params.recipes); window.params.enabled = eval(window.params.enabled);
+		window.params.r = getData('recipe', window.params.m.get()); window.params.title = eval(window.params.title); y = 30; var wnd = window;
+		function updateRecipe(e){
+			var scroll = wnd.params.inv_list.getScrollY();
+			wnd.params.r = getData('recipe', wnd.params.m.get()); var p = getDisplayPoint(wnd.clickables.getSelected(),20,10); wnd.update();
+			wnd.params.inv_list.updateScroll(scroll); wnd.clickables.setSelectedPoint(p.x, p.y);
+		}
+		</script>
+		<text text="window.params.title" width="672" y="16" align="center" />
+		<text text="var g = eval(window.params.grow); return getText(g == null?'structure.grow':g)" width="640" x="16" y="y+16" align="left" />
+		<container x="16" y="y+46">
+			<border ui="details" x="0" y="0" width="640" height="64" />
+			<script>i = 0; _w = Math.floor(640/window.params.r.creates.length);</script><repeat count="window.params.r.creates.length">
+				<script>_item = window.params.r.getCreateInfo(i)</script><item item="_item" x="_w*i" y="0" />
+				<text text="_item.getName()" width="_w-70" x="_w*i+64" y="22" size="20" align="left" />
+				<script>i++; _item = null;</script>
+			</repeat>
+		</container>
+		<selectItem><script>window.params.m.setString(item.id)</script></selectItem>
+		<progressBar value="eval(window.params.progress)" max="1000000" width="640" height="20" color="229922" showText="false" x="16" y="y+118" />
+		<append><section if="settings.get('show_hints').getBool() != false"><script>tutorial_text = getText('help.progress'); tutorial_y = y+118+10;</script><run procedure="tutorial.overlay" /></section></append>
+		<script>y += 150; inventory = null; rows = 6; width = 640;</script><run procedure="inventory.list" /><script>y -= 150;</script>
+		<tile id="divider" scaleX="4.6" x="67" y="y+534" if="window.params.enabled != null" />
+		<button text="boolText(window.params.enabled, getText('common.pause'), getText('common.resume'))" x="116" y="y+540" width="440" height="30" if="window.params.enabled != null">
+			<onSelect><script>window.params.enabled.set(!window.params.enabled.get())</script></onSelect>
+		</button>
+		<added><script>this.params.m.addEventListener("updated", updateRecipe);</script></added>
+		<removed><script>this.params.m.removeEventListener("updated", updateRecipe);</script></removed>
+	</window>
+	<window id="select_object" width="544" height="572" closeButton="true">
+		<formattedText text="eval(window.params.title)" width="544" y="16" align="center" />
+		<list scroll="true" rows="17" cols="2" x="16" y="46">
+			<renderer width="256" height="30">
+				<border ui="box" x="0" y="0" width="256" height="30" />
+				<text text="item == null?getText('common.none'):item.vars.get('getName')()" color="dbc898" width="256" x="0" y="4" />
+				<onSelect><script>enterChild("object", item); window.close();</script></onSelect>
+				<onHover><script>window.details.x = button.x+button.parent.parent.x+(256-window.details.width)/2; window.details.setInfoPos(item == null?null:item, button.y+button.parent.y+button.parent.parent.y, 32);</script></onHover>
+			</renderer>
+			<init>if(eval(window.params.includeNone) == true) addItem(null); var accept = eval(window.params.accept); for(i in area.objects) if(accept(i)) addItem(i);</init>
+		</list>
+	</window>
+	<window id="select_character" width="544" height="574" closeButton="true">
+		<formattedText text="eval(window.params.title)" width="544" y="16" align="center" />
+		<list scroll="true" rows="4" cols="4" x="16" y="46">
+			<renderer width="128" height="128">
+				<image image="makeCharacterIcon(item)" if="item != null" />
+				<rect x="8" y="104" width="112" height="24" color="99000000" />
+				<border ui="box" x="0" y="0" width="128" height="128" />
+				<text text="item == null?getText('common.none'):item.vars.get('getName')()" color="dbc898" width="128" x="0" y="104" />
+				<onSelect><script>enterChild("object", item); window.close();</script></onSelect>
+				<onHover><script>window.details.x = button.x+button.parent.parent.x+(128-window.details.width)/2; window.details.setInfoPos(item == null?null:item, button.y+button.parent.y+button.parent.parent.y, 130);</script></onHover>
+			</renderer>
+			<init>if(eval(window.params.includeNone)== true) addItem(null); var accept = eval(window.params.accept); for(i in area.objects) if(accept(i)) addItem(i);</init>
+		</list>
+	</window>
+	<window id="manned_grow" extends="growing" height="582+68">
+		<script if="window.params.setNPC == null">
+		window.params.worker = eval(window.params.worker); window.params.setNPC = eval(window.params.setWorker); skill = parseString(window.params.skill);
+		</script>
+		<append>
+			<tile id="divider" scaleX="4.6" x="67" y="y+534" />
+			<formattedText text="getText('structure.worker{skill:'+skill+'}')" width="440" x="116" y="y+540" align="center" />
+			<check on="checkbox.on" off="checkbox.off" mutable="eval(window.params.hasWorker)" scale="0.5" x="86" y="y+570" />
+			<button x="146" y="y+570" text="window.params.worker" width="440" height="30">
+				<onSelect>
+					<window id="select_character" includeNone="true" accept="isNPC" title="getText('structure.select_worker{skill:'+skill+'}')"><script>window.params.setNPC(object)</script></window>
+				</onSelect>
+			</button>
+		</append>
+	</window>
+	<window id="manned_craft" extends="crafting">
+		<script if="window.params.setNPC == null">
+		window.params.worker = eval(window.params.worker); window.params.setNPC = eval(window.params.setWorker); skill = parseString(window.params.skill);
+		</script>
+		<append>
+			<tile id="divider" scaleX="4.6" x="67" y="bot" />
+			<formattedText text="getText('structure.worker{skill:'+skill+'}')" width="440" x="116" y="bot+6" align="center" />
+			<check on="checkbox.on" off="checkbox.off" mutable="eval(window.params.hasWorker)" scale="0.5" x="86" y="bot+30" />
+			<button x="146" y="bot+30" text="window.params.worker" width="440" height="30">
+				<onSelect>
+					<window id="select_character" includeNone="true" accept="isNPC" title="getText('structure.select_worker{skill:'+skill+'}')"><script>window.params.setNPC(object)</script></window>
+				</onSelect>
+			</button>
+			<script>bot += 68</script>
+		</append>
+	</window>
+	<window id="invcraft" width="672" height="582" closeButton="true">
+		<script if="window.params.m == null">
+		warning = new Mutable(); warning.set(""); window.params.object = eval(window.params.object);
+		window.params.m = eval(window.params.recipe); inventory = window.params.object.inventory; recipes = eval(window.params.recipes);
+		window.params.ct = eval(window.params.count); window.params.progress = eval(window.params.progress);
+		window.params.r = getData('recipe', window.params.m.get()); window.params.title = eval(window.params.title); y = 30; var wnd = window;
+		function updateRecipe(e){
+			if(wnd.params.ct != null) wnd.params.ct.delete();
+			var sel = wnd.clickables.getSelected(), scroll = wnd.params.inv_list.getScrollY(); if(sel != null) sel = sel.item;
+			var id = wnd.params.m.get(); wnd.params.r = getData('recipe', id); wnd.update();
+			wnd.params.inv_list.updateScroll(scroll);
+			if(sel != null) wnd.clickables.setSelected(wnd.params.inv_list.list.getChildAt(wnd.params.items.indexOf(sel)));
+		}
+		function updateCount(e){
+			var sel = wnd.clickables.getSelected(), scroll = wnd.params.inv_list.getScrollY(); if(sel != null) sel = sel.item; wnd.update();
+			wnd.params.inv_list.updateScroll(scroll);
+			if(sel != null) wnd.clickables.setSelected(wnd.params.inv_list.list.getChildAt(wnd.params.items.indexOf(sel)));
+		}
+		function updatePower(e){if(object.getPower() == 0) warning.set(getText("warning.no_power").get()); else warning.set("");}
+		</script>
+		<text text="window.params.title" width="672" y="16" align="center" />
+		<text section="structure" id="craft" width="640" x="16" y="y+16" align="left" />
+		<text text="warning" color="ff2222" width="640" x="16" y="y+16" align="right" />
+		<container x="16" y="y+46">
+			<border ui="details" x="0" y="0" width="530" height="64" />
+			<choose>
+				<text section="structure" id="select_craft" width="530" x="0" y="16" if="window.params.r == null" />
+				<section>
+					<script>i = 0; _w = Math.floor(530/window.params.r.creates.length);</script><repeat count="window.params.r.creates.length">
+						<script>_item = window.params.r.getCreateInfo(i)</script><item item="_item" x="_w*i" y="0" />
+						<text text="_item.getName()" color="cccccc" width="_w-70" x="_w*i+64" y="22" size="20" align="left" />
+						<script>i++; _item = null;</script>
+					</repeat><text text="new ToStringMutable(window.params.ct, function(v){return v == null?'':'x'+(v+1);})" width="522" x="0" align="right" y="36" if="window.params.ct != null" />
+				</section>
+			</choose>
+		</container>
+		<button section="common" id="cancel" color="ffffff" x="16+540" y="y+46" width="100" height="64">
+			<onSelect>
+				<script if="window.params.r != null">
+				var ct = (window.params.ct == null)?0:window.params.ct.get(); if(ct == null) ct = 1; else ct++;
+				for(i in window.params.r.getRequirements(ct)) if(!window.params.object.collectItem(i)){playSoundAt(area, window.params.object, "throw"); window.params.object.dropItem(i, 0.25);}
+				window.params.m.delete(); if(window.params.ct != null) window.params.ct.delete(); window.params.progress.set(0);
+				</script>
+			</onSelect>
+		</button>
+		<selectItem><choose>
+			<section if="!item.hasRequirements(inventory)">
+				<sound id="warning" /><show tooltip="popup" text="getText('warning.no_ingredients')" hold="40" x="0.5" y="0.5" color="ff2222" />
+			</section>
+			<script if="window.params.m.get() == null">for(r in item.requirements) inventory.removeById(r.id, r.count); window.params.m.setString(item.id)</script>
+			<script if="window.params.ct != null && window.params.m.get() == item.id">for(r in item.requirements) inventory.removeById(r.id, r.count); window.params.ct.addInt(1);</script>
+			<section><sound id="warning" /><show tooltip="popup" text="getTextTemplate('warning.crafting', {name:window.params.title})" hold="40" x="0.5" y="0.5" color="ff2222" /></section>
+		</choose></selectItem>
+		<progressBar value="window.params.progress" max="1000000" width="640" height="20" color="229922" showText="false" x="16" y="y+118" />
+		<script>y += 150; rows = 6; width=640;</script><run procedure="inventory.list" /><script>y -= 150;</script>
+		<added><script>this.params.m.addEventListener("updated", updateRecipe); if(this.params.ct != null) this.params.ct.addEventListener("updated", updateCount); this.params.object.power.addEventListener("updated", updatePower); updatePower(null);</script></added>
+		<removed><script>this.params.m.removeEventListener("updated", updateRecipe); if(this.params.ct != null) this.params.ct.removeEventListener("updated", updateCount); this.params.object.power.removeEventListener("updated", updatePower);</script></removed>
+	</window>
+
+	<window id="power_usage" width="500" height="122" closeButton="true">
+		<text text="getText(eval(window.params.title))" width="500" y="16" align="center" />
+		<formattedText section="structure" id="power_gen" color="ccffcc" width="468" x="16" y="46" align="left" />
+		<formattedText text="eval(window.params.power_gen)" color="ccffcc" width="468" x="16" y="46" align="right" />
+		<formattedText section="structure" id="power_use" width="468" color="ffcccc" x="16" y="76" align="left" />
+		<formattedText text="eval(window.params.power_use)" color="ffcccc" width="468" x="16" y="76" align="right" />
+	</window>
+	<script>function fuelTime(t){
+		if(t > 999) return getText("structure.fuel_minutes{min:"+Math.round(t/60)+"}");
+		else if(t > 0) return getText("structure.fuel_seconds{sec:"+Math.round(t)+"}");
+		else return getText("structure.fuel_infinite");
+	}</script>
+	<window id="select_fuel" width="500" height="510" closeButton="true">
+		<text text="getText(window.params.title)" width="500" y="16" align="center" />
+		<list scroll="true" rows="7" cols="1" x="16" y="46">
+			<renderer width="468" height="64">
+				<script>_item = item.getRequirement(0)</script><item item="_item" x="0" y="0" />
+				<text text="_item.getName()" width="160" x="64" y="22" size="20" align="left" />
+				<text text="fuelTime(item.cost*item.timePerCost/60)" color="cccccc" width="228" x="160+64" y="22" size="20" align="left" />
+				<script>ct++; _item = null;</script>
+				<onSelect>
+					<script>enterChild("recipe", item); window.close();</script>
+				</onSelect>
+			</renderer>
+			<init>window.params.items = []; for(i in eval(window.params.recipes)){window.params.items.push(i); addItem(i);} window.params.inv_list = list;</init>
+		</list>
+	</window>
+	<window id="fuel_generator" extends="base_craft">
+		<script if="window.params.m == null">recipes = eval(window.params.recipes);</script>
+		<script>y = 178; window.params.ingredients = 'structure.fuel';</script>
+		<append>
+			<text section="warning" id="no_fuel" color="ff2222" width="640" x="16" y="y" align="right" name="no_fuel" />
+			<script>var superUpdateCraftingRequirements = updateCraftingRequirements; function updateCraftingRequirements(e){
+				superUpdateCraftingRequirements(e); no_fuel.visible = !shouldProgress;
+			}</script>
+			<text text="getText(window.params.title)" width="672" y="16" align="center" />
+			<formattedText section="structure" id="power_gen" color="ccffcc" width="640" x="16" y="46" align="left" />
+			<formattedText text="eval(window.params.power_gen)" color="ccffcc" width="640" x="16" y="46" align="right" />
+			<formattedText section="structure" id="power_use" width="640" color="ffcccc" x="16" y="76" align="left" />
+			<formattedText text="eval(window.params.power_use)" color="ffcccc" width="640" x="16" y="76" align="right" />
+			<button x="16" y="106" width="640" height="64">
+				<script>_item = window.params.r.getRequirement(0)</script><item item="_item" x="0" y="0" />
+				<text text="_item.getName()" width="160" x="64" y="22" size="20" align="left" />
+				<text text="fuelTime(window.params.r.cost*window.params.r.timePerCost/60)" color="cccccc" width="400" x="160+64" y="22" size="20" align="left" />
+				<script>_item = null;</script>
+				<tile id="target_arrow" color="33aaff" colorScale="1.5" scale="0.25" x="624" y="16" rotation="PI/2" />
+				<onSelect><window id="select_fuel" title="structure.fuel_title" recipes="recipes"><script>window.params.m.setString(recipe.id)</script></window></onSelect>
+			</button>
+		</append>
+		<append><section if="settings.get('show_hints').getBool() != false"><script>tutorial_text = getText('help.fuel'); tutorial_y = y+98+10;</script><run procedure="tutorial.overlay" /></section></append>
+	</window>
+	<window id="select_structure" ui="none" width="800" height="484" closeButton="true">
+		<border ui="default" x="0" y="0" width="800" height="484" />
+		<tile id="window.title" x="241" y="8" />
+		<text text="getText(window.params.title)" size="20" color="dbc898" width="800" y="10" />
+		<script if="container.params.structure_icon == null">container.params.structure_icon = container.makeIcon(256,144);</script>
+		<list scroll="true" rows="3" cols="3" x="16" y="36">
+			<renderer width="256" height="144">
+				<image image="makeObjectIcon(item)" />
+				<rect x="8" y="120" width="240" height="24" color="99000000" />
+				<border ui="box" x="0" y="0" width="256" height="144" />
+				<text text="getText(item.params.name)" color="dbc898" width="256" x="0" y="120" align="center" />
+				<onSelect><script>enterChild("structure", item); window.close();</script></onSelect>
+				<onHover><script>
+					if(item == null){
+						if(window.params.hover != null) window.params.hover.destroy(); window.params.hover = null;
+						button.getChildAt(4).displayable.setTexture(makeObjectIcon(button.item)); window.details.setString(null); return;
+					} window.params.hover = (item.params.animateIcon == null)?null:item.params.animateIcon(); if(window.params.hover != null){var t = container.params.structure_icon; window.params.hover.update(t, 0); button.getChildAt(4).displayable.setTexture(t);}
+                    window.details.width = 452; window.details.x = button.x+button.parent.parent.x-90;
+					var b = new StringBuf(); if(getText(item.params.desc) != null){b.add("[text="); b.add(item.params.desc); b.add("]\n");} var recipe = getData('recipe', item.xml.get('recipe')), req = recipe.requirements; var first = true;
+					var p = parseFloat(item.params.build.xml.get("power_use")); if(p > 0){
+						b.add("[text=structure>power_cost{cost:"); b.add(Std.string(p)); b.add("}]\n");
+					} b.add("[text=structure>size{x:"); b.add(Std.string(Math.ceil(item.aabb.getWidth()))); b.add("}{y:");
+					b.add(Std.string(Math.ceil(item.aabb.getHeight()))); b.add("}{z:"); b.add(Std.string(Math.ceil(item.aabb.getDepth()))); b.add("}]\n");
+					for(r in req){
+						if(first) first = false; else b.add(", "); b.add("[item="); b.add(r.id); b.add("] x"); b.add(r.count);
+					} if(recipe.cost > 0){if(first) first = false; else b.add(", "); b.add("[text=structure>power_build{cost:"); b.add(Std.string(recipe.cost)); b.add("}]");}
+					window.details.setStringPos(b.toString(), button.y+button.parent.y+button.parent.parent.y, 146);
+                </script></onHover>
+			</renderer>
+			<init>var ar = []; for(type in STRUCTURE_TYPES) ar.push([]); window.params.tabs = ['all']; var sel = parseString(window.params.selected); window.params.selected = null;
+			for(i in state.storage.get('blueprints').getArray()){
+				var s = getStructure(i); if(s == null) continue; var t = STRUCTURE_TYPES.indexOf(s.xml.get("type")); if(t == -1) t = STRUCTURE_TYPES.length-1; ar[t].push(s);
+			} var i = 0; for(type in STRUCTURE_TYPES){var list = ar[i++]; if(list.length > 0){
+				window.params.tabs.push(type);
+				if(window.params.tab == null || window.params.tab == type) for(s in list){var b = addItem(s); if(s.id == sel) window.setSelected(b);}
+			}}
+			</init>
+		</list>
+		<script>i = window.params.tabs.length-1;</script>
+		<repeat count="window.params.tabs.length">
+			<script>tab = window.params.tabs[i--];</script>
+			<button text="getText('structure.'+tab)" ui="tab_off" x="16+128*(i+1)" y="-40" width="128" height="40" if="(tab == 'all'?null:tab) != window.params.tab">
+				<onSelect><script>window.params.tab = tab == 'all'?null:tab; var p = getDisplayPoint(button,20,10); window.update(); window.clickables.setSelectedPoint(p.x, p.y);</script></onSelect>
+			</button>
+		</repeat>
+		<repeat count="4"><rearrange from="0" to="numChildren" /></repeat>
+		<script>tab = (window.params.tab == null)?'all':window.params.tab; i = window.params.tabs.indexOf(tab);</script>
+		<button text="getText('structure.'+tab)" ui="tab_on" x="16+128*i" y="-40" width="128" height="40" if="i != -1" />
+		<onFrame>if(this.params.hover != null) this.params.hover.step(container.params.structure_icon, frames);</onFrame>
+	</window>
+
+	<script>
+	function charge(from, to, amt){
+		var f = Math.min(amt, to.getMaxPower()-to.getPower()-to.power_partial);
+		if(f > 0){var ret = -from.charge(-f); if(ret &lt; f) to.charge(f-ret);}
+	}
+	</script>
+	<window id="battery" width="384" height="190" closeButton="true">
+		<script>battery = eval(window.params.battery); object = eval(window.params.object);</script>
+		<text text="getText(window.params.title)" width="384" y="16" align="center" />
+		<progressBar value="battery.power" max="battery.max_power" width="320" height="20" color="998822" showText="true" x="32" y="46" />
+		<tile id="divider" scaleX="2.3" x="57" y="74" />
+		<holdButton section="common" id="charge" x="16" y="90" width="352">
+			<onHold>charge(object, battery, frames*4);</onHold>
+		</holdButton>
+		<holdButton section="common" id="discharge" x="16" y="138" width="352">
+			<onHold>charge(battery, object, frames*4);</onHold>
+		</holdButton>
+	</window>
+	<window id="npc_info" width="672" height="y+16" closeButton="true">
+		<script>window.params.npc = eval(window.params.npc); window.params.to = eval(window.params.to); window.params.indicator = eval(window.params.indicator);</script>
+		<tile id="window.title" x="177" y="-14" />
+		<text text="getText('npc>'+window.params.npc.info.xml.get('job'))" size="20" color="dbc898" width="672" y="-12" />
+		<text text="window.params.npc.vars.get('getName')()" size="22" y="16" color="ffffff" width="672" />
+		<script>
+		var n = window.params.npc; var v = n.vars; var home = v.get("home").get();
+		var hp = n.getHungerPercent(); if(n.getMaxOxygen() > 0 &amp;&amp; !n.canBreathe(false)) window.params.msg = n.getOxygenPercent() &lt; 1?"no_air":"no_air_outside";
+		else if(hp &lt; 0.25) window.params.msg = "hungry";
+		else if(home == null) window.params.msg = "homeless";
+		else if(v.get("pathfind_fail") != null){
+			var t = v.get("pathfind_fail"); if(t == v.get("work").get()) window.params.msg = "to_work_fail";
+			else if(t == home) window.params.msg = "to_home_fail";
+		} else if(!home.hasPower()) window.params.msg = "no_power";
+		else if(v.get("path") != null){
+			var t = v.get("to"); if(t == v.get("work").get()) window.params.msg = "to_work";
+			else if(t == home) window.params.msg = "to_home"; else window.params.msg = (hp &lt; 0.5 &amp;&amp; getTotalFood(n.inventory)+getTotalFood(home.inventory) &lt; 50)?"no_food":"idle";
+		} else if(v.get("atWork").get() == true) window.params.msg = "working"; else window.params.msg = (hp &lt; 0.5 &amp;&amp; getTotalFood(n.inventory)+getTotalFood(home.inventory) &lt; 50)?"no_food":"idle";
+		if(window.params.npc.info.params.robot == true &amp;&amp; window.params.msg == "no_food") window.params.msg = "idle";
+		</script>
+		<formattedText text="getText(window.params.npc.info.params.talk_section+'>'+window.params.msg)" color="cccccc" width="640" x="16" y="44" align="left" />
+		<script>y = 52+Math.ceil(lastTextHeight);</script>
+		<text section="common" id="health" size="16" x="0" y="y" width="220" align="right" />
+		<progressBar value="window.params.npc.health" max="window.params.npc.max_health" width="256" height="20" color="992222" showText="true" x="236" y="y" /><script>y += 24;</script>
+		<choose>
+			<section if="window.params.npc.info.params.robot == true">
+				<text section="common" id="power" size="16" x="0" y="y" width="220" align="right" />
+				<progressBar value="window.params.npc.hunger" max="window.params.npc.max_hunger" width="256" height="20" color="998822" showText="true" x="236" y="y" /><script>y += 24;</script>
+			</section>
+			<section>
+				<text section="common" id="power" size="16" x="0" y="y" width="220" align="right" />
+				<progressBar value="window.params.npc.power" max="window.params.npc.max_power" width="256" height="20" color="998822" showText="true" x="236" y="y" /><script>y += 24;</script>
+				<text section="common" id="hunger" size="16" x="0" y="y" width="220" align="right" />
+				<progressBar value="window.params.npc.hunger" max="window.params.npc.max_hunger" width="256" height="20" color="229922" showText="true" x="236" y="y" /><script>y += 24;</script>
+				<section if="var max = window.params.npc.getMaxOxygen(); return max > 0 && window.params.npc.oxygen.get() < max;">
+					<text section="common" id="oxygen" size="16" x="0" y="y" width="220" align="right" />
+					<progressBar value="window.params.npc.oxygen" max="window.params.npc.max_oxygen" width="256" height="20" color="999999" showText="true" x="236" y="y" /><script>y += 24;</script>
+				</section><script>y += 8;</script>
+			</section>
+		</choose>
+		<script>i = -1; x = 80-256; y += 22;</script>
+		<repeat count="SKILLS.length">
+			<script>x += 256; if(x >= 512){x = 80; y += 22;} i++;</script>
+			<text text="getText('npc>'+SKILLS[i])" size="16" width="128" x="x" y="y-26" align="right" />
+			<points value="floatToInt(window.params.npc.storage.get(SKILLS[i]), function(v){return (v == null)?0:Math.floor(v/100);})" max="window.params.npc.info.params.max_skill[SKILLS[i]]" spacing="13" off="point.off" on="point.on" x="x+136" y="y-26" />
+		</repeat>
+		<inventory inventory="window.params.npc.inventory" x="16" y="y" itemUI="small" /><script>y += 64*window.params.npc.inventory.getHeight()+12;</script>
+		<text text="eval(window.params.to_title)" width="672" y="y" align="center" />
+		<inventory inventory="window.params.to" x="16" y="y+30" itemUI="small" enabled="no_collect" /><script>y += 64*window.params.to.getHeight()+30;</script>
+		<script>var v = window.params.npc.vars; y += 8; function __setHome(o){
+			if(o == v.get("home").get()) return;
+			if(isHomeFull(o)){
+				var object = getPlayerForScreen(container);
+				if(object != null) object.dispatchEvent(new ObjectEvent("warning", getText("warning.bunker_full{structure:"+o.vars.get('getName')().get()+"}")));
+			} else v.get('setHome')(o);
+		} list = []; list.push({title:getText("structure.work"), obj:v.get("work"), here:v.get("atWork"), includeNone:true, accept:isWork, set:v.get('setWork')});
+		list.push({title:getText("structure.home"), obj:v.get("home"), here:v.get("atHome"), includeNone:false, accept:window.params.npc.info.params.robot == true?isHomeBot:isHome, set:__setHome});
+		</script>
+		<repeat count="2">
+			<script>item = list.pop()</script>
+			<button width="640" height="30" ui="item" x="16" y="y">
+				<text text="item.title" width="100" x="0" y="0" align="left" />
+				<check on="checkbox.on" off="checkbox.off" mutable="item.here" scale="0.5" x="100" y="0" />
+				<text text="item.obj.get()==null?getText('common.none'):item.obj.get().vars.get('getName')()" color="dbc898" width="580" x="160" y="0" align="left" />
+				<onSelect>
+					<window id="select_object" includeNone="item.includeNone" accept="item.accept" title="item.title"><script>item.set(object)</script></window>
+				</onSelect>
+				<onInit><script>function itemUpdated(e){updateButton();}</script></onInit>
+				<added><script>item.obj.addEventListener("updated", itemUpdated);</script></added>
+				<removed><script>item.obj.removeEventListener("updated", itemUpdated);</script></removed>
+			</button><script>y += 30;</script>
+		</repeat><script>y += 8; item = null; list = null;</script>
+		<section if="window.params.indicator != null">
+			<button ui="item" x="16" y="y" width="640" height="30">
+				<text section="structure" id="indicator"  width="600" x="30" y="0" align="left" />
+				<check on="checkbox.on" off="checkbox.off" mutable="window.params.indicator" scale="0.5" x="0" y="0" />
+				<onSelect><script>window.params.indicator.set(!window.params.indicator.get())</script></onSelect>
+			</button><script>y += 30;</script>
+		</section>
+		<run procedure="sort_button" inventory="window.params.npc.inventory" x="540" y="-16" />
+	</window>
+
+	<window id="bunker" width="672" height="y+58" closeButton="true">
+		<script>struc = eval(window.params.structure); to = eval(window.params.to); to_title = eval(window.params.to_title); window.params.indicator = eval(window.params.indicator);</script>
+		<text section="structure" id="npcs" width="640" x="16" y="16" align="left" />
+		<script>y = 46+30*struc.info.params.maxNPCs+8;</script>
+		<text text="eval(window.params.from_title)" width="672" y="y" align="center" /><script>y += 30;</script>
+		<inventory inventory="struc.inventory" x="16" y="y" itemUI="small" /><script>y += struc.inventory.getHeight()*64+12;</script>
+		<text text="to_title" width="672" y="y" align="center" />
+		<inventory inventory="to" x="16" y="y+30" itemUI="small" enabled="no_collect" /><script>y += to.getHeight()*64;</script>
+		<list rows="struc.info.params.maxNPCs" cols="1" x="16" y="46">
+			<renderer width="640" height="30">
+				<check on="checkbox.on" off="checkbox.off" mutable="item.here" scale="0.5" x="0" y="0" />
+				<text text="item.name" color="dbc898" width="580" x="60" y="0" align="left" />
+				<onSelect><script>me = item.npc.get(); unset('item');</script><choose>
+					<window id="npc_info" npc="me" to="to" to_title="to_title" indicator="me.storage.get('indicator')" if="me != null" />
+					<window id="select_character" accept="function(i){return isNPC(i) && i.info.params.robot != true && i.vars.get('home').get() != struc;}" title="getText('structure.add_npc')"><script>struc.vars.get("addNPC")(object)</script></window>
+				</choose></onSelect>
+			</renderer>
+			<init>for(i in struc.vars.get("npcs")) addItem(i);</init>
+		</list>
+		<section if="window.params.indicator != null">
+			<button ui="item" x="16" y="y+38" width="640" height="30">
+				<text section="structure" id="indicator"  width="600" x="30" y="0" align="left" />
+				<check on="checkbox.on" off="checkbox.off" mutable="window.params.indicator" scale="0.5" x="0" y="0" />
+				<onSelect><script>window.params.indicator.set(!window.params.indicator.get())</script></onSelect>
+			</button><script>y += 30;</script>
+		</section>
+		<run procedure="sort_button" inventory="struc.inventory" x="540" y="-16" />
+	</window>
+
+
+	<window id="select_item" width="500" height="510" closeButton="true">
+		<text text="getText(window.params.title)" width="500" y="16" align="center" />
+		<list scroll="true" rows="7" cols="1" x="16" y="46">
+			<renderer width="468" height="64">
+				<item item="item" x="0" y="0" />
+				<text text="item.getName()" width="400" x="64" y="22" size="20" align="left" />
+				<onSelect><script>enterChild("selected", item); window.close();</script></onSelect>
+				<onHover><script>window.details.x = (500-window.details.width)/2; window.details.setInfoPos(item == null || item.info == null || item.count == null?null:item, button.y+button.parent.y+button.parent.parent.y, 66);</script></onHover>
+			</renderer>
+			<init>var sel = parseString(window.params.selected); for(i in eval(window.params.items)){var b = addItem(makeItem(i)); if(i == sel) window.setSelected(b);}</init>
+		</list>
+	</window>
+	<window id="select_upgrade" width="500" height="510" closeButton="true">
+		<text text="getText(window.params.title)" width="500" y="16" align="center" />
+		<list scroll="true" rows="7" cols="1" x="16" y="46">
+			<renderer width="468" height="64">
+				<choose>
+					<section if="item.count == null">
+						<item item="makeItem('suit')" x="0" y="0" />
+						<text section="items" id="suit" width="400" x="64" y="22" size="20" align="left" />
+					</section><section>
+						<item item="item" x="0" y="0" />
+						<text text="item.getName()" width="400" x="64" y="22" size="20" align="left" />
+					</section>
+				</choose>
+				<onSelect><script>enterChild("item", item); window.close();</script></onSelect>
+				<onHover><script>window.details.x = (500-window.details.width)/2; window.details.setInfoPos(item == null || item.info == null || item.count == null?null:item, button.y+button.parent.y+button.parent.parent.y, 66);</script></onHover>
+			</renderer>
+			<init>if(object.info.params.upgrades != null) addItem(object); for(i in eval(window.params.inventory)) if(i.info != null &amp;&amp; i.info.params.upgrades != null) addItem(i);</init>
+		</list>
+	</window>
+	<window id="upgrade" width="672" height="488" closeButton="true">
+		<script if="window.params.inv == null">window.details.width = 672; if(window.params.item == null &amp;&amp; object.info.params.upgrades != null) window.params.item = object;
+		inventory = eval(window.params.inventory); window.params.inv = inventory; window.params.title = eval(window.params.title); y = 30;
+		</script>
+		<text text="window.params.title" width="672" y="16" align="center" />
+		<text text="var g = eval(window.params.upgrade); return getText(g == null?'structure.upgrade':g)" width="640" x="16" y="y+16" align="left" />
+		<button x="16" y="y+46" width="640" height="64">
+			<choose>
+				<text section="common" id="none" width="500" x="8" y="22" size="20" align="left" if="window.params.item == null" />
+				<section if="window.params.item.count == null">
+					<item item="makeItem('suit')" x="0" y="0" />
+					<text section="items" id="suit" width="500" x="64" y="22" size="20" align="left" />
+				</section><section>
+					<item item="window.params.item" x="0" y="0" />
+					<text text="window.params.item.getName()" width="500" x="64" y="22" size="20" align="left" />
+				</section>
+			</choose>
+			<tile id="target_arrow" color="33aaff" colorScale="1.5" scale="0.25" x="624" y="16" rotation="PI/2" />
+			<onSelect><window id="select_upgrade" title="structure.upgrade_title" inventory="inventory"><script>window.params.item = item; var p = getDisplayPoint(button,20,10); window.update(); window.clickables.setSelectedPoint(p.x, p.y);</script></window></onSelect>
+		</button>
+		<list scroll="true" rows="5" cols="1" x="17" y="y+120">
+			<renderer width="640" height="64" enabled="function(i){var lvl = i.getLevel(window.params.item.storage); return lvl < getMaxLevel(state, window.params.item, i) && i.hasRequirements(inventory, lvl+1);}">
+				<script>ct = 0; lvl = item.getLevel(window.params.item.storage); max_level = getMaxLevel(state, window.params.item, item); cost = lvl >= max_level?[]:item.levelCost(lvl+1);  _w = cost.length == 0?640:Math.floor(640/cost.length);</script>
+				<text text="item.getName()" width="400" x="8" y="0" align="left" />
+				<points value="new Static(lvl)" max="max_level" spacing="13" off="point.off" on="point.on" x="632-13*item.max_level" y="8" />
+				<points value="new Static(0)" max="item.max_level-max_level" alpha="0.5" spacing="13" off="point.off" on="point.on" x="632-13*(item.max_level-max_level)" y="8" if="item.max_level > max_level" />
+				<choose>
+					<text section="upgrades" id="max" color="cccccc" width="_w-70" x="_w*ct+64" y="38" size="20" align="left" if="lvl >= item.max_level" />
+					<tile id="no_blueprint" x="0" y="32" scale="0.25" if="cost.length == 0" />
+				</choose>
+				<repeat count="cost.length">
+					<script>id = cost[ct].id; count = cost[ct].count; total = inventory.getCountById(id);</script><item item="makeItem(id)" x="_w*ct" y="32" scale="0.5" />
+					<text text="'x'+count+' ('+total+')'" color="total < count?0xcc2222:0xcccccc" width="_w-70" x="_w*ct+64" y="38" size="20" align="left" />
+					<script>ct++;</script>
+				</repeat>
+				<onSelect><script>lvl = item.getLevel(window.params.item.storage); max_level = getMaxLevel(state, window.params.item, item);</script><choose><choose if="lvl < max_level">
+					<section if="!item.hasRequirements(inventory, lvl+1)">
+						<sound id="warning" /><show tooltip="popup" text="getText('warning.no_ingredients')" hold="40" x="0.5" y="0.5" color="ff2222" />
+					</section>
+					<script>
+					state.setAchievement(container, "chip", true);
+					for(r in item.levelCost(lvl+1)) inventory.removeById(r.id, r.count); item.setLevel(window.params.item.storage, lvl+1);
+					var data = {upgrade:item, object:object, window:window, item:window.params.item, level:lvl+1};
+					object.dispatchEvent(new ObjectEvent("upgrade", data)); var scroll = window.params.item_list.getScrollY();
+					window.update(); window.params.item_list.updateScroll(scroll); window.clickables.setSelected(window.params.item_list.list.getChildAt(window.params.items.indexOf(item)));
+					</script>
+				</choose>
+				<section>
+					<sound id="warning" /><show tooltip="popup" text="getText('warning.'+(lvl >= item.max_level?'no_upgrade':'upgrade_locked'))" hold="40" x="0.5" y="0.5" color="ff2222" formatted="true" />
+				</section>
+				</choose></onSelect>
+				<onHover><script>
+				if(item == null) window.details.setString(null); else {
+					if(window.params.item != null &amp;&amp; window.params.item.info.params.upgradeDesc != null)
+						window.details.setString(window.params.item.info.params.upgradeDesc(item));
+					else window.details.setString(item.getDesc().get());
+				}
+				</script></onHover>
+			</renderer>
+			<init>window.params.items = []; window.params.item_list = list;
+			if(window.params.item != null){
+				var ar = window.params.item.info.params.getUpgrades == null?window.params.item.info.params.upgrades:window.params.item.info.params.getUpgrades(window.params.item);
+				for(i in ar){var d = getData("upgrade", i); if(d != null){addItem(d); window.params.items.push(d);}}
+			}</init>
+		</list>
+	</window>
+
+	<window id="set_teleport" width="500" height="y+4" closeButton="true">
+		<script>window.params.enabled = eval(window.params.enabled);
+		window.params.selected = eval(window.params.selected); window.params.o = eval(window.params.object);
+		window.params.indicator = eval(window.params.indicator); y = 516;</script>
+		<text text="getText(eval(window.params.title))" width="500" y="16" align="center" />
+		<text text="getText(eval(window.params.desc))" width="484" x="8" y="40" color="cccccc" size="20" />
+		<list scroll="true" rows="12" cols="1" x="16" y="106">
+			<renderer width="468" height="30">
+				<border ui="box" x="0" y="0" width="468" height="30" if="window.params.selected.get() == item" />
+				<script>x = 8;</script>
+				<choose if="item != null">
+					<section if="item.info.params.vehicle == true">
+						<choose>
+							<tile id="no" x="x" y="0" scale="0.25" if="item.vars.get('pilot') != null" />
+							<sprite value="item.vars.get('getIndicator')().createSprite()" scale="0.25" />
+						</choose>
+						<script>x += 32</script>
+					</section>
+					<section>
+						<script>p = item.power_use > 0 &amp;&amp; !item.hasPower();</script>
+						<section if="!canTeleportTo(item) && (p || item.storage.get('enabled').getBool() == false)">
+							<tile id="power" x="x" y="0" scale="0.25" if="p" />
+							<tile id="no" x="x" y="0" scale="0.25" /><script>x += 32</script>
+						</section>
+					</section>
+				</choose>
+				<text text="item == null?getText('common.none'):(item.vars.get('getName')())" color="dbc898" width="452" x="x" y="4" align="left" />
+				<onSelect><choose>
+					<section if="item != null && item.info.params.vehicle == true && item.vars.get('pilot') != null">
+						<sound id="warning" /><show tooltip="popup" text="getText('warning.has_pilot')" hold="40" x="0.5" y="0.5" color="ff2222" />
+					</section>
+					<script>enterChild("object", item); window.close();</script>
+				</choose></onSelect>
+				<onHover><script>window.details.x = (500-window.details.width)/2; window.details.setInfoPos(item == null?null:item, button.y+button.parent.y+button.parent.parent.y, 32);</script></onHover>
+			</renderer>
+			<init>addItem(null); var list = eval(window.params.list); for(i in list) addItem(i);</init>
+		</list>
+		<tile id="divider" scaleX="4" x="18" y="472" if="window.params.enabled != null" />
+		<button section="common" id="rename" x="30" y="478" width="440" height="30">
+			<onSelect>
+				<script>n = window.params.o.vars.get('getName')();</script><window id="input" title="getText('structure.rename_teleportal')" initial="n"><script>window.params.o.storage.get("name").setString(text);</script></window>
+			</onSelect>
+		</button>
+		<section if="window.params.enabled != null">
+			<button text="boolText(window.params.enabled, getText('common.pause'), getText('common.resume'))" x="30" y="y" width="440" height="30">
+				<onSelect><script>window.params.enabled.set(!window.params.enabled.get())</script></onSelect>
+			</button><script>y += 38;</script>
+		</section>
+		<section if="window.params.indicator != null">
+			<button ui="item" x="30" y="y" width="440" height="30">
+				<text section="structure" id="indicator"  width="600" x="30" y="0" align="left" />
+				<check on="checkbox.on" off="checkbox.off" mutable="window.params.indicator" scale="0.5" x="0" y="0" />
+				<onSelect><script>window.params.indicator.set(!window.params.indicator.get())</script></onSelect>
+			</button><script>y += 30;</script>
+		</section>
+	</window>
+
+	<script>
+	function getMaterialValue(m){return m.mine_power*20000+(m.ramp?10000:0)+m.flags;}
+	function sortMaterial(a, b){return getMaterialValue(a)-getMaterialValue(b);}
+	</script>
+	<window id="select_material" ui="none" width="608+(window.params.ramp == null?0:108)" height="484" closeButton="true">
+		<border ui="default" x="0" y="0" width="608+(window.params.ramp == null?0:108)" height="484" />
+		<tile id="window.title" x="145" y="8" />
+		<text text="getText(window.params.title)" size="20" color="dbc898" width="608" y="10" />
+		<script>wnd = window</script>
+		<list scroll="true" rows="3" cols="4" x="16" y="36">
+			<renderer width="144" height="144">
+				<image image="makeMaterialIcon(item, wnd.params.ramp == null?null:wnd.params.ramp.get())" if="item.id != 'clear'" />
+				<rect x="8" y="120" width="128" height="24" color="99000000" />
+				<border ui="box" x="0" y="0" width="144" height="144" />
+				<text text="var t = getText(item.params.name); return t == null?getText('common.unknown'):t" color="dbc898" width="144" x="0" y="120" align="center" />
+				<onSelect><script>enterChild("material", item); window.close();</script></onSelect>
+				<onHover><script>
+					if(item == null){window.details.setString(null); return;}
+					var d = getText(item.params.desc); if(d == null){window.details.setString(null); return;}
+                    window.details.width = 452; window.details.x = button.x+button.parent.parent.x-90;
+					window.details.setStringPos(d.get(), button.y+button.parent.y+button.parent.parent.y, 146);
+                </script></onHover>
+			</renderer>
+			<init>var sel = parseString(window.params.selected); window.params.selected = null;
+			window.params.ramp = eval(window.params.ramp);
+			var materials = eval(window.params.materials); if(materials == null) return; var ar = [];
+			for(id in materials){
+				var m = MaterialInfo.get(id); if(m != null){
+					if(m.params.name == null){
+						if(m.xml.exists("name")) m.params.name = m.xml.get("name"); else {
+							var i = getItem(m.xml.get("item")); if(i == null) m.params.name = "material>"+id; else m.params.name = i.name;
+						}
+					}
+					if(m.params.desc == null &amp;&amp; m.mine_power &lt; 9999) m.params.desc = "material>hardness{hardness:"+m.mine_power+"}";
+					ar.push(m);
+				}
+			} ar.sort(sortMaterial); window.params.buttons = []; for(m in ar){var b = addItem(m); window.params.buttons.push(b); if(m.id == sel) window.setSelected(b);}
+			</init>
+		</list>
+		<section if="window.params.ramp != null">
+			<tile id="window.title" x="606" y="8" scaleX="0.3" />
+			<text section="structure" id="ramp" size="20" color="dbc898" width="100" x="604" y="10" />
+			<list rows="6" cols="1" x="618" y="36">
+				<renderer width="72" height="72">
+					<image image="makeMaterialIcon(MaterialInfo.get('white_ramp'), item)" scale="0.5" />
+					<border ui="box" x="0" y="0" width="72" height="72" if="wnd.params.ramp.get() == item" />
+					<onSelect><script>window.params.ramp.set(item); for(b in window.params.buttons) b.update();</script></onSelect>
+				</renderer>
+				<init>for(i in 0...6) window.params.buttons.push(addItem(i));</init>
+			</list>
+		</section>
+	</window>
+
+	<window id="give" width="672" height="y+58" closeButton="true">
+		<script>window.params.object = eval(window.params.object); window.params.to = eval(window.params.to); window.params.indicator = eval(window.params.indicator);</script>
+		<text text="window.params.object.vars.get('getName')()" width="672" y="16" align="center" />
+		<inventory inventory="window.params.object.inventory" enabled="give" x="16" y="46" itemUI="small" /><set id="y" value="58+window.params.object.inventory.getHeight()*64" />
+		<text text="eval(window.params.to_title)" width="672" y="y" align="center" />
+		<inventory inventory="window.params.to" x="16" y="y+30" itemUI="small" enabled="no_collect" /><script>y += window.params.to.getHeight()*64;</script>
+		<run procedure="sort_button" inventory="window.params.to" x="540" y="-16" />
+		<section if="window.params.indicator != null">
+			<button ui="item" x="16" y="y+38" width="640" height="30">
+				<text section="structure" id="indicator"  width="600" x="30" y="0" align="left" />
+				<check on="checkbox.on" off="checkbox.off" mutable="window.params.indicator" scale="0.5" x="0" y="0" />
+				<onSelect><script>window.params.indicator.set(!window.params.indicator.get())</script></onSelect>
+			</button><script>y += 30;</script>
+		</section>
+	</window>
+
+	<window id="gui.default" ui="none" width="40" height="0" halign="1" valign="0" animate="false">
+		<progressBar ui="bar" icon="gui.health" value="(gui.object.max_health.get() > 1?gui.object:gui.eye).health" max="(gui.object.max_health.get() > 1?gui.object:gui.eye).max_health" width="318" height="25" x="-318" y="14" color="992222" showText="true" name="health" />
+		<progressBar ui="bar" icon="gui.power" value="gui.eye.power" max="gui.eye.max_power" width="318" height="25" x="-318" y="45" color="998822" showText="true" name="power" />
+		<progressBar ui="bar" icon="gui.hunger" value="gui.eye.hunger" max="gui.eye.max_hunger" width="318" height="25" x="-318" y="76" color="229922" showText="true" name="hunger" />
+		<progressBar ui="bar" icon="gui.oxygen" value="gui.eye.oxygen" max="gui.eye.max_oxygen" width="318" height="25" x="-318" y="107" color="999999" showText="true" name="oxygen" hideFull="true" />
+		<container lerpable="true" x="-200" y="107">
+			<border ui="details" width="200" height="25" />
+			<resource value="gui.eye.storage.get('coins')" size="25" width="200" align="right" colored="true" name="coins">
+				<tile id="gui.coins" x="204" y="(25-getTile('gui.coins').getHeight())*0.5" />
+			</resource>
+		</container>
+		<onInit><script>var d = gui.eye.storage.get('coins'); coins.parent.alpha = d.isInt()?1:0; oxygen.y = 107+31*coins.parent.alpha; this.params.updateCoins = function(e){
+			var a = d.isInt()?1:0; if(coins.parent.alpha != a){coins.parent.lerp(new AlphaKeyframe(a), 10); oxygen.y = 107+31*a;}
+		}</script></onInit>
+		<added><script>gui.eye.storage.get('coins').addEventListener("updated", this.params.updateCoins);</script></added>
+		<removed><script>gui.eye.storage.get('coins').removeEventListener("updated", this.params.updateCoins);</script></removed>
+	</window>
+
+	<window id="set_time" width="300" height="100" closeable="true">
+		<script>window.params.time = new Mutable(); window.params.time.set(Math.floor(state.getTime()/3600+15.5)%24);</script>
+		<text section="structure" id="time" x="8" y="16" width="156" />
+		<spinner x="164" y="16" width="120" height="30" value="window.params.time" min="0" max="23">
+			<onAction><run xml="window.xml" event="onConfirm" /></onAction>
+			<onInit><script>window.setSelected(spinner);</script></onInit>
+		</spinner>
+		<button x="20" y="54" section="common" id="ok" width="120" height="30">
+			<onSelect><run xml="window.xml" event="onConfirm" /></onSelect>
+		</button>
+		<onConfirm><script>
+			var t = state.getTime(), dh = window.params.time.get()-(Math.floor(state.getTime()/3600+15.5)%24); if(dh &lt;= 0) dh += 24; state.setTime(t+dh*3600); window.close();
+        </script></onConfirm>
+		<button x="160" y="54" section="common" id="cancel" width="120" height="30">
+			<onSelect><script>window.close();</script></onSelect>
+		</button>
+	</window>
+</data>

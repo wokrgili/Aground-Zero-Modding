@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<structure id="title_gen" extends="generator" lightPowered="false" />
+	<structure id="title_pod" extends="cryopod" power="1">
+		<init><script>var a = this.models[1].animation.animations[0]; a.animationSpeed = -1; a.onComplete = null;</script></init>
+	</structure>
+	<model id="logo.planet" primitive="quad" texture="logo.png" emission="logo.png"><texture x='0' y='0' width='858' height='857' /></model>
+	<model id="logo.aground" primitive="quad" texture="logo.png" emission="logo.png"><texture x='0' y='861' width='1171' height='367' /></model>
+	<model id="logo.zero" primitive="quad" texture="logo.png" emission="logo.png"><texture x='0' y='1232' width='916' height='263' /></model>
+	<model id="logo.zero_red" primitive="quad" texture="logo.png" emission="logo.png"><texture x='0' y='1499' width='759' height='198' /></model>
+	
+	<structure id="logo" self="STRUCTURE" block="0" static="true">
+		<shape type="box" width="2.56" height="0.25" depth="1.873" />
+		<model id="logo.planet">
+			<transform>matrix.setScale(1.8757,1.8735,1); matrix.translate(0.34104184452-1.28,-1.05,-0.2); var b = new Basis(); b.tilt(-PI/2); b.roll(-PI/2); matrix.append(b.getMatrix()); for(i in 0...15) matrix.matrix[i] *= 1.1;</transform>
+		</model>
+		<model id="logo.aground">
+			<transform>matrix.setScale(2.56,0.80232280089,1); matrix.translate(-1.28,0.23829205803-0.96,0.3); var b = new Basis(); b.tilt(-PI/2); b.roll(-PI/2); matrix.append(b.getMatrix());</transform>
+		</model>
+		<model id="logo.zero">
+			<transform>matrix.setScale(2.00252775372,0.57496157121,1); matrix.translate(0.2842015371-1.28,1.03187019624-0.9365,0.4); var b = new Basis(); b.tilt(-PI/2); b.roll(-PI/2); matrix.append(b.getMatrix());</transform>
+		</model>
+		<model id="logo.zero_red">			
+			<transform>matrix.setScale(1.65929974353,0.43286080266,1); matrix.translate(0.44379163101-1.28,1.1586678051-0.9365,0.5); var b = new Basis(); b.tilt(-PI/2); b.roll(-PI/2); matrix.append(b.getMatrix());</transform>
+		</model>
+		<init><script>for(i in 0...4){var m = this.models[i]; m.tint.set(0,0,0); m.emissionTint.set(0.75,0.75,0.75); m.emissionAlpha = i == 3;} this.fadeEmissive = 0.25;</script></init>
+	</structure>
+	<structure id="title_logo" extends="logo">
+		<infoInit>for(m in this.models) for(i in 0...15) m.transform.matrix[i] *= 0.8; this.models[0].transform.matrix[14] -= 0.1;</infoInit>
+	</structure>
+	<area id="title" width="16" height="16" depth="16" ground="default" break_emit="666666">
+		<generate>
+			Generate.setCube(this, "cave", 16, 16, 16); var ground = 2;
+			var cave = [0,0,1,1,1,1,1,1,1,1,1,0,0,
+						0,1,1,2,2,2,2,2,2,2,1,1,0,
+						1,1,2,2,4,4,4,4,4,2,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,2,4,4,4,4,4,3,2,1,1,
+						0,1,1,2,2,2,2,2,2,2,2,1,0,
+						0,0,1,1,1,1,1,1,1,1,1,0,0];
+			addCave(this, cave, "cave_ramp", 13, 11, (16-13)>>1, (16-11)>>1, ground);
+			Generate.autoRamps(this, 14, 14, 5, 1, 1, ground-1);
+			this.spawn("structure", "title_pod", 8, 9, ground-1);
+			this.spawn("structure", "battery", 10.5, 8.5, ground-1, PI*3/2);
+			this.spawn("structure", "title_logo", 8, 1.25+550/getFOV(), ground, PI/2);
+			var g = this.spawn("structure", "title_gen", 6, 8, ground-1);
+			g.inventory.addItem(makeItem('exotic_matter')); g.storage.get('recipe').setString("fuel_exotic_matter"); g.storage.get("enabled").setBool(false);
+			for(x in 7...10) this.setGround(x,8,ground-1,CABLE);
+			var l = new PointLight(4,1,1,0.5); l.renderDust = false; l.updatePos(8,12,ground); this.point_lights.push(l);
+		</generate>
+		<init><script>
+		function updateFOV(e){this.getById("title_logo").setPosition(8,1.25+550/getFOV(),2.9365);}
+		settings.get("fov").addEventListener("updated", updateFOV);
+		</script></init>
+		<destroy><script>settings.get("fov").removeEventListener("updated", updateFOV);</script></destroy>
+	</area>
+	<title id="default" area="title" bgm="title" options="play,multiplayer,menu,exit" logo="false">
+		<init><script modal="true">
+			camera.lookTo(8,4,2.6,8,8,2);
+			var g = area.getById("title_gen"); g.models[0].emissionTint.set(0,0,0); g.lights[0].color.set(0,0,0);
+			g.particles[0].colorMatrix.setAr([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]);
+			g.lerp(new ColorModKeyframe(g.models[0].emissionTint, 0,0,0), 63, onComplete);
+		</script><script modal="true">
+			var g = area.getById("title_gen"); this.getChildAt(0).lerp(new ColorModKeyframe(g.lights[0].color, 2,12,14), 300);
+			this.getChildAt(0).lerp(new ColorMatrixKeyframe(g.particles[0].colorMatrix, 2,2,2), 300);
+			g.lerp(new ColorModKeyframe(g.models[0].emissionTint, 0.375,1.8,2.25), 300, onComplete);
+		</script>
+		<script>var g = area.getById("title_gen"); this.getChildAt(0).clearTrack(ColorModKeyframe); this.getChildAt(0).clearTrack(ColorMatrixKeyframe);
+		g.particles[0].colorMatrix.identity();
+		g.clearTrack(ColorModKeyframe); g.models[0].emissionTint.set(0.25,1.2,1.5); g.lights[0].color.set(1,6,7); g.storage.get("enabled").setBool(true);</script>
+		</init>
+		<select><script if="id == 'play' || id == 'multiplayer'">area.getById("title_pod").vars.get("openDoor")();</script></select>
+		<cancelLoad><script>area.getById("title_pod").vars.get("closeDoor")();</script></cancelLoad>
+		<load>
+			<sound id="whoosh" />
+			<script>this.getChildAt(0).lerp(new LookToKeyframe(this.camera, new Point(8,8,2.6), new Point(8,12,2)), 90);</script>
+			<wait seconds="1" />
+		</load>
+		<hover><script>
+		var x = 8; switch(id){
+			case "play": x = 6.5;
+			case "multiplayer": x = 7.5;
+			case "menu": x = 8.5;
+			case "exit": x = 9.5;
+		} this.getChildAt(0).lerp(new LookToKeyframe(this.camera, new Point(x,4,2.6), new Point(8,8,2)), 30);
+		</script></hover>
+		<button x="1" y="20" width="194" height="58" name="wishlist" if="getMod('full_version') == null">
+			<text text="Now In Early Access!" size="18" width="194" y="0" color="ffffff" />
+			<formattedText text="Get it on [tile=steam ignoreHeight] [b]STEAM[/b]" size="18" width="194" y="34" color="ffffff" />
+			<onSelect><script>button.stage.loadURL("https://store.steampowered.com/app/1795570?utm_source=demo");</script></onSelect>
+		</button>
+		<button x="670" y="20" text="Submit Feedback" width="250" name="feedback">
+			<onSelect><script>button.stage.loadURL(STEAM?"https://steamcommunity.com/app/1795570/discussions/1/":"https://discord.gg/fancyfish");</script></onSelect>
+		</button>
+		<resize><script>
+		var wx = (container.getWidth()-800)*0.5; feedback.x = container.getWidth()-250-20-wx; feedback.y = 20+720-container.getHeight();
+		if(exists('wishlist')){wishlist.x = 20-wx; wishlist.y = feedback.y;}
+		</script></resize>
+	</title>
+	<area id="gameOver" width="16" height="16" depth="16" ground="default" break_emit="666666">
+		<generate>
+			Generate.setCube(this, "cave", 16, 16, 16); var ground = 2;
+			var cave = [0,0,1,1,1,1,1,1,1,1,1,0,0,
+						0,1,1,2,2,2,2,2,2,2,1,1,0,
+						1,1,2,2,4,4,4,4,4,2,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,2,4,4,4,4,4,3,2,1,1,
+						0,1,1,2,2,2,2,2,2,2,2,1,0,
+						0,0,1,1,1,1,1,1,1,1,1,0,0];
+			addCave(this, cave, "cave_ramp", 13, 11, (16-13)>>1, (16-11)>>1, ground);
+			Generate.autoRamps(this, 14, 14, 5, 1, 1, ground-1);
+			this.spawn("structure", "cryopod_broken", 8, 9, ground-1);
+			this.spawn("structure", "logo", 8, 1.25+550/getFOV(), ground-0.25, PI/2);
+			var l = new PointLight(4,1,1,0.5); l.renderDust = false; l.updatePos(8,12,ground); this.point_lights.push(l);
+		</generate>
+		<init><script>
+		function updateFOV(e){this.getById("logo").setPosition(8,1.25+550/getFOV(),2.9365-0.25);}
+		settings.get("fov").addEventListener("updated", updateFOV);
+		</script></init>
+		<destroy><script>settings.get("fov").removeEventListener("updated", updateFOV);</script></destroy>
+	</area>
+	<window id="gameOver" ui="none" width="700" height="100" valign="0.66" modal="false">
+		<text section="common" id="dead" size="60" color="ff2222" width="700" />
+	</window>
+	<title id="gameOver" area="gameOver" bgm="title" options="reload,title" logo="false" >
+		<init>
+			<script>camera.lookTo(8,4,1.2,8,8,2);</script>
+			<window id="gameOver" modal="false" />
+		</init>
+		<select><script if="id == 'reload'">area.getById("cryopod_broken").vars.get("openDoor")();</script></select>
+		<cancelLoad><script>area.getById("cryopod_broken").vars.get("closeDoor")();</script></cancelLoad>
+		<load>
+			<sound id="whoosh" />
+			<script>this.getChildAt(0).lerp(new LookToKeyframe(this.camera, new Point(8,8,2.6), new Point(8,12,2)), 90);</script>
+			<wait seconds="1" />
+		</load>
+		<setState><script>state.host.restoreHealth(); state.host.oxygen.set(state.host.getMaxOxygen());</script></setState>
+	</title>
+	<include id="credits.xml" />
+</data>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<name>Core</name>
+	<description>Core files.</description>
+	<author>Fancy Fish Games</author>
+	<version>0.2.4</version>
+	<website>https://fancyfishgames.com/</website>
+	<disableWarning>You will not be able to play without a full replacement mod if you disable Core (until you re-enable it).</disableWarning>
+	<init>
+		<data type="onScreen" />
+		<include id="lang/languages.xml" />
+		<include id="achievements.xml" />
+		<include id="models/models.xml" />
+		<include id="ui.xml" />
+		<include id="help.xml" />
+		<include id="items/items.xml" />
+		<include id="world/data.xml" />
+		<include id="objects/objects.xml" />
+		<include id="world/campaign.xml" />
+		<include id="title.xml" />
+		<include id="sound/sounds.xml" />
+		<include id="music/music.xml" />
+	</init>
+</data>

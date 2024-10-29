@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<script>
+	MAX_HISTORY = 30;
+	function addHistory(object, msg, speaker, ?color){
+		var d = object.storage.get('history'); if(!d.hasData()) d.setArray(DATA_OBJECT, []); var ar = d.getArray();
+		if(ar.length == MAX_HISTORY) ar.shift();
+		var s = new Storage(); s.get("id").setString(msg.toString()); s.get("speaker").setString(speaker); s.get("seed").setInt(getChooseRandom());
+		if(color != null) s.get("color").setInt(color); ar.push(s);
+	}
+	function getHistoryText(h){
+		var id = h.get("id").getString(); var m = getText(id); if(m != null) id = m.get();
+		var c = h.get("color").getInt(); if(c != null) id = "[color="+toHex(c)+"]"+id;
+		var s = h.get("speaker").getString(); if(s != null) id = "[color=ff66ff]"+s+":[/color] "+id;
+		return id;
+	}
+	function selectChoice(container, item, txt){var o = getPlayerForScreen(container); if(o != null) addHistory(o, txt, null, 0xffff54);}
+	</script>
+
+    <window id="history" ui="details" width="800" height="646" closeButton="true">
+        <text section="common" id="history" color="dbc898" width="800" x="0" y="8" />
+        <list scroll="true" rows="20" cols="1" x="8" y="38">
+            <renderer width="784" height="(item == null)?30:(lastTextHeight+4)">
+                <script>old = setChooseRandom(item.get("seed").getInt())</script>
+                <formattedText text="getHistoryText(item)" color="cccccc" size="22" width="776" x="4" align="left" />
+                <script>setChooseRandom(old)</script>
+            </renderer>
+            <init>var o = getPlayerForScreen(container); if(o != null){var d = o.storage.get('history'); if(d.hasData()) for(h in d.getArray()) addItem(h); list.scrollToBottom();}</init>
+        </list>
+        <onInit><script>this.clickables.setSelected(this.closeButton);</script></onInit>
+    </window>
+
+    <menuOption id="controls.help">
+        <script>object = getPlayerForScreen(container); area = container.getArea(); gui = container.gui;</script><run procedure="help" />
+    </menuOption>
+    <menuOption id="history">
+        <window id="history" />
+    </menuOption>
+</data>

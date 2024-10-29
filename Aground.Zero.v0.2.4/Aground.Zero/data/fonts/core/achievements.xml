@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<tilesheet id="achievements.png" width="96" height="96" />
+    <tile sheet="achievements.png" id="ach.hidden" x="4" />
+	<tile sheet="achievements.png" id="ach.powered" x="6" />
+	<tile sheet="achievements.png" id="ach.defeat_bat" x="0"  />
+	<tile sheet="achievements.png" id="ach.bunker" x="1"  />
+	<tile sheet="achievements.png" id="ach.diamonds" x="3"  />
+	<tile sheet="achievements.png" id="ach.chip" x="2"  />
+	<tile sheet="achievements.png" id="ach.survivors" x="8"  />
+	<tile sheet="achievements.png" id="ach.professor" x="7"  />
+	<tile sheet="achievements.png" id="ach.defeat_wyrm" x="9"  />
+	<tile sheet="achievements.png" id="ach.pizza" x="5"  />
+
+	<script>function incStat(container, state, id, ct){
+		var ach = getData("achievement", id); if(ach == null || ach.stat == null) return;
+		var v = Utils.clampi(state.getStat(ach.stat)+ct, 0, ach.max); state.setStat(ach.stat, v);
+		if(v == ach.max) state.setAchievement(container, id, true); return v;
+	} function setStat(container, state, id, ct){
+		var ach = getData("achievement", id); if(ach == null || ach.stat == null) return;
+		var v = Utils.clampi(ct, 0, ach.max); if(v &lt;= state.getStat(ach.stat)) return; state.setStat(ach.stat, v);
+		if(v == ach.max) state.setAchievement(container, id, true); return v;
+	}</script>
+	
+	<procedure id="renderAchievement">
+		<choose>
+			<tile id="item.tile" if="item.object.hasAchievement(item.id)" />
+			<tile id="ach.hidden" hsv="[0,-95,-30,-30]" if="item.hidden" />
+			<tile id="item.tile" hsv="[0,-95,-30,-30]" />
+		</choose>
+	</procedure>
+	<procedure id="defaultAchievementInfo" height="96">
+		<script>item = this;</script><container lerpable="true"><run procedure="renderAchievement" /></container>
+		<formattedText text="getText(this.name)" width="width-108" x="108" color="dbc898" />
+		<formattedText text="getText(this.desc)" width="width-108" x="108" y="30" size="20" align="left" />
+		<progressBar value="item.object.getStatMutable(this.stat)" max="this.max" width="width-108" x="108" y="76" height="20" color="3bb0a5" showText="true" if="!this.object.hasAchievement(this.id) && this.stat != null" />
+	</procedure>
+    <data type="achievement">
+        this.hidden = this.xml.get("hidden") == "true"; this.tile = this.xml.get("tile");
+        this.name = this.xml.exists("name")?this.xml.get("name"):"achievements>"+this.id;
+        this.desc = this.xml.exists("desc")?this.xml.get("desc"):"achievement.descriptions>"+this.id;
+		this.stat = this.xml.get("stat"); this.max = parseInt(this.xml.get("max"));
+		this.addInfo = function(c, s, width, x, y){
+			var i = this.xml.elementPathsNamed("info"); if(!i.hasNext()) return xmlInfo(defaultAchievementInfo, this, s, width, x, y); else return xmlInfo(i.next(), this, s, width, x, y);
+		}
+    </data>
+    <achievement id="powered" tile="ach.powered" />
+	<achievement id="defeat_bat" tile="ach.defeat_bat" />
+	<achievement id="bunker" tile="ach.bunker" />
+	<achievement id="diamonds" tile="ach.diamonds" stat="diamond_ct" max="10" />
+	<achievement id="chip" tile="ach.chip" />
+	<achievement id="survivors" tile="ach.survivors" stat="survivor_ct" max="8" />
+	<achievement id="professor" tile="ach.professor" />
+	<achievement id="defeat_wyrm" tile="ach.defeat_wyrm" />
+	<achievement id="pizza" tile="ach.pizza" />
+
+    <window id="achievements" width="632" height="532" closeButton="true">
+		<script if="window.params.o == null">
+		window.params.o = eval(window.params.object);
+		var wnd = window; function updateAchievements(e){
+			var p = getDisplayPoint(wnd.clickables.getSelected(),20,10); wnd.update(); wnd.clickables.setSelectedPoint(p.x, p.y);
+		} window.params.count = new Mutable(); window.params.total = getDataArray('achievement').length; window.details.width = 400;
+		</script>
+		<progressBar value="window.params.count" max="window.params.total" width="512" height="20" color="3bb0a5" showText="false" x="48" y="-12" />
+		<text text="concat(getText('common.achievements'), concat(intToString(window.params.count), '/'+window.params.total), ': ')" size="20" color="ffffff" width="512" x="48" y="-12" />
+		<list scroll="true" rows="5" cols="6" x="16" y="16">
+			<renderer width="100" height="100" ui="none">
+				<run procedure="renderAchievement" />
+				<onInit><script>var t = button.transform; t.center_x = 48; t.center_y = 48; t.x += 48; t.y += 48;</script></onInit>
+				<onHover>
+					<lerp object="button" scale="1.05/button.scaleY" hsv="[0,0,40,20]" frames="10" modal="false" if="item != null" />
+					<lerp object="button" scale="1/button.scaleY" hsv="[0,0,0,0]" frames="10" modal="false" if="item == null" />
+					<script>window.details.x = button.x+button.parent.parent.x-window.details.width/2; window.details.setInfoPos(item == null || (item.hidden &amp;&amp; !item.object.hasAchievement(item.id))?null:item, button.y+button.parent.y+button.parent.parent.y-48, 102);</script>
+				</onHover>
+			</renderer>
+			<init>var ct = 0; for(a in getDataArray("achievement")){if(window.params.o.hasAchievement(a.id)) ct++; a.object = window.params.o; addItem(a);} window.params.count.set(ct);</init>
+		</list>
+		<added><script>this.params.o.addEventListener("gain_achievement", updateAchievements);</script></added>
+		<removed><script>this.params.o.removeEventListener("gain_achievement", updateAchievements);</script></removed>
+    </window>
+	<window id="gainAchievement" width="400" height="96" ui="details" modal="false" halign="0.05" valign="0.05">
+		<script>this = getData('achievement', parseString(window.params.achievement)); this.object = state; width=400;</script>
+		<run procedure="defaultAchievementInfo" />
+		<onInit>
+			<lerp object="this.getChildAt(0)" color="ffffff" seconds="0.25"><from hsv="[0,-95,-30,-30]" /></lerp>
+			<lerp object="this.getChildAt(0)" color="0" colorAdd="eeeeee" seconds="0.3" />
+			<applyLerp object="this.getChildAt(0)" hsv="[0,0,0,0]" />
+			<lerp object="this.getChildAt(0)" color="ffffff" colorAdd="0" seconds="0.3" />
+			<lerp object="this.getChildAt(0)" color="ffffff" colorAdd="0" seconds="2" />
+			<script>this.close()</script>
+		</onInit>
+	</window>
+</data>

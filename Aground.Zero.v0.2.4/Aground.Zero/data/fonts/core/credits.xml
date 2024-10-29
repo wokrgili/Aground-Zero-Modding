@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<script>
+	CREDITS = ['[size=20]Code, Game Design & Story[size=30]\nDavid Maletz[color=9999ff] [size=16](@DavidMaletz)[/size][/color]',
+	'[size=20]Music & SFX[size=30]\nChase Bethea[color=9999ff] [size=16](@chasebethea)[/size][/color]',
+	'[size=20]Concept & 2D Art[size=30]\nJames Brunner[color=9999ff] [size=16](@manovermars)[/size][/color]',
+	'[size=20]Structure Models[size=30]\nBen Mordue [color=9999ff] [size=16](@mordueBen)[/size][/color]',
+	'[size=20]Character Models[size=30]\nFe Angelo[color=9999ff] [size=16](@2dchaos)[/size][/color]',
+	'[size=20]Character Animations[size=30]\nTyler Coe',
+	'[size=20]Logo & Editing[size=30]\nNatalie Maletz[color=9999ff] [size=16](@NatalieDMaletz)[/size][/color]'];
+	function getFOV(){var f = settings.get("fov").getFloat(); return f == null?95:f;}
+	</script>
+	<light id="credits_storehouse" type="point" r="4" g="1" b="1" fade="0.25" offsetZ="0.5" />
+	<structure id="credits_storehouse" extends="storehouse" lightPowered="false">
+		<light id="credits_storehouse" />
+		<transform>matrix.setScale(0.5,0.5,0.5)</transform>
+		<texture width="320" height="128" bg="ff000000">
+			<container scale="1.28"><formattedText text="this.storage.get('text')" color="ffffff" width="250" /></container>
+		</texture>
+	</structure>
+	<area id="credits" width="16" height="64" depth="16" ground="default" break_emit="666666">
+		<atmosphere sun="{core}/world/star.png" moon="{core}/world/moon.png" stars="{core}/world/stars.png" />
+		<generate>
+			Generate.setCube(this, "cave", 16, 63, 16, 0, 1);
+			Generate.mine(this, 3, 62, 3, 2, 1, 5);
+			for(y in 2...62) this.setGround(3,y,5,setDir(BELT, 3));
+			Generate.setCube(this, "metal2", 16, 1, 16);
+			this.spawn("structure", "logo", 3.5, 60.25-550/getFOV(), 6, -PI/2);
+			var g = this.spawn("structure", "generator", 2, 54, 5);
+			g.inventory.addItem(makeItem('exotic_matter')); g.storage.get('recipe').setString("fuel_exotic_matter");
+			Generate.mine(this, 1, 2, 3, 1, 53, 5);
+			var len = CREDITS.length; for(i in 0...len){
+				this.spawn("structure", "credits_storehouse", 5.5, 48-i*6, 5).storage.get("text").setString(CREDITS[i]);
+				Generate.mine(this, 2, 4, 3, 5, 46-i*6, 5);
+			} Generate.mine(this, 7, 3, 3, 6, 1, 5);
+		</generate>
+	</area>
+	<campaign id="credits" area="credits" start_time="0.53*365.242*24*3600">
+		<onScreen>
+			<music id="title" seconds="1" />
+			<script>container.camera.lookTo(3.5, 58, 6.1, 3.5, 54, 6.1); var l = new PointLight(4,1,1,0.25); l.renderDust = false; l.updatePos(3.5,2,5.5); state.areas[0].point_lights.push(l);</script>
+			<window id="credits" modal="false" var="credits" />
+			<lerp object="credits" alpha="1" frames="100" /><script>ar = state.areas[0].getAllById("credits_storehouse"); ar.reverse();</script>
+			<sound id="whoosh" />
+			<repeat count="ar.length">
+				<script modal="true">
+				var me = ar.pop(), y = me.getY();
+				credits.lerp(new LookToKeyframe(container.camera, new Point(3,y+0.5,6.1), new Point(5,y,6)), 120, onComplete);
+				</script>
+				<lerp object="credits" alpha="1" seconds="1.5" />
+			</repeat>
+			<script modal="true">
+			state.setTime(27000);
+			state.areas[0].spawn("object", "wyrm", 9, 2.5, 5, -PI/2);
+			credits.lerp(new LookToKeyframe(container.camera, new Point(3.5,6,6.1), new Point(3.5,4,6.1)), 120, onComplete);
+			</script>
+			<lerp object="credits" alpha="1" seconds="5" />
+			<script modal="true">
+			credits.lerp(new LookToKeyframe(container.camera, new Point(3.5,2.5,6.1), new Point(0,2.5,6.5)), 200, onComplete);
+			</script>
+			<script modal="true">
+			credits.visible = true; credits.lerp(new YKeyframe(-1000), 30*60, onComplete);
+			credits.lerp(new LookToKeyframe(container.camera, new Point(0,2.5,6.1), new Point(-3,2.5,7.5)), 30*60);
+			for(t in credits.tracks.tracks) t.interp = function(f){return f;}
+			</script><title />
+		</onScreen>
+		<onMenu>
+			<window type="menu">
+				<option id="load" />
+				<option id="options" />
+				<option id="quit"><title /></option>
+				<option id="return_game" />
+			</window>
+		</onMenu>
+	</campaign>
+	<window id="credits" ui="none" width="800" height="0" halign="0.5" valign="0" animate="false" modal="false">
+		<formattedText text="'[size=60][b]CREDITS[/b][/size]\n\n[size=20]Additional Character Models[size=30]\nPeacox Studio\n\n\n[size=20]Additional Concept & 2D Art[size=30]\nAaron Norell[color=9999ff] [size=16](@aron_ato)[/size][/color]\n\n\n[size=40][b]ASSETS[/b]\n\n[size=30]Additional tiles from Irondust\nSFX from GameDevMarket.net\nUI from Wenrexa (Nesia 01)\nFree Fonts used: NP Naipol\n\n\n[size=40][b]TESTERS[/b][size=30]\n\nAlchemist187\nThe 8-bit wolf\nEtrotta\nKampmichi\nLeafy Luigi\nTetramina\n\n\n[size=40][b]SPECIAL THANKS[/b][size=30]\n\nMark and Ilana Maletz\n\n\nThank you for playing!\n\n[tile=ffg_logo]'" color="ffffff" width="800" y="0" />
+		<onInit><script>this.y = container.getHeight(); this.visible = false;
+		function press(e){if(e.object == "select" || e.object == "down") this.frameSpeed = 5; else if(e.object == "up") this.frameSpeed = -5;}
+		function release(e){if(e.object == "select" || e.object == "down" || e.object == "up") this.frameSpeed = 1; if(e.object == "pause") state.runEvent(container, "onMenu");}
+		this.setStatic(false);
+		</script></onInit>
+		<added><set id="controls" value="this.controls" /><invokeLater><script>controls.addEventListener("press", press); controls.addEventListener("release", release);</script></invokeLater></added>
+		<removed><script>this.controls.removeEventListener("press", press); this.controls.removeEventListener("release", release);</script></removed>
+	</window>
+
+	<window id="outro" ui="none" width="800" height="300" valign="0.25" animate="false" closeable="true">
+		<revealText section="pai" id="outro2" color="ffffff" size="40" width="800" align="left" />
+		<container lerpable="true"><tile id="logo" x="(800-1171*0.3)/2" y="220" scale="0.3" /></container>
+		<container lerpable="true"><text section="pai" id="outro3" color="ffffff" width="800" y="470" /></container>
+		<script>window.params.action = new Mutable(); window.params.action.set(getText("pai.wishlist").get());</script>
+		<button text="window.params.action" width="300" x="250" y="520">
+			<onSelect><script if="button.visible">
+			var c = getText("common.ok").get(); if(window.params.action.get() == c) window.close();
+			else {button.stage.loadURL("https://store.steampowered.com/app/1795570?utm_source=demo"); window.params.action.set(c);}
+			</script></onSelect>
+		</button>
+		<onInit><script>this.getChildAt(1).alpha = 0; this.getChildAt(2).alpha = 0; this.getChildAt(3).alpha = 0; this.getChildAt(3).visible = false; this.frameSpeed = 0.25;</script></onInit>
+		<onTextComplete>
+			<sound id="shine" /><lerp object="this.getChildAt(1)" alpha="1" seconds="1" /><sound id="chimes" />
+			<script>this.getChildAt(3).visible=true;</script><lerp object="this.getChildAt(2)" alpha="1" seconds="1" modal="false" />
+			<lerp object="this.getChildAt(3)" alpha="1" seconds="1" modal="false" />
+		</onTextComplete>
+		<emptySelect><script if="this.getChildAt(3).visible">this.close()</script></emptySelect>
+		<onCancel><script>if(!this.getChildAt(3).visible) allowCancel = false;</script></onCancel>
+		<onClose><lerp object="this" alpha="0" seconds="0.25" /></onClose>
+	</window>
+</data>
