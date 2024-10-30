@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<model id="professor" path="professor.wobj" texture="professor.png" normal="professorN.png" />
+	<model id="scientist" path="professor.wobj" texture="scientist.png" normal="professorN.png" />
+    <model id="scavenger" path="scavenger.wobj" texture="scavenger.png" normal="scavengerN.png" emission="scavengerE.png" />
+	<model id="soldier" path="soldier.wobj" texture="soldier.png" normal="soldierN.png" />
+	<model id="chef1" path="chef.wobj" texture="chef1.png" normal="chefN.png" />
+	<model id="chef2" path="chef.wobj" texture="chef2.png" normal="chefN.png" />
+    <model id="farmer1" path="farmer.wobj" texture="farmer1.png" normal="farmerN.png" />
+	<model id="farmer2" path="farmer.wobj" texture="farmer2.png" normal="farmerN.png" />
+    <model id="miner1" path="miner.wobj" texture="miner1.png" normal="minerN.png" />
+	<model id="miner2" path="miner.wobj" texture="miner2.png" normal="minerN.png" />
+    <setSpecular normal="professorN.png" specular="professorS.png" scale="1" />
+    <setSpecular normal="scavengerN.png" specular="scavengerS.png" scale="1" />
+	<setSpecular normal="soldierN.png" specular="soldierS.png" scale="1" />
+	<setSpecular normal="chefN.png" specular="chefS.png" scale="1" />
+    <setSpecular normal="farmerN.png" specular="farmerS.png" scale="1" />
+    <setSpecular normal="minerN.png" specular="minerS.png" scale="1" />
+
+	<include id="player.xml" />
+</data>
