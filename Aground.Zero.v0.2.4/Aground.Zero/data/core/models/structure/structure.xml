@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <model id="storehouse" path="storehouse.wobj" texture="storehouse_D.png" emission="storehouse_E.png" normal="storehouse_N.png" />
+	<setSpecular normal="storehouse_N.png" specular="white" scale="0.7" />
+    <model id="chest" path="chest.wobj" texture="chest_D.png" emission="chest_E.png" normal="chest_N.png" />
+	<setSpecular normal="chest_N.png" specular="white" scale="0.7" />
+	<model id="storehouse_screen" path="storehouse_screen.wobj" texture="white" />
+	<model id="generator" path="generator.wobj" texture="generator_D.png" emission="generator_E.png" normal="generator_N.png" />
+	<setSpecular normal="generator_N.png" specular="white" scale="0.7" />
+	<model id="factory" path="factory.wobj" texture="factory_D.png" emission="factory_E.png" normal="factory_N.png"/>
+	<setSpecular normal="factory_N.png" specular="white" scale="0.7" />
+	<model id="factory_belt" path="factory_belt.wobj" texture="factory_belt_D.png" normal="factory_belt_N.png"/>
+	<setSpecular normal="factory_belt_N.png" specular="white" scale="0.7" />
+	<model id="battery" path="battery.wobj" texture="battery_D.png" normal="battery_N.png" />
+	<setSpecular normal="battery_N.png" specular="white" scale="0.7" />
+	<model id="battery_levels" path="battery_levels.wobj" texture="white" normal="glass" emission="battery_levels.png" />
+	<model id="cryopod" path="cryopod.wobj" texture="cryo_D.png" emission="cryo_E.png" normal="cryo_N.png" />
+	<setSpecular normal="cryo_N.png" specular="white" scale="0.7" />
+	<model id="cryopod_doors" path="cryopod_doors.wobj" texture="cryo_D.png" emission="cryo_E.png" normal="cryo_N.png" />
+	<model id="cryopod_broken" path="cryopod_broken.wobj" texture="cryo_broken_D.png" emission="cryo_E.png" normal="cryo_broken_N.png" />
+	<setSpecular normal="cryo_broken_N.png" specular="white" scale="0.7" />
+	<model id="cryopod_broken_doors" path="cryopod_broken_doors.wobj" texture="cryopod_glass_broken_D.png" />
+	<model id="hydroponics" path="hydroponics.wobj" texture="hydroponics_D.png" emission="hydroponics_E.png" normal="hydroponics_N.png"  />
+	<setSpecular normal="hydroponics_N.png" specular="white" scale="0.7" />
+	<model id="hydroponics_glass" path="hydroponics_glass.wobj" texture="hydroponics_D.png" emission="hydroponics_E.png" normal="hydroponics_N.png"  />
+	<model id="tomatoes" path="tomatoes.wobj" texture="tomatoes_D.png" normal="tomatoes_N.png"  />
+	<setSpecular normal="tomatoes_N.png" specular="black" />
+	<model id="wheat" path="wheat.wobj" texture="wheat_D.png" normal="wheat_N.png"  />
+	<setSpecular normal="wheat_N.png" specular="black" />
+	<model id="sugar" path="sugar.wobj" texture="sugar_D.png" normal="sugar_N.png"  />
+	<setSpecular normal="sugar_N.png" specular="black" />
+	<model id="meat" path="meat.wobj" texture="meat_D.png" normal="meat_N.png"  />
+	<setSpecular normal="meat_N.png" specular="black" />
+	<model id="milk" path="milk.wobj" texture="milk_D.png" normal="milk_N.png"  />
+	<setSpecular normal="milk_N.png" specular="black" />
+	<model id="rig" path="rig.wobj" texture="rig_D.png" emission="rig_E.png" normal="rig_N.png" />
+	<setSpecular normal="rig_N.png" specular="white" scale="0.7" />
+    <model id="lab" path="lab.wobj" texture="lab_D.png" emission="lab_E.png" normal="lab_N.png"  />
+	<setSpecular normal="lab_N.png" specular="white" scale="0.7" />
+    <model id="lab_glass" path="lab_glass.wobj" texture="glass.png" />
+	<model id="kitchen" path="kitchen.wobj" texture="kitchen_D.png" emission="kitchen_E.png" normal="kitchen_N.png"  />
+	<setSpecular normal="kitchen_N.png" specular="white" scale="0.7" />
+	<model id="bunker" path="bunker.wobj" texture="bunker_D.png" emission="bunker_E.png" normal="bunker_N.png"/>
+	<setSpecular normal="bunker_N.png" specular="white" scale="0.7" />
+    <model id="bunker_interior" path="bunker_interior.wobj" texture="bunker_interior_D.png" emission="bunker_interior_E.png" normal="bunker_interior_N.png" />
+	<setSpecular normal="bunker_interior_N.png" specular="bunker_interior_S.png" scale="0.7" />
+	<model id="bunker_broken1" path="bunker_broken1.wobj" texture="bunker_broken_D.png" normal="bunker_broken_N.png" />
+	<setSpecular normal="bunker_broken_N.png" specular="white" scale="0.7" />
+	<model id="bunker_broken2" path="bunker_broken2.wobj" texture="bunker_broken_D.png" normal="bunker_broken_N.png" />
+	<model id="bunker_broken3" path="bunker_broken3.wobj" texture="bunker_broken_D.png" normal="bunker_broken_N.png" />
+	<model id="bunker_broken4" path="bunker_broken4.wobj" texture="bunker_broken_D.png" normal="bunker_broken_N.png" />
+	<model id="bunker_broken5" path="bunker_broken5.wobj" texture="bunker_broken_D.png" normal="bunker_broken_N.png" />
+	<model id="bunker_broken6" path="bunker_broken6.wobj" texture="bunker_broken_D.png" normal="bunker_broken_N.png" />
+	<model id="light" path="light.wobj" texture="light_D.png" emission="light_E.png" normal="light_N.png" />
+	<setSpecular normal="light_N.png" specular="white" scale="0.7" />
+	<model id="teleportal" path="teleportal.wobj" texture="teleportal_D.png" emission="teleportal_E.png" normal="teleportal_N.png" />
+	<setSpecular normal="teleportal_N.png" specular="white" scale="0.7" />
+	<model id="teleportalFX" path="teleportalFX.wobj" texture="portalFX_D.png" emission="portalFX_D.png" />
+	<model id="shield" primitive="dbl_sphere" texture="portalFX_D.png" emission="portalFX_D.png"><texture x='0' y='32' width="256" height="64" /></model>
+	<model id="flat_shield" primitive="dbl_quad" texture="portalFX_D.png" emission="portalFX_D.png"><texture x='0' y='32' width="256" height="64" /></model>
+</data>
