@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<include id="character/character.xml" />
+	<include id="enemy/enemy.xml" />
+	<include id="structure/structure.xml" />
+	<include id="tools/tools.xml" />
+	<image id="grid" path="grid.png" />
+
+	<ground id="default" cableWidth="0.125" cableHeight="0.125" ladderThickness="0.125" ladderOverhang="0.125" beltDepth="0.16" beltOffset="0.05" fps="5">
+		<texture path="ground.png" />
+		<normal path="groundN.png" />
+		<emission path="groundE1.png" />
+		<emission path="groundE2.png" />
+		<ground type="belt" x='528' y='0' width='256' height='256' />
+		<ground type="belt_lip" x='0' y='544' width="256" height="256" />
+		<ground type="splitter" x='800' y='272' width="256" height="256" />
+		<ground type="cable_side" x='0' y='0' width="512" height="256" />
+		<ground type="cable_top" x='0' y='272' width="512" height="256" />
+		<ground type="cable_center" x='800' y='0' width="256" height="256" />
+		<ground type="cable_center_top" x='528' y='272' width="256" height="256" />
+		<ground type="ladder_bar_front" x='272' y='544' width="64" height="256" />
+		<ground type="ladder_bar_side" x='352' y='544' width="64" height="256" />
+		<ground type="ladder_rung_front" x='800' y='544' width="256" height="64" />
+		<ground type="ladder_rung_top" x='800' y='670' width="256" height="32" />
+		<ground type="ladder_rung_bottom" x='800' y='622' width="256" height="32" />
+		<ground type="ladder_cap" x='352' y='640' width='64' height='64' />
+		<ground type="drain" x='528' y='544' width="256" height="256" />
+	</ground>
+
+	<model id="cable" primitive="cube" texture="ground.png" normal="groundN.png"><texture x='528' y='272' width="256" height="256" /></model>
+	<script>cableTransform = makeMatrix([0.125,0,0,0,0,0.125,0,0,0,0,0.125,0,0,0,0.125*0.5,1]);</script>
+	<model id="belt" primitive="quad" texture="ground.png" normal="groundN.png" emission="groundE2.png"><texture x='528' y='0' width='256' height='256' /></model>
+	<model id="belt_lip" primitive="quad" texture="ground.png" normal="groundN.png" emission="groundE2.png"><texture x='0' y='544' width="256" height="256" /></model>
+	<model id="splitter" primitive="quad" texture="ground.png" normal="groundN.png"><texture x='800' y='272' width="256" height="256" /></model>
+	<model id="drain" primitive="quad" texture="ground.png" normal="groundN.png" emission="groundE2.png"><texture x='528' y='544' width="256" height="256" /></model>
+	<script>beltTransform = drainTransform = makeMatrix([1,0,0,0,0,1,0,0,0,0,1,0,-0.5,-0.5,0.08,1]);</script>
+
+	<setSpecular normal="groundN.png" specular="white" scale="0.7" />
+</data>
