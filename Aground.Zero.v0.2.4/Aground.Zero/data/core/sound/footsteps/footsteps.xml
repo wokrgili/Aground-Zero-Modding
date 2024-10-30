@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <sound id="step.rock" path="rock" count="8" />
+    <sound id="step.water0" path="water_low" count="8" />
+    <sound id="step.water1" path="water_med" count="8" />
+    <sound id="step.water2" path="water_high" count="8" />
+    <sound id="step.metal" path="metal" count="8" />
+    <sound id="flap" count="4" />
+
+    NOTE: type can be -1 for jump, 0 for foot up, and 1 for foot down (based on camera bob).
+    <script>
+    function structureOrVehicle(o){return o.info.params.vehicle == true || Action.filterStructure(o);}
+    function defaultFootstep(object, type){
+        var a = object.area; if(a == null) return;
+        if(object.body.getGravityScale() == 0){playSoundAt(a, object, "step.metal", false, 0.7); return;} if(type == 0) return;
+        var x = Math.floor(object.getX()), y = Math.floor(object.getY()), fz = object.getZ()+object.info.aabb.min_z+0.01, z = Math.floor(fz);
+        if(a.getFirstInTile(x, y, z-1, structureOrVehicle) != null){playSoundAt(a, object, "step.metal", false, 0.7); return;}
+        var sz = z, b = a.isBlocking(x,y,sz); if(b == -1){sz--; b = a.isBlocking(x,y,sz); if(b == -1) return;}
+        var l = a.hasWater(x,y,z+1)?7:(a.getWaterLevel(x,y,z)-(fz-z)*7); if(l > 0 &amp;&amp; a.getWaterBlock(x+0.5, y+0.5, z+0.5).length == 0){
+            playSoundAt(a, object, "step.water"+Utils.min(2, Math.floor(l/3+0.1)), false, 0.7);
+        } else {
+            var info = a.get(x,y,sz).info; if(info != null){
+                var id = info.xml.get("step");
+                playSoundAt(a, object, "step."+(id == null?"rock":id), false, 0.7);
+            }
+        }
+    }</script>
+    <volume name="step.rock" value="70" />
+    <volume name="step.water0" value="70" />
+    <volume name="step.water1" value="70" />
+    <volume name="step.water2" value="70" />
+    <volume name="step.metal" value="70" />
+</data>
