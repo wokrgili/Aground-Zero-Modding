@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<model id="worker_bot" path="worker_bot.wobj" texture="worker_bot_D.png" normal="worker_bot_N.png" emission="worker_bot_E.png" />
+	<model id="bot_treads" path="bot_treads.wobj" texture="worker_bot_D.png" normal="worker_bot_N.png" emission="worker_bot_E.png" />
+	<setSpecular normal="worker_bot_N.png" specular="white" scale="0.7" />
+	<model id="worker_bay" path="{core}/models/structure/cryopod.wobj" texture="worker_bay_D.png" emission="worker_bay_E.png" normal="{core}/models/structure/cryo_N.png" />
+    
+	<model id="recycler" path="recycler.wobj" texture="recycler_D.png" normal="recycler_N.png" emission="recycler_E.png" />
+	<model id="recycler_belt" path="recycler_belt.wobj" texture="recycler_D.png" normal="recycler_N.png" emission="recycler_E.png" />
+	<setSpecular normal="recycler_N.png" specular="white" scale="0.7" />
+
+	<model id="particle_accelerator" path="particle_accelerator.wobj" texture="particle_accelerator_D.png" normal="particle_accelerator_N.png" emission="particle_accelerator_E.png" />
+	<model id="particle_accelerator_fx" path="particle_accelerator_fx.wobj" emission="particle_accelerator_fx.png" />
+	<setSpecular normal="particle_accelerator_N.png" specular="white" scale="0.7" />
+
+	<model id="turret" path="turret.wobj" texture="turret_D.png" normal="turret_N.png" emission="turret_E.png" />
+	<setSpecular normal="turret_N.png" specular="white" scale="0.7" />
+	<model id="turret_glass" path="turret_glass.wobj" texture="turret_glass.png" />
+
+	<model id="com" path="com.wobj" texture="com_D.png" normal="com_N.png" emission="com_E.png" />
+	<setSpecular normal="com_N.png" specular="white" scale="0.7" />
+
+	<model id="vending" path="vending.wobj" texture="vending_D.png" normal="vending_N.png" emission="vending_E.png" />
+	<setSpecular normal="vending_N.png" specular="white" scale="0.7" />
+	<model id="vending_screen" path="vending_screen.wobj" texture="white" />
+	<model id="vending_broken" path="vending_broken.wobj" texture="vending_broken_D.png" normal="vending_broken_N.png" />
+	<setSpecular normal="vending_broken_N.png" specular="white" scale="0.5" />
+
+	<model id="desk" path="desk.wobj" texture="desk_D.png" normal="desk_N.png" emission="desk_E.png" />
+	<model id="desk_broken" path="desk_broken.wobj" texture="desk_broken_D.png" normal="desk_broken_N.png" />
+	<model id="chair" path="chair.wobj" texture="desk_D.png" normal="desk_N.png" />
+	<setSpecular normal="desk_N.png" specular="white" scale="0.7" />
+	<setSpecular normal="desk_broken_N.png" specular="white" scale="0.5" />
+
+	<include id="surface/surface.xml" />
+</data>
