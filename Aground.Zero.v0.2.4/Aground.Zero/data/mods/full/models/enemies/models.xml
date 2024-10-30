@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<model id="hunter_bot" path="hunter_bot.wobj" texture="hunterBot_D.png" normal="hunterBot_N.png" emission="hunterBot_E.png" />
+
+    <model id="sub_AI" path="sub_AI.wobj" texture="sub_AI_D.png" normal="sub_AI_N.png" emission="sub_AI_E.png" />
+
+    <setSpecular normal="hunterBot_N.png" specular="white" scale="0.7" />
+    <setSpecular normal="sub_AI_N.png" specular="white" scale="0.7" />
+</data>
