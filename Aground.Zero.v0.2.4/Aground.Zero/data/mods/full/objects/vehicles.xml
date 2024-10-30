@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<onScreen id="mountVehicle">
+		<script if="player.area != null">
+			var p = player.getPosition().clone(), ar = player.area.getObjects(function(o){
+				if(o.info.params.vehicle == true &amp;&amp; o.vars.get('pilot') == null){
+					var vp = o.getPosition(); o.vars.get('adjustPosition')(vp);
+					return Point.distanceSq(p, vp) &lt; 0.1;
+				} else return false;
+			}, makeBounds(p.x-0.25,p.y-0.25,p.z-0.25,0.5,0.5,0.5));
+			if(ar.length > 0) ar[0].vars.get("mountInstant")(container, player);
+		</script>
+	</onScreen>
+	<script>
+	function rotateLerp(object, x, y, z, frames, ?onComplete){
+		var rot = object.getRotation(); object.lerp(new RotateKeyframe(getAngle(rot.x,x), getAngle(rot.y,y), getAngle(rot.z,z)), frames, onComplete);
+	}
+	function eyeRotateLerp(object, x, y, z, frames, ?onComplete){
+		var rot = object.getEyeRotation(); object.lerp(new EyeRotateKeyframe(getAngle(rot.x,x), getAngle(rot.y,y), getAngle(rot.z,z)), frames, onComplete);
+	}
+	</script>
+	<structure id="mountable" health="1" defense="4" speed="0.5" jump_frames="0" allow_climb="false" modelBottom="false" self="STRUCTURE" block="WORLD|STRUCTURE|BLUEPRINT|PLAYER|NPC|ENEMY|ITEM|PROJECTILE" bob_ht="0">
+		<infoInit>
+		this.params.name = this.xml.exists("name")?parseString(this.xml.get("name")):'structure>'+this.id; this.params.defense = eval(this.xml.get("defense")); this.stopFriction = 0.2;
+		this.params.frames = 20; this.params.eyeRotate = new Vec3(0.3,0,0); this.params.vehicle = true; this.rotationFactor.init(1,1,1);
+		this.params.isPlayer = function(o){var p = o.vars.get("pilot"); return p != null &amp;&amp; p.isPlayer();}
+		this.params.structure_distance = 2; this.params.unmount = "actions.unmount";
+		</infoInit>
+		<init><script>
+		pilot = null; joint = null; can_target = false;
+		function adjustRotation(r){}
+		function adjustPosition(p){}
+		function onRelease(container, key){if(key == "jump" &amp;&amp; pilot != null &amp;&amp; container.object != null) unmount(container, pilot, this.info.params.frames);}
+		function mountInstant(container, object){
+			can_target = true; var v = object.vars.get("vehicle"); if(v == this) return; if(v != null) v.vars.get("unmountInstant")(container, object, false);
+			pilot = object; var r = this.info.params.eyeRotate; object.setEyeRotation(r.x, r.y, r.z);
+			var r = this.getRotation(); adjustRotation(r); object.setRotation(r.x, r.y, r.z);
+			var p = this.getPosition(); adjustPosition(p); object.setPosition(p.x, p.y, p.z);
+			object.body._shapeList.setCollisionMask(object.info.shapes[0].collisionMask&amp;(~PROJECTILE));
+			object.body.setRotationFactor(vec3(1,1,1)); joint = this.attach(object); object.vars.set("vehicle", this); if(container != null) container.setGUI(this, object);
+		}
+		function mount(container, object, frames){
+			var v = object.vars.get("vehicle"); if(v == this) return; if(v != null) v.vars.get("unmountInstant")(container, object, false);
+			if(frames &lt;= 0) mountInstant(container, object); else {
+				pilot = object; container.gui.locked = true; object.body.setType(BODY_STATIC); if(v != null) v.body._ignoreCollide = object.body; this.body._ignoreCollide = object.body;
+				var r = this.info.params.eyeRotate; eyeRotateLerp(object, r.x, r.y, r.z, frames);
+				var r = this.getRotation().clone(); adjustRotation(r); rotateLerp(object, r.x, r.y, r.z, frames);
+				var p = this.getPosition(); adjustPosition(p); object.lerp(new MoveKeyframe(p.x, p.y, p.z), frames, function(){
+					if(v != null) v.body._ignoreCollide = null; this.body._ignoreCollide = null; object.body.setType(BODY_DYNAMIC); mountInstant(container, object);
+				});
+			}
+		}
+		function getVacateDeltas(b, aabb){return Area.getVacateDeltas(b, aabb);}
+		function unmountInstant(container, object, ?exit){
+			object.body._shapeList.setCollisionMask(object.info.shapes[0].collisionMask);
+			can_target = false; pilot = null; object.body.setRotationFactor(vec3(0,0,0)); this.detach(joint); joint = null; object.vars.set("vehicle", null); if(container != null) container.setGUI(object);
+			if(exit != false){
+				var b = this.getAABB().clone(), aabb = object.getAABB().clone();
+				for(pt in getVacateDeltas(b, aabb)) if(object.area.relocate(aabb, object, pt.x, pt.y, pt.z, this.notSelf)) break;
+			}
+		}
+		function unmount(container, object, frames){
+			if(frames &lt;= 0) unmountInstant(container, object); else {
+				var b = this.getAABB().clone(), aabb = object.getAABB().clone(), delta = null;
+				for(pt in getVacateDeltas(b, aabb)) if(object.area.relocate(aabb, object, pt.x, pt.y, pt.z, this.notSelf, false)){delta = pt; break;}
+				if(delta == null){unmountInstant(container, object); return;} this.detach(joint); joint = null;
+				container.gui.locked = true; object.body.setType(BODY_STATIC); this.body._ignoreCollide = object.body;
+				var p = this.getPosition(); object.lerp(new MoveKeyframe(p.x+delta.x, p.y+delta.y, p.z+delta.z), frames, function(){
+					this.body._ignoreCollide = null; object.body.setType(BODY_DYNAMIC); unmountInstant(container, object, false);
+				});
+			}
+		}
+		function getName(){return getText(this.info.params.name);}
+		function setGravityScale(s){
+			this.body.setGravityScale(s); if(pilot != null) pilot.body.setGravityScale(s);
+		}
+		</script></init>
+		<onAlternate><stop if="this.info.params.blueprint == null" />
+		<sound id="select" source="this" />
+		<window type="prompt" message="warning.dismantle"><script>this.onDeath();</script></window></onAlternate>
+		<onDeath><script if="this.area != null">var o = this.info.params.blueprint.create(this.state); if(o != null){
+			if(this.getMaxHealth() == o.getMaxHealth()-1) o.setHealth(this.getHealth()+1); else o.restoreHealth(); o.copyTransform(this); this.area.add(o,false);
+		} else o = this; this.remove(); if(this.inventory != null) for(i in this.inventory) if(i.count > 0) o.dropItem(i, 0.25);</script></onDeath>
+		<onDamage><script>playSoundAt(this.area, this, "structure_hit"); this.flash(2,0,0,1,8);</script></onDamage>
+		<removedFromArea><script if="pilot != null">unmountInstant(getScreenForPlayer(pilot), pilot)</script></removedFromArea>
+		<openInventory>
+			<window id="inventory" inventory="pilot.inventory" if="pilot != null" />
+		</openInventory>
+		<initGUI>
+			<window id="gui.default" into="gui" modal="false" />
+			<script>gui.setTooltip(5, "jump", getText(this.info.params.unmount+"{vehicle:"+this.info.params.name+"}"), -6, -160, gui.right, 2); gui.structure_distance = this.info.params.structure_distance;</script>
+		</initGUI>
+	</structure>
+	<structure id="vehicle" extends="mountable" health="30" health_bar="Icon.fromTile(getTile('health_bar'),TYPE_EMISSIVE,3)" indicator="home">
+		<infoInit>this.params.teleport = "teleportal"; this.params.structure_distance = 3; this.params.indicator = this.xml.get("indicator");</infoInit>
+		<inventory width="10" height="3" />
+		<init><script>
+		function getIndicator(){var i = Icon.fromTile(getTile(this.info.params.indicator),TYPE_INDICATOR,0.6); return i;}
+		handleIndicator(this, true);
+		function collectItem(i){return this.addItem(i);}
+		function setTeleport(s){
+			var w = teleport.get(); if(s == w) return; teleport.set(s);
+			if(w != null &amp;&amp; w.vars.get("teleport").get() == this) w.vars.get("setTeleport")(null);
+		}
+		teleport = new Mutable(); teleport.set(null);
+		function teleportObject(from, object){
+			if(pilot != null) return false; var c = getScreenForPlayer(object); if(c == null) return false;
+			playSoundAt(from.area, from, "teleport"); if(object.area != this.area) this.area.add(object);
+			mountInstant(c, object); playSoundAt(this.area, this, "teleport"); return true;
+		}
+		function teleportItem(from, item){}
+		</script></init>
+		<onSelect><choose>
+			<script if="pilot == null">mount(container, object, this.info.params.frames);</script>
+			<section>
+				<sound id="select" source="this" /><window id="give" object="this" to="object.inventory" to_title="getText('structure.inventory')" indicator="this.storage.get('indicator')"  />
+			</section>
+		</choose></onSelect>
+		<getSelection>selection.bounds.copy(this.info.aabb); selection.setTooltips(getText(this.vars.get('pilot') == null?'actions.pilot{vehicle:'+this.info.params.name+'}':'actions.give'), this.info.params.blueprint == null?null:getText("actions.dismantle{hold:false}{structure:"+this.info.params.name+"}")); return true;</getSelection>
+		<removedFromArea><script>setTeleport(null);</script></removedFromArea>
+		<openInventory>
+			<window id="vehicle_inventory" from="pilot.inventory" to="this.inventory" from_title="getText('structure.inventory')" to_title="getName()" if="pilot != null" /><break />
+		</openInventory>
+	</structure>
+	<model id="sphere_block" primitive="sphere" />
+	<structure id="sub" extends="vehicle" health="200" model="sub" health_bar_z="0.2" indicator="sub">
+		<infoInit>this.params.extend_raytrace = 1; this.params.has_oxygen = true; this.params.setupAnimations = function(model, a){
+			var ar = ["Propeller_spin", "hatch_open", "arm_extend_left", "arm_extend_right"]; a.setAnimationCount(ar.length);
+			var i = 0; for(id in ar){a.animations[i].set(model.getAnimationByName(id), i == 0, null, 0); i++;}
+			a.setFrame(0);
+		}</infoInit>
+        <model id="sub_glass" tint="55ffffff" type="transparent" />
+		<model id="sphere_block" type="water_block">
+			<transform>matrix.setScale(2.12,2.2,2.2); matrix.set(3,1,-0.2);</transform>
+		</model>
+		<shape type="box" width="3" y="0.5" z="-0.1" height="4" depth="2.9" />
+		<shape type="sphere" radius="1" y="-0.2" self="WATER_BLOCK" block="0" />
+		<transform>matrix.setScale(0.5,0.5,0.5); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+		moving = 0; move_sfx = null; this.keepUpright = true;
+		function getVacateDeltas(b, aabb){
+			var ar = Area.getVacateDeltas(b, aabb); for(v in ar) if(v.z > 0){ar.remove(v); ar.unshift(v); break;} return ar;
+		}
+
+		function updateTooltips(gui){
+			var rl = gui.selection.rotateTooltip, rr = rl; if(rl == null){rl = getText("actions.surface"); rr = getText("actions.dive");}
+			gui.setTooltips(gui.selection.actionTooltip, gui.selection.altTooltip, rl, rr, gui.selection.centerTooltip);
+		}
+		function adjustMovement(gui, p, frames){
+			if(this.body._gravityScale != 0) p.set(0,0,0);
+			else {moving = 1; if(gui.selection.rotateTooltip == null) p.z = gui.controls.getStrength(28)-gui.controls.getStrength(30);}
+		}
+		function handleWater(gui, frames){
+			var x = Math.floor(this.getX()), y = Math.floor(this.getY()), z = Math.floor(this.getZ());
+			if(this.area.hasWater(x, y, z) || this.area.hasWater(x, y, z+1)) setGravityScale(0); else setGravityScale(1);
+		}
+		function handleStop(gui, frames, speed){
+			if(this.body._gravityScale == 0 &amp;&amp; gui.selection.rotateTooltip == null){
+				var dz = gui.controls.getStrength(28)-gui.controls.getStrength(30);
+				if(dz != 0){moving = 1; this.move(0, 0, dz, frames, speed);}
+			}
+		}
+		point = new Point(1.19,0.5,0.5);
+		function fireTorpedo(info){
+			if(info == null || this.area == null) return;
+			point.x = -point.x; var x = point.x; this.invTransformPoint(point);
+			var t = info.create(this.state); t.setPosition(point.x, point.y, point.z);
+			var v = this.getRotation(); t.setRotation(v.x, v.y, v.z);
+			t.body._ignoreCollide = this.body; point.set(x,0.5,0.5); this.area.add(t, false);
+			playSoundAt(this.area, this, "torpedo_launcher");
+		}
+		a = this.models[0].animation; this.info.params.setupAnimations(this.models[0], a);
+
+		var superMountInstant = mountInstant;
+		function mountInstant(container, object){a.animations[1].animationSpeed = -1; superMountInstant(container, object);}
+		var superMount = mount;
+		function mount(container, object, frames){
+			container.gui.locked = true; var d = a.animations[1];
+			playSoundAt(this.area, this, "hatch_open"); d.animationSpeed = 1; d.onComplete = function(){d.onComplete = null; superMount(container, object, frames);}
+			if(d.currentFrame >= d.animation.duration) d.onComplete();
+		}
+		var superUnmountInstant = unmountInstant;
+		function unmountInstant(container, object, ?exit){a.animations[1].animationSpeed = -1; superUnmountInstant(container, object, exit);}
+		var superUnmount = unmount;
+		function unmount(container, object, frames){
+			var d = a.animations[1]; container.gui.locked = true; eyeRotateLerp(object, -75*PI/180, 0, 0, d.animation.duration/2);
+			playSoundAt(this.area, this, "hatch_open"); d.animationSpeed = 1; d.onComplete = function(){
+				eyeRotateLerp(object, 0, 0, 0, frames);
+				d.onComplete = null; superUnmount(container, object, frames);
+			} if(d.currentFrame >= d.animation.duration) d.onComplete();
+		}
+		var cur_arm = 2;
+		function doRelease(){var d = a.animations[cur_arm]; d.onComplete = null; d.animationSpeed = -1; cur_arm = (cur_arm == 2)?3:2;}
+		function releaseObject(e){
+			var d = a.animations[cur_arm]; if(d.animationSpeed != 1) return;
+			if(d.currentFrame >= d.animation.duration) doRelease(); else d.onComplete = doRelease;
+		}
+		function pressObject(e){
+			a.animations[cur_arm].animationSpeed = 1;
+		}
+
+		this.addEventListener("release_object", releaseObject);
+		this.addEventListener("press_object", pressObject);
+		this.addEventListener("alt_release_object", releaseObject);
+		this.addEventListener("alt_press_object", pressObject);
+		function collectItem(i){if(this.addItem(i)){var d = a.animations[cur_arm]; if(d.animationSpeed != 1){d.animationSpeed = 1; d.onComplete = doRelease;} return true;} else return false;}
+		hit_frames = 0;
+		</script></init>
+		<onFrame>
+		hit_frames -= frames; if(pilot == null) handleWater(null, frames);
+		if(moving == 1){
+			if(move_sfx == null){move_sfx = playSoundAt(this.area, this, "sub_move", true); a.animations[0].animationSpeed = 4;} moving = 2;
+		} else if(moving == 2){
+			if(move_sfx != null){move_sfx.stop(); move_sfx = null; a.animations[0].animationSpeed = 0;} moving = 0;
+		}
+		</onFrame>
+		<beginContact>if(move_sfx != null &amp;&amp; hit_frames &lt; 0){playSoundAt(this.area, this, "sub_hit"); hit_frames = 40;}</beginContact>
+		<beginWorldContact>if(move_sfx != null &amp;&amp; hit_frames &lt; 0){playSoundAt(this.area, this, "sub_hit"); hit_frames = 40;}</beginWorldContact>
+	</structure>
+
+	<recipe id="build_sub" cost="200" time="5"><requires id="chromium" count="4" /><requires id="steel" count="20" /><requires id="wire" count="10" /></recipe>
+    <structure id="sub_blueprint" extends="blueprint" info="sub" type="vehicle" recipe="build_sub" static="false">
+		<infoInit>
+		this.params.place_water = true;
+		this.params.iconModels = function(models){
+			this.params.build.params.setupAnimations(models[0], models[0].animation);
+		}
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this), a = ret.models[0].animation;
+			var openHatch = null, closeHatch = null, startGrab = null, endGrab = null, startGrab2 = null, endGrab2 = null;
+			openHatch = function(){
+				a.animations[1].animationSpeed = 1; a.animations[1].onComplete = closeHatch;
+			} closeHatch = function(){
+				a.animations[1].animationSpeed = -1; a.animations[1].onComplete = startGrab;
+			} startGrab = function(){
+				a.animations[2].animationSpeed = 1; a.animations[2].onComplete = endGrab;
+			} endGrab = function(){
+				a.animations[2].animationSpeed = -1; a.animations[2].onComplete = startGrab2;
+			} startGrab2 = function(){
+				a.animations[3].animationSpeed = 1; a.animations[3].onComplete = endGrab2;
+			} endGrab2 = function(){
+				a.animations[3].animationSpeed = -1; a.animations[3].onComplete = openHatch;
+			} openHatch();
+			ret.step = function(icon, frames){ret.models[0].step(frames); ret.update(icon, frames);}
+			return ret;
+		} this.params.iconPan = 0.8;
+		</infoInit>
+		<init><script>
+		can_target = false; this.body.setGravityScale(0);
+		this.info.params.build.params.setupAnimations(this.models[0], this.models[0].animation);
+		this.info.params.build.params.setupAnimations(this.models[2], this.models[2].animation);
+		</script></init>
+		<onFrame>
+		var x = Math.floor(this.getX()), y = Math.floor(this.getY()), z = Math.floor(this.getZ());
+		if(this.area.hasWater(x, y, z) || this.area.hasWater(x, y, z+1)) this.body.setGravityScale(0); else this.body.setGravityScale(1);
+		</onFrame>
+	</structure>
+	<object id="missile" aoe="2" speed="0.5" self="PROJECTILE" block="WORLD|STRUCTURE|BLUEPRINT|PLAYER|NPC|ENEMY|PROJECTILE" modelBottom="false" save="false">
+		<infoInit>this.params.attack = eval(this.xml.get("attack")); this.params.aoe = eval(this.xml.get("aoe")); this.params.range = eval(this.xml.get("range")); this.rotationFactor.init(1,1,1);</infoInit>
+		<init><script>
+		this.body.setGravityScale(0); range = this.info.params.range;
+		function canDamage(o){
+			return (o.info.self&amp;(PLAYER|NPC|ENEMY|STRUCTURE|BLUEPRINT)) != 0 &amp;&amp; o.health.get() > 0 &amp;&amp; getItemValue(o,"defense") &lt; this.info.params.attack;
+		}
+		function canHitShape(s){return (s._collisionMask&amp;PROJECTILE) != 0;}
+		function explode(){
+			var v = this.body._ignoreCollide.userData, aoe = this.info.params.aoe, atk = this.info.params.attack, pt = new Point(this.getX(), this.getY(), this.getZ());
+			if(this.area != null) for(o in this.area.getObjects(canDamage, makeBounds(this.getX()-aoe,this.getY()-aoe,this.getZ()-aoe,aoe*2,aoe*2,aoe*2), 0, canHitShape)){
+				var aabb = o.getAABB(), dx = Utils.clamp(this.getX(), aabb.min_x, aabb.max_x)-this.getX(), dy = Utils.clamp(this.getY(), aabb.min_y, aabb.max_y)-this.getY();
+				var dz = Utils.clamp(this.getZ(), aabb.min_z, aabb.max_z)-this.getZ(), len = Math.sqrt(dx*dx+dy*dy+dz*dz);
+				if(len &lt; aoe) attack(o, v, Utils.interp(atk, 0, Math.max(0, (len-1)/aoe)), pt, null, null);
+			} this.remove();
+		}
+		function onFrame(){}
+		</script></init>
+		<onFrame>onFrame(); var v = vec3(0,0,0); this.body.getLinearVelocityTo(v); range -= v.length()*frames/60;
+		if(range &lt;= 0) this.remove(); else {var d = this.getViewDir(); this.move(d.x, d.y, d.z, frames, 1, 0);}</onFrame>
+		<beginContact>explode();</beginContact>
+		<beginWorldContact>explode();</beginWorldContact>
+		<addedToArea><script>playSoundAt(this.area, this, "sub_move", true, 3, 2);</script></addedToArea>
+	</object>
+	<particles id="torpedo" extends="break" left="true" size="0.00390625" offsetY="0.6" width="0.005" height="0.1" depth="0.005" alpha="1" speed="0" power="0.4" spawnCount="0" />
+	<particles id="torpedo_explode" extends="break" colorScale="3" type="emissive" spawnCount="60" speed="0.07" size="0.015625" />
+	<object id="torpedo" extends="missile" model="torpedo" attack="30" range="30">
+		<shape type="capsule" radius="0.125" height="0.875" tilt="-90" />
+		<particles id="torpedo" />
+		<transform>matrix.setScale(0.5,0.5,0.5); matrix.set(3,1,0.4); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+		var superExplode = explode; function explode(){
+			if(this.area == null) return; var p = this.getPosition(); this.area.addParticles("torpedo_explode", p.x, p.y, p.z);
+			playSoundAt(this.area, p, "torpedo", false, 3, 2); superExplode();
+		}
+		function onFrame(){
+			var x = Math.floor(this.getX()), y = Math.floor(this.getY()), z = Math.floor(this.getZ());
+			this.body.setGravityScale(this.area.hasWater(x, y, z) || this.area.hasWater(x, y, z+1)?0:1);
+		}
+		</script></init>
+	</object>
+
+	<structure id="boring" extends="vehicle" health="450" health_bar_z="0.2" modelBottom="true" indicator="boring">
+		<infoInit>this.rotationFactor.init(0,0,0); this.params.eyeRotate = new Vec3(-0.165,0,0); this.params.setupAnimations = function(model, a){
+			var ar = ["drill_loop", "door_open"]; a.setAnimationCount(ar.length);
+			var i = 0; for(id in ar){a.animations[i].set(model.getAnimationByName(id), i == 0, null, 0); i++;}
+			var mask = 0; for(i in 11...15) mask = Bitmask.set(mask, i, true); a.animations[0].tracks = mask;
+			a.animations[1].tracks = ~mask; a.setFrame(0);
+		} this.params.drill_radius = 1.475; this.params.drill_power = 32767; this.params.drill_speed = 2147483647; this.params.boring_loop = "boring";</infoInit>
+		<mask id="boring_screen"><model id="boring" /></mask>
+		<shape type="cylinder" radius="1.4" height="2.7" />
+		<transform>matrix.setScale(0.473,0.473,0.473); matrix.set(3,1,-0.378); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+		moving = 0; move_sfx = null;
+		function getVacateDeltas(b, aabb){
+			var ar = Area.getVacateDeltas(b, aabb); var view = this.getViewDir().clone(); view.scaleBy(-1.9); ar.unshift(view); return ar;
+		}
+		a = this.masks[0].models[0].animation; this.info.params.setupAnimations(this.masks[0].models[0], a);
+		var superMountInstant = mountInstant;
+		function mountInstant(container, object){a.animations[1].animationSpeed = -1; superMountInstant(container, object);}
+		var superMount = mount;
+		function mount(container, object, frames){
+			container.gui.locked = true; var d = a.animations[1];
+			d.animationSpeed = 1; playSoundAt(this.area, this, "ship_door"); d.onComplete = function(){d.onComplete = null; superMount(container, object, frames);}
+			if(d.currentFrame >= d.animation.duration) d.onComplete();
+		}
+		var superUnmountInstant = unmountInstant;
+		function unmountInstant(container, object, ?exit){a.animations[1].animationSpeed = -1; superUnmountInstant(container, object, exit);}
+		var superUnmount = unmount;
+		function unmount(container, object, frames){
+			var d = a.animations[1]; container.gui.locked = true; eyeRotateLerp(object,0, 0, PI, d.animation.duration/4);
+			d.animationSpeed = 1; playSoundAt(this.area, this, "ship_door"); d.onComplete = function(){
+				eyeRotateLerp(object, 0, 0, PI, frames/2, function(){eyeRotateLerp(object, 0, 0, 0, frames/2);});
+				d.onComplete = null; superUnmount(container, object, frames);
+			} if(d.currentFrame >= d.animation.duration) d.onComplete();
+		}
+		point = new Point(); bounds = makeBounds(0,0,0,0,0,0); boring_sfx = null;
+		function adjustMovement(gui, p, frames){
+			moving = 1; if(this.area != null &amp;&amp; pilot != null &amp;&amp; gui.controls.getStrength(0)-gui.controls.getStrength(2) > 0.1){
+				var r = this.getAABB(); r.inflate(0.1, 0.1, -0.1); r.max_z += 0.2;
+				var sx = Math.floor(r.min_x), sy = Math.floor(r.min_y), sz = Math.floor(r.min_z);
+				var ex = Math.ceil(r.max_x), ey = Math.ceil(r.max_y), ez = Math.ceil(r.max_z);
+				var dir = RAMP_BOTTOM|RAMP_INNER, view = this.getViewDir();
+				if(view.x > 0.5) dir |= RAMP_RIGHT;
+				else if(view.x &lt; -0.5) dir |= RAMP_LEFT;
+				if(view.y > 0.5) dir |= RAMP_FRONT;
+				else if(view.y &lt; -0.5) dir |= RAMP_BACK;
+				var power = this.info.params.drill_power, radius = this.info.params.drill_radius, speed = this.info.params.drill_speed, mining = false;
+				for(y in sy...ey) for(x in sx...ex){
+					point.set(x+0.5-this.getX(), y+0.5-this.getY(), 0.0); var dp = Point.dot(point, this.getViewDir());
+					if(dp > 0){
+						bounds.set(point.x-0.5, point.y-0.5, 0, 1, 1, 0);
+						if(bounds.issectSphere(radius)) for(z in sz...ez){
+							var r = this.area.isBlocking(x, y, z);
+							if(r != -1 &amp;&amp; (z > sz || r != dir) &amp;&amp; Action.getStructureOnTile(this.area, x, y, z) == null){
+								if(Action.mineTile(this.area, pilot, x, y, z, power, frames*speed) == -1) mining = true;
+							}
+						}
+					}
+				} if(mining){if(boring_sfx == null) boring_sfx = playSoundAt(this.area, this, this.info.params.boring_loop, true); else {boring_sfx.peak = Math.min(boring_sfx.peak+frames*0.05, 1.5);} return;}
+			} if(boring_sfx != null) boring_sfx.peak = Math.max(boring_sfx.peak-frames*0.05, 0);
+		}
+		</script></init>
+		<onFrame>
+		if(moving == 1){
+			if(move_sfx == null){move_sfx = playSoundAt(this.area, this, "bot_treads", true); a.animations[0].animationSpeed = 1;} moving = 2;
+		} else if(moving == 2){
+			if(move_sfx != null){move_sfx.stop(); move_sfx = null; a.animations[0].animationSpeed = 0;}
+			if(boring_sfx != null){boring_sfx.stop(); boring_sfx = null;} moving = 0;
+		}
+		</onFrame>
+	</structure>
+
+	<recipe id="build_boring" cost="200" time="5"><requires id="titanium" count="4" /><requires id="steel" count="20" /><requires id="wire" count="10" /></recipe>
+    <structure id="boring_blueprint" extends="blueprint" model="boring" info="boring" type="vehicle" recipe="build_boring">
+		<infoInit>
+		this.params.iconModels = function(models){
+			this.params.build.params.setupAnimations(models[0], models[0].animation);
+		}
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); var a = ret.models[0].animation;
+			a.animations[0].animationSpeed = 1;
+			ret.step = function(icon, frames){ret.models[0].step(frames); ret.update(icon, frames);}
+			return ret;
+		} this.params.iconPan = 0.8;
+		</infoInit>
+		<init><script>
+		this.info.params.build.params.setupAnimations(this.models[0], this.models[0].animation);
+		this.info.params.build.params.setupAnimations(this.models[1], this.models[1].animation);
+		</script></init>
+	</structure>
+
+	<structure id="chair" extends="mountable" model="chair" modelBottom="true" speed="0.25">
+		<infoInit>
+		this.rotationFactor.init(0,0,0); this.params.unmount = "actions.get_up";
+		</infoInit>
+		<shape type="box" width="0.6" height="0.7" depth="0.4" z="-0.3" />
+		<shape type="box" width="0.6" height="0.2" depth="0.6" z="0.2" y="0.25" />
+		<transform>matrix.setScale(0.5,0.5,0.5); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+		var superMountInstant = mountInstant;
+		function mountInstant(container, object){superMountInstant(container, object); object.body._shapeList._collisionMask = PROJECTILE|SELECTABLE|ENEMY;}
+		var superUnmountInstant = unmountInstant;
+		function unmountInstant(container, object, ?exit){superUnmountInstant(container, object, exit); object.body._shapeList._collisionMask = object.info.block;}
+
+		function getVacateDeltas(b, aabb){
+			return Area.getVacateDeltas(b, aabb).filter(function(p){if(p.z == 0){p.z = 0.5; return true;} else return false;});
+		}
+		var superUnmount = unmount;
+		function unmount(container, object, frames){
+			if(area.isBlocking(Math.floor(this.getX()), Math.floor(this.getY()), Math.floor(this.getZ())+1) != -1) object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_space")));
+			else superUnmount(container, object, frames);
+		}
+		</script></init>
+		<onSelect><script>unlockBlueprints(state, object, ["chair_blueprint"]); playSoundAt(this.area, this, "select"); if(pilot == null) mount(container, object, this.info.params.frames);</script></onSelect>
+		<onAlternate><script>unlockBlueprints(state, object, ["chair_blueprint"]);</script></onAlternate>
+		<getSelection>selection.bounds.copy(this.info.aabb); selection.setTooltips(getText(this.vars.get('pilot') == null?'actions.sit{structure:'+this.info.params.name+'}':null), this.info.params.blueprint == null?null:getText("actions.dismantle{hold:false}{structure:"+this.info.params.name+"}")); return true;</getSelection>
+	</structure>
+	<structure id="chair_blueprint" extends="blueprint" type="decor" info="chair" recipe="build_chest" />
+</data>

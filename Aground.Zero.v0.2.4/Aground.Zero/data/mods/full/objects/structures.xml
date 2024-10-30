@@ -1,0 +1,486 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<structure id="particle_accelerator" extends="craft" model="particle_accelerator" power_use="30" loop_sfx="particle_accelerator" scale_anim="false">
+		<infoInit>this.params.dispatchFrom.set(0,-0.5,0); this.params.dispatchTo = new Point(-1.5,-0.5,0);</infoInit>
+		<shape type="box" x="-0.6" width="0.8" height="2" depth="2" />
+		<shape type="box" y="0.6" width="2" height="0.8" depth="2" />
+		<shape type="convex_hull" includeAABB="false">
+			<vertex x="-0.95" y="-0.95" z="-0.95" />
+			<vertex x="0.95" y="-0.95" z="-0.95" />
+			<vertex x="-0.95" y="0.95" z="-0.95" />
+			<vertex x="0.95" y="0.95" z="-0.95" />
+			<vertex x="-0.85" y="-0.85" z="-0.85" />
+			<vertex x="0.85" y="-0.85" z="-0.85" />
+			<vertex x="-0.85" y="0.85" z="-0.85" />
+			<vertex x="0.85" y="0.85" z="-0.85" />
+		</shape>
+		<model id="particle_accelerator_fx" tint="88ffffff" type="transparent" />
+		<transform>matrix.setScale(0.5,0.5,0.5); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<recipe type="particle_accelerator" />
+		<light id="hydroponics" />
+		<init><script>
+			this.models[1].setAnimation("FX_loop", true, null, 1); this.models[1].visible = 0;
+			this.models[0].setAnimation("ventspin_loop", true, null, 0); 
+			function onFrame(frames){if(shouldProgress) this.models[1].texCrop.x = Utils.mod(this.models[1].texCrop.x+frames*0.006, 1);}
+			function updateShouldProgress(){this.models[1].visible = shouldProgress?1:0; this.models[0].animation.setAnimationSpeed(shouldProgress?1:0);}
+		</script></init>
+		<onSelect><super /><script>unlockBlueprints(state, object, ["particle_accelerator_blueprint"]);</script></onSelect>
+		<onAlternate><script>unlockBlueprints(state, object, ["particle_accelerator_blueprint"]);</script></onAlternate>
+	</structure>
+
+	<structure id="uncraft" extends="arrow_structure" powered="true">
+		<infoInit>this.params.scaleAnim = this.xml.get("scale_anim") != "false"; this.params.dispatchFrom = new Point(0,0,0); this.params.dispatchTo = new Point(0,-1.5,0);</infoInit>
+		<inventory width="1" height="1" />
+		<init><script>
+		enabled = this.storage.get("enabled"); if(!enabled.hasData()) enabled.setBool(true);
+		power_use = parseFloat(this.info.xml.get('power_use')); this.power_use = 0; speed = 1;
+		shouldProgress = false; partial = 0; progress = new Mutable(); recipe = new Mutable();
+		operateParticles = this.info.xml.get("operate_particles"); sfx = new Mutable(); loop_sfx = this.info.xml.get("loop_sfx");
+		function updateShouldProgress(){}
+		function checkReqs(e){
+			var r = true; if(recipe.get() == null) r = false; else {
+				var req = recipe.get().creates[0], item = this.inventory.getItem(0, 0); r = item.count >= req.count &amp;&amp; item.info != null &amp;&amp; item.info.id == req.id;
+			} var er = enabled.get() &amp;&amp; r; this.power_use = er?power_use:0;
+			var sp = er &amp;&amp; this.hasPower(); if(sp == shouldProgress) return; shouldProgress = sp;
+			var s = sfx.get(); if(s != null) s.stop(); sfx.set(null); updateShouldProgress();
+			if(!shouldProgress){
+				if(!r){partial = 0; this.storage.get("cost").setInt(0); progress.set(0);}
+				if(operateParticles != null) this.removeParticlesById(operateParticles);
+				this.clearTrack(ModelScaleKeyframe); this.resetModelTransform();
+			} else {
+				if(operateParticles != null) this.addParticles(operateParticles); if(this.info.params.scaleAnim) this.loopLerp(new ModelScaleKeyframe(0.98,1.02,1.02), 10);
+			}
+		} function changeItem(e){
+			var item = this.inventory.getItem(0, 0), r = null, id = (item.info == null)?null:item.info.id;
+			if(id != null) for(_r in getDataByType("recipe"))
+				if(_r.requirements.length > 0 &amp;&amp; _r.creates.length == 1 &amp;&amp; _r.creates[0].id == id &amp;&amp; _r.xml.get("uncraft") != "false"){r = _r; break;}
+			if(recipe.get() != r){partial = 0; this.storage.get("cost").setInt(0); progress.set(0); recipe.set(r);} checkReqs(e);
+		}
+		this.inventory.getItem(0, 0).addEventListener("updated", changeItem);
+		this.addEventListener("has_power", checkReqs);
+		function collectItem(item){
+			if(item.info == null || item.info.xml.get('uncraft_last') == 'false') return false; var v = this.inventory.getItem(0, 0);
+			if(v.info == null){v.copy(item); item.clear(); return true;} else if(v.is(item)) return v.add(item); else return false;
+		} this.inventory.insertItem = collectItem; enabled.addEventListener("updated", checkReqs); changeItem(null);
+		progress.set(recipe.get() == null?0:Math.floor(this.storage.get("cost").getInt()*1000000/recipe.get().cost));
+		function onFrame(frames){}
+		function dispatchItem(i){
+			tmpPoint.copy(this.info.params.dispatchFrom); this.invTransformPoint(tmpPoint); var x = tmpPoint.x; var y = tmpPoint.y;
+			tmpPoint.copy(this.info.params.dispatchTo); this.invTransformPoint(tmpPoint); this.placeItem(i, x, y, tmpPoint.x, tmpPoint.y);
+		} function completeUncraft(r){}
+		</script></init>
+		<onSelect><sound id="select" source="this" /><window id="uncraft" title="this.info.params.name" recipe="recipe" requirements="this.inventory" to="object.inventory" to_title="getText('structure.inventory')" progress="progress" enabled="this.storage.get('enabled')" /></onSelect>
+		<onFrame>
+			onFrame(frames); if(shouldProgress){
+				if(loop_sfx != null &amp;&amp; sfx.get() == null) sfx.set(playSoundAt(this.area, this, loop_sfx, true, 0.5));
+				var s = this.storage.get("cost"), r = recipe.get();
+				partial += frames*speed; if(partial >= r.timePerCost){
+					partial -= r.timePerCost; if(s.addInt(1) >= r.cost){
+						s.setInt(0); r.useCreates(this.inventory);
+						for(r in r.requirements) dispatchItem(makeItem(r.id, r.count)); completeUncraft(r);
+					}
+				} progress.set(Math.floor((s.getInt()+partial/r.timePerCost)*1000000/r.cost));
+			}
+		</onFrame>
+	</structure>
+	<light id="recycler" type="point" r="3" g="3.5" b="4" direct_light="false" />
+	<particles id="recycler" extends="damage" points="[new Point(0.65,0,0.3), new Point(-0.7,-0.25,0.2)]" />
+	<structure id="recycler" extends="uncraft" power_use="5" model="recycler" operate_particles="recycler" loop_sfx="factory">
+		<infoInit>this.params.dispatchFrom.set(-0.7,0,0); this.params.dispatchTo = new Point(-0.7,-1.5,0);</infoInit>
+		<shape type="box" width="2" height="2" depth="1" />
+		<model id="recycler_belt" />
+		<transform>matrix.setScale(0.5,0.5,0.5); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<light id="recycler" />
+		<init><script>
+		this.models[0].setAnimation("spin_loop", true, null, 0);
+		function updateShouldProgress(){
+			if(!this.models[0].isAnimating()) this.models[0].animation.setAnimationSpeed(shouldProgress?1:0);
+		}
+		function onFrame(frames){if(shouldProgress) this.models[1].texCrop.x += frames*0.001;}
+		var superCompleteUncraft = completeUncraft;
+		function completeUncraft(r){superCompleteUncraft(r); this.models[0].setAnimation("flap", false, function(){this.models[0].setAnimation("spin_loop", true); updateShouldProgress();}, 2);}
+		</script></init>
+		<onSelect>
+			<super /><script>unlockBlueprints(state, object, ["recycler_blueprint"]);</script>
+		</onSelect>
+		<onAlternate><script>unlockBlueprints(state, object, ["recycler_blueprint"]);</script></onAlternate>
+	</structure>
+	<particles id="accelerator_uranium" extends="fake_item" item="uranium" dispatchFrom="new Point(1,-0.7,-0.3)" dispatchTo="new Point(-0.5,-0.7,-0.3)" />
+	<particles id="accelerator_exotic" extends="fake_item" item="exotic_matter" dispatchFrom="new Point(-0.5,-0.7,-0.3)" dispatchTo="new Point(-1.5,-0.7,-0.3)" />
+	<recipe id="build_particle_accelerator" cost="50" time="6"><requires id="ai_core" count="1" /><requires id="chromium" count="2" /><requires id="steel" count="10" /><requires id="wire" count="10" /></recipe>
+    <structure id="particle_accelerator_blueprint" extends="blueprint" type="produce" info="particle_accelerator" recipe="build_particle_accelerator">
+		<infoInit>
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this);
+			ret.particles = [Area.makeParticles(getParticles("accelerator_exotic"))];
+			ret.models[1].setAnimation("FX_loop", true, null, 1);
+			ret.models[0].setAnimation("ventspin_loop", true, null, 1);
+			var next = 1; 
+			ret.step = function(icon, frames){
+				ret.models[0].step(frames); ret.models[1].step(frames);
+				ret.models[1].texCrop.x += frames*0.006; if(ret.models[1].texCrop.x > next){
+					if(next == 2){
+						next = 1; ret.models[1].texCrop.x -= 2; ret.particles.push(Area.makeParticles(getParticles("accelerator_exotic")));
+					} else {next++; ret.particles.push(Area.makeParticles(getParticles("accelerator_uranium")));}
+				} ret.update(icon, frames);
+			} return ret;
+		}
+		</infoInit>
+	</structure>
+	<recipe id="build_recycler" cost="30" time="6"><requires id="titanium" count="1" /><requires id="steel" count="5" /><requires id="wire" count="4" /></recipe>
+	<particles id="recycler_steel" extends="fake_item" item="steel" dispatchFrom="new Point(0.7,-0.7,1)" dispatchTo="new Point(0.7,-0.7,-0.2)" />
+	<particles id="uncraft_steel" extends="fake_item" item="iron" dispatchFrom="new Point(-0.7,0.3,-0.2)" dispatchTo="new Point(-0.7,-1.5,-0.2)" />
+	<structure id="recycler_blueprint" extends="blueprint" type="produce" info="recycler" recipe="build_recycler">
+		<infoInit>
+		this.params.iconCamera = function(dist, camera){
+			var dz = 1.3+this.aabb.min_z; camera.rotation.pan(PI); camera.rotation.tilt(Math.atan2(dz,dist)); camera.rotation.pan(0.2); camera.moveRelative(0, dist, -0.25);
+		}
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); scaleAnimatedIcon(ret, 0.98,1.02,1.02, 10);
+			ret.particles = [Area.makeParticles(getParticles("recycler"))];
+			var dispatch; var work = function(){ret.particles.push(Area.makeParticles(getParticles("recycler_steel"))); ret.models[0].setAnimation("spin_loop", false, dispatch, 1, 0, true);};
+			dispatch = function(){
+				ret.models[0].setAnimation("flap", false, work); ret.particles.push(Area.makeParticles(getParticles("uncraft_steel")));
+			} work();
+			ret.step = function(icon, frames){
+				ret.models[0].step(frames); ret.models[1].texCrop.x += frames*0.001; ret.update(icon, frames);
+			} return ret;
+		}
+		</infoInit>
+	</structure>
+
+	<recipe id="craft_exotic_matter" cost="100" type="particle_accelerator"><requires id="uranium" count="5" /><creates id="exotic_matter" count="1" /></recipe>
+	<recipe id="print_blueprint" cost="2"><requires id="ai_core" count="1" /><creates id="blueprint" count="1" /></recipe>
+	<script>
+	function printBlueprint(id, lvl){
+		var s = new Storage(); if(id != "suit") s.get("id").setString(id); s.get("lvl").setInt(lvl);
+		var orig = getData('recipe','print_blueprint'); var r = orig.copy(); r.creates = [copyData(orig.creates[0])]; r.creates[0].storage = s;
+		r.requirements = []; for(req in orig.requirements){var rr = copyData(req); rr.count &lt;&lt;= lvl-2; r.requirements.push(rr);}
+		r.id = r.id+lvl+id; recipeFuncs(r); setData("recipe", r.id, r); return r;
+	} for(id in ["suit", "mine", "craft", "build", "shovel", "laser_gun", "paint"]) for(lvl in 2...5) printBlueprint(id, lvl);
+	</script>
+
+	<structure id="base_turret" extends="base_structure" targets="ENEMY" health="30" defense="5" attack="7" range="10" rate="5" health_bar="Icon.fromTile(getTile('health_bar'),TYPE_EMISSIVE,1.5)">
+		<infoInit>this.params.attack = eval(this.xml.get("attack")); this.params.range = eval(this.xml.get("range"));
+		this.params.rate = 60.0/eval(this.xml.get("rate")); this.params.targets = eval(this.xml.get("targets")); this.params.shoot_point = new Point(0,0,0);</infoInit>
+		<init><script>
+		power_use = parseFloat(this.info.xml.get('power_use')); idle_use = parseFloat(this.info.xml.get('idle_use')); this.power_use = 0; partial = 0;
+		if(power_use > 0){
+			enabled = this.storage.get("enabled"); if(!enabled.hasData()) enabled.setBool(true);
+			shouldProgress = false;
+			function changeEnabled(e){
+				var e = enabled.get(); this.power_use = e?power_use:0; shouldProgress = e &amp;&amp; this.hasPower();
+				if(shouldProgress) this.models[0].emissionTint.set(1,1,1); else this.models[0].emissionTint.set(0,0,0);
+			}
+			this.addEventListener("has_power", changeEnabled);
+			enabled.addEventListener("updated", changeEnabled); changeEnabled(null);
+		} else shouldProgress = true;
+		bounds = makeBounds(0,0,0,0,0,0); seek_radius = this.info.params.range-0.5; from = new Point();
+		function canTarget(o){return o.vars.get("can_target") != false &amp;&amp; (o.info.self&amp;this.info.params.targets) != 0 &amp;&amp; o.health.get() > 0 &amp;&amp; getItemValue(o,"defense") &lt; this.info.params.attack;}
+		var point = new Point();
+		function setTarget(o){}
+		function getTargetDir(){
+			point.copy(this.info.params.shoot_point); this.invTransformPoint(point);
+			bounds.set(point.x-seek_radius, point.y-seek_radius, point.z-seek_radius, seek_radius*2, seek_radius*2, seek_radius*2);
+			for(o in this.area.getObjects(canTarget, bounds)){
+				from.copy(this.getPosition()); if(this.area.raytrace(true, function(b){return b != this &amp;&amp; b != o;}, from, o.getPosition(), PROJECTILE) >= 1){
+					setTarget(o); from.set(o.getX()-point.x, o.getY()-point.y, o.getZ()-point.z); from.normalize(); return from;
+				}
+			} return null;
+		}
+		function onFireProjectile(){playSoundAt(this.area, this, "laser");}
+		function fireProjectile(){
+			var dir = getTargetDir(); if(dir != null){
+				onFireProjectile(); var l = new PointLight(4,1,1,0.25); l.renderDust = false; point.copy(this.info.params.shoot_point); this.invTransformPoint(point);
+				this.area.fireProjectile(this, this, Icon.fromTile(getTile('bolt'),TYPE_EMISSIVE,0.3), point.x, point.y, point.z, dir, 0.75, this.info.params.range, this.notSelf, l);
+				return true;
+			} else return false;
+		}
+		</script></init>
+		<onFrame>
+			if(shouldProgress &amp;&amp; this.getHealth() > 0){
+				partial += frames; if(partial >= this.info.params.rate){
+					partial -= this.info.params.rate; if(fireProjectile()) this.power_use = power_use; else this.power_use = idle_use;
+				}
+			}
+		</onFrame>
+		<onProjectileHit><script>
+		this.scale_decay = -0.2*this.scale; if(data.object != null){
+			playSoundAt(area, data.object, "bolt_hit");
+			attack(data.object, this.spawner, this.item.info.params.attack, data.point, this, data);
+		} if(data.tile != null &amp;&amp; Action.getStructureOnTile(area, data.tile[0], data.tile[1], data.tile[2]) == null){
+			if(Action.mineTile(area, null, data.tile[0], data.tile[1], data.tile[2], 2, 16) > 0) playSoundAt(area, vec3(data.tile[0]+0.5, data.tile[1]+0.5, data.tile[2]+0.5), "break", false, 1, 2);
+		}
+		</script></onProjectileHit>
+	</structure>
+	<recipe id="build_turret" cost="30" time="6"><requires id="ai_core" count="1" /><requires id="steel" count="10" /><requires id="wire" count="10" /></recipe>
+	<structure id="turret" extends="base_turret" model="turret" powered="true" power_use="10" idle_use="3" tooltip="actions.toggle">
+		<infoInit>this.params.shoot_point = new Point(0,0,0.8);</infoInit>
+		<shape type="cylinder" radius="0.9" height="2" />
+		<model id="turret_glass" tint="99ffffff" type="transparent" />
+		<transform>matrix.setScale(0.5,0.5,0.5);</transform>
+		<init><script>
+		var d = this.storage.get("enabled"); d.addEventListener("updated", function(e){
+			playSoundAt(this.area, this, "ship_door"); this.models[1].animation.setAnimationSpeed(d.get()?1:-1);
+		});
+		</script></init>
+		<onSelect><script>var d = this.storage.get("enabled"); d.setBool(!d.getBool());</script></onSelect>
+	</structure>
+	<particles id="turret_fire" x="1" extends="fake_item" icon="Icon.fromTile(getTile('bolt'),TYPE_EMISSIVE,0.3)" dispatchFrom="new Point(0,0,0.8)" dispatchTo="new Point(-1.5,0,0)" speed="0.1" power="0.05" spawnCount="0" />
+	<structure id="turret_blueprint" extends="blueprint" type="base" info="turret" recipe="build_turret">
+		<infoInit>
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this);
+			ret.models[1].animation.animations[0].onComplete = function(){
+				ret.particles = [Area.makeParticles(getParticles("turret_fire"))];
+			} ret.step = function(icon, frames){
+				ret.models[1].step(frames); ret.update(icon, frames);
+			} return ret;
+		}
+		</infoInit>
+	</structure>
+
+	<light id="worker_bay" type="point" r="3" g="2" b="1" />
+	<structure id="worker_bay" extends="npc_home" model="worker_bay" entrance="new Point(0,-1.5,0)" npcEnter="true" npcs="1" power_use="4" tooltip="actions.manage" operate_particles="construct" loop_sfx="fabricator">
+		<infoInit>this.params.acceptNPC = false; this.params.acceptBot = true;
+		this.params.types = []; for(e in this.xml.elementsNamed("recipe")) if(e.get("stop") == "true") break; else this.params.types.push(e.get("type"));
+		</infoInit>
+		<shape type="box" width="1.85" height="1.55" depth="2" />
+		<recipe type="worker_bay" />
+		<init><script>
+		build = new Mutable(); sfx = null; shouldProgress = false; progress = new Mutable(); progress.set(0);
+		operateParticles = this.info.xml.get("operate_particles"); sfx = new Mutable(); loop_sfx = this.info.xml.get("loop_sfx");
+		function updateBuild(e){
+				var b = build.get(), sp = b != null &amp;&amp; this.hasPower(); if(sp == shouldProgress) return; shouldProgress = sp;
+				var s = sfx.get(); if(s != null) s.stop(); sfx.set(null);
+				if(!shouldProgress){
+					if(operateParticles != null) this.removeParticlesById(operateParticles);
+					this.clearTrack(ModelScaleKeyframe); this.resetModelTransform();
+					if(b != null){b.clearTrack(ModelScaleKeyframe); b.resetModelTransform();}
+				} else {
+					if(operateParticles != null) this.addParticles(operateParticles);
+					this.loopLerp(new ModelScaleKeyframe(1.02,0.98,1.02), 10); b.loopLerp(new ModelScaleKeyframe(1.02,0.98,1.02), 10);
+				}
+			}
+		function onNPCEnter(npc){
+			npc.lerp(new RotateKeyframe(0,0,this.getRotation().z), 10); npc.vars.get("playSleep")();
+		} function startBuild(info){
+			var b = info.create(this.state); b.setPosition(this.getX(), this.getY(), this.getZ()-1-info.aabb.min_z); b.setRotation(0,0,this.getRotation().z);
+			b.vars.get("setHome")(this); this.area.add(b);
+		} function completeBuild(){
+			var b = build.get(); b.remove(); build.set(null); progress.set(0);
+			var c = b.info.params.build.create(this.state); c.setPosition(b.getX(), b.getY(), b.getZ());
+			c.setRotation(0, 0, b.getRotation().z); c.storage.copy(b.storage, false); c.vars.get("setHome")(this); this.area.add(c);
+			c.vars.get("exit")(this); updateBuild(null);
+		} var superRemoveNPC = __removeNPC; var superAddNPC = __addNPC;
+		function __removeNPC(n){superRemoveNPC(n); if(build.get() == n){build.set(null); progress.set(0); dismantle = null; updateBuild(null);}}
+		function __addNPC(n){superAddNPC(n); if(n.info.self != NPC){build.set(n); progress.set(Math.floor(n.vars.get("getBuildProgress")()*1000000)); dismantle = null; updateBuild(null);}}
+		this.addEventListener("has_power", updateBuild); dismantle = null;
+		</script></init>
+		<light id="worker_bay" />
+		<onSelect>
+			<sound id="select" source="this" />
+			<window id="worker_bay" structure="this" object="object" recipes="getRecipesByTypes(this.info.params.types, state.storage)" />
+		</onSelect>
+		<onFrame>if(!shouldProgress) return; if(loop_sfx != null &amp;&amp; sfx.get() == null) sfx.set(playSoundAt(this.area, this, loop_sfx, true, 0.5));
+		var b = build.get(); if(dismantle == b){
+			if(fakeDismantleHold(b, frames*10, b.info.params.recipe, b.vars.get('partial'))){b.info.params.recipe.refundRequirements(this); b.remove();}
+		} else if(fakeBuildHold(b, frames, b.info.params.recipe, b.vars.get('partial'))) completeBuild();
+		if(build.get() != null) progress.set(Math.floor(b.vars.get("getBuildProgress")()*1000000));
+		</onFrame>
+		<onDeath><script if="this.area != null">var b = build.get(); if(b != null) b.info.params.recipe.refundRequirements(this);</script></onDeath>
+	</structure>
+	<recipe id="build_worker_bay" cost="50" time="6"><requires id="chip" count="1" /><requires id="titanium" count="10" /><requires id="wire" count="10" /></recipe>
+	<structure id="worker_bay_blueprint" extends="blueprint" type="base" info="worker_bay" recipe="build_worker_bay">
+		<infoInit>
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); var b = getStructure("build_bot"), r = getModel(b.models[0].id); ret.camera.z -= b.aabb.min_z;
+			var model = new Model(r); model.mipmapTextures = r.mipmapTextures; ret.models[0].transform.set(3,2,ret.models[0].transform.get(3,2)-b.aabb.min_z);
+			model.transform.copy(b.modelTransform); model.transform.set(3,2,model.transform.get(3,2)-b.aabb.min_z); model.max_z = 0; ret.models.push(model);
+			ret.step = function(icon, frames){ret.models[1].max_z += frames/120; ret.update(icon, frames);}
+			return ret;
+		}
+		</infoInit>
+	</structure>
+
+	<structure id="base_vending" extends="base_structure" powered="true" power_use="1" restock_count="5" restock="50" tooltip="actions.use">
+		<infoInit>
+		this.params.stock = []; for(e in this.xml.elementsNamed("stock")) if(e.get("stop") == "true") break; else this.params.stock.push({item:e.get("item"), count:eval(e.get("count"))});
+		this.params.keepStock = function(i){
+			for(s in this.params.stock) if(s.item == i.info.id) return true; return false;
+		}
+		this.params.restockCount = eval(this.xml.get("restock_count")); this.params.restock_frames = eval(this.xml.get("restock"))*60;
+		this.params.restock = function(inv, ct){
+			if(inv.isFull()){
+				var seen = new StringMap(); for(i in inv) if(i.info != null){if(seen.exists(i.info.id) || !this.params.keepStock(i)) i.clear(); else seen.set(i.info.id, true);}
+			} sortInventory(inv);
+			var cdf = [], total = 0; for(s in this.params.stock){
+				total += Utils.max(0, s.count-inv.getCountById(s.item)); cdf.push(total);
+			} var len = cdf.length; if(cdf[len-1] == 0) return;
+			for(z in 0...ct){
+				var i = Utils.drawCDF(cdf); if(inv.addItem(makeItem(this.params.stock[i].item))){for(j in i...len) cdf[j]--; if(cdf[len-1] == 0) break;}
+			} sortInventory(inv);
+		}</infoInit>
+		<init><script>
+		this.fadeEmissive = 0.125;
+		var r = this.models[1].renderable.clone(); this.setRenderable(1, r); updateTexture = true;
+		function updateItem(e){
+			if(e == null || e.oldInfo != e.item.info) updateTexture = true;
+		} for(i in this.inventory) i.addEventListener("updated", updateItem);
+		function restock(){this.info.params.restock(this.inventory, this.info.params.restockCount);}
+		progress = this.storage.get("progress"); if(!progress.isFloat()) progress.setFloat(0);
+		</script></init>
+		<onFrame>if(updateTexture){
+			updateTexture = false; var t = this.setTexture(0, this.info.xml.elementPathsNamed("texture").next());
+			this.models[1].renderable.set("emissionTexture", t);
+		} if(this.hasPower()){
+			var f = progress.getFloat()+frames; if(f >= this.info.params.restock_frames){f -= this.info.params.restock_frames; restock();}
+			progress.setFloat(f);
+		}</onFrame>
+		<texture width="320" height="384" bg="ff000000">
+			<script>y = 0; i = 0;</script><repeat count="6">
+				<script>x = 0</script><repeat count="5">
+					<border ui="box" x="x" y="y" width="64" height="64" />
+					<script>item = this.inventory.getItem(i%10,Math.floor(i/10))</script>
+					<item item="item" x="x" y="y" incCount="false" />
+					<section if="item.info != null && item.info.cost > 0" >
+						<rect x="x+2" y="y+48" width="60" height="14" color="cc000000" />
+						<tile id="gui.coins" x="x" y="y+48" scale="0.5" /><text text="Utils.addCommas(item.info.cost)" width="64" x="x" y="y+48" size="17" align="right" />
+					</section>
+					<script>x += 64; i++;</script>
+				</repeat><script>y += 64; item = null;</script>
+			</repeat>
+		</texture>
+		<addedToArea><script if="this.inventory.isEmpty()">restock()</script></addedToArea>
+		<onSelect>
+			<sound id="chest_open" source="this" />
+			<window id="vending" from="this" to="object.inventory" enabled="this.hasPower()" from_title="getText(this.info.params.name)" to_title="getText('structure.inventory')" />
+		</onSelect>
+		<onDeath><script>this.inventory.clear()</script></onDeath>
+	</structure>
+	<structure id="vending" extends="base_vending" model="vending">
+		<stock item="tomato" count="10" /><stock item="milk" count="10" /><stock item="bread" count="10" /><stock item="hamburger" count="10" />
+		<stock item="nutrient_bar" count="10" /><stock item="ice_cream" count="5" /><stock item="cake" count="5" />
+		<stock item="iron" count="10" /><stock item="gold" count="10" /><stock item="diamond" count="5" />
+		<stock item="titanium" count="5" /><stock item="uranium" count="5" /><stock item="chromium" count="5" /><stock item="chip" count="5" />
+		<stock item="cable" count="10" /><stock item="belt" count="10" /><stock item="anti_gravity_upgrade" count="1" />
+
+		<shape type="box" width="2" height="1" depth="2.7" />
+		<transform>var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<model id="vending_screen" tint="ff222222" />
+		<inventory width="10" height="3" />
+		<init><script>
+		var superRestock = restock; function restock(){
+			superRestock(); if(this.inventory.getCountById('anti_gravity_upgrade') == 0) this.inventory.addItem(makeItem('anti_gravity_upgrade'));
+		}
+		</script></init>
+		<onSelect><super /><script>unlockBlueprints(state, object, ["vending_blueprint"]);</script></onSelect>
+		<onAlternate><script>unlockBlueprints(state, object, ["vending_blueprint"]);</script></onAlternate>
+	</structure>
+	<structure id="vending_debris" name="structure>vending" extends="debris" model="vending_broken" recipe="debris1" static="true" modelBottom="true">
+		<shape type="box" width="2" height="1" depth="2.7" />
+		<transform>var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<getSelection>selection.bounds.copy(this.info.aabb); selection.setTooltips(getText("actions.scan{structure:"+this.info.params.name+"}"), getText("actions.dismantle{hold:true}{structure:"+this.info.params.name+"}")); return true;</getSelection>
+		<onSelect><script>if(!unlockBlueprints(state, object, ["vending_blueprint"])) object.dispatchEvent(new ObjectEvent("warning", getText("warning.already_scanned{name:"+this.info.params.name+"}"))); else playSoundAt(this.area, this, "select");</script></onSelect>
+		<onAltPress><script>unlockBlueprints(state, object, ["vending_blueprint"]);</script></onAltPress>
+	</structure>
+	<recipe id="build_vending" cost="20" time="6"><requires id="ai_core" count="1" /><requires id="steel" count="10" /><requires id="wire" count="10" /></recipe>
+	<structure id="vending_blueprint" extends="blueprint" type="base" info="vending" recipe="build_vending">
+		<infoInit>
+		this.params.iconCamera = function(dist, camera){
+			dist -= 1; var dz = 1.3+this.aabb.min_z, tilt = Math.atan2(dz,dist); camera.rotation.pan(PI); camera.rotation.tilt(tilt);
+			camera.rotation.pan(0.1); camera.moveRelative(-0.125, dist, 0);
+		}
+		this.params.makeScreen = function(){
+			var xml = this.params.build.xml.elementPathsNamed("texture").next();
+			var w = eval(xml.get('width')), h = eval(xml.get('height'));
+			this.params.screen = makeIcon(w, h);
+			var vars = createVariables(), inv = new Inventory(10, 3);
+			this.params.build.params.restock(inv, this.params.build.restockCount); vars.set("this", {inventory:inv});
+			Object._setTexture(this.params.screen, xml, vars, null);
+		}
+		this.params.iconModels = function(models){
+			if(this.params.screen == null) this.params.makeScreen(); var r = models[1].renderable.clone(); r.set("emissionTexture", this.params.screen); models[1].renderable = r;
+		}
+		</infoInit>
+	</structure>
+
+	<quest id="particle_accelerator" extends="find_structure" global="true">
+		<requires id="particle_accelerator" tile="PAI" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="pai" id="particle_accelerator3" pai="true" expression="smile" />
+				<dialogue section="pai" id="particle_accelerator4" pai="true" expression="smile" />
+			</blockingEvent>
+			<script>unlockBlueprints(state, player, ["particle_accelerator_blueprint"]);</script>
+		</completeQuest>
+	</quest>
+	<light id="desk" type="point" r="3" g="4" b="3" direct_light="false" />
+	<structure id="desk" extends="base_structure" model="desk">
+		<light id="desk" />
+		<shape type="box" width="2" height="1" depth="0.6" z="-0.2" />
+		<shape type="box" width="1.7" height="0.2" depth="0.4" z="0.3" y="0.3" />
+		<transform>matrix.setScale(0.5,0.5,0.5); matrix.set(3,1,-0.5);</transform>
+		<onSelect>
+			<sound id="select" source="this" />
+			<run xml="this.info.xml" event="checkLog" />
+			<window id="log" log="this.storage.get('log')" />
+			<run xml="this.info.xml" event="onInteract" />
+		</onSelect>
+		<onAlternate><run xml="this.info.xml" event="checkLog" /><run xml="this.info.xml" event="onInteract" /><stop if="this.area == null" /></onAlternate>
+		<checkLog>
+			<script>
+			var s = this.storage.get("log").getString(); if(s != null &amp;&amp; StringTools.startsWith(s, "logs>")){
+				var ar = state.storage.get("logs").getArray(); if(ar == null){ar = []; state.storage.get("logs").setArray(DATA_STRING, ar);}
+				var l = s.substring(5); if(ar.indexOf(l) == -1){ar.push(l); setStat(container, state, "logs", ar.length); object.dispatchEvent(new ObjectEvent("notification", getText("logs.unlocked")));}
+			}
+			</script>
+		</checkLog>
+		<onInteract>
+			<blockingEvent if="!hasBlueprints(state, ['particle_accelerator_blueprint']) && !object.hasQuest('particle_accelerator') && !object.questComplete('particle_accelerator')">
+				<script>player.addQuest("particle_accelerator")</script>
+				<dialogue section="pai" id="particle_accelerator1" pai="true" expression="happy" />
+				<dialogue section="pai" id="particle_accelerator2" pai="true" expression="smile" />
+			</blockingEvent>
+			<script>unlockBlueprints(state, object, ["desk_blueprint"]);</script>
+		</onInteract>
+		<getSelection>selection.bounds.copy(this.info.aabb); selection.setTooltips(getText("actions.use{structure:structure.computer}"), this.info.params.blueprint == null?null:getText("actions.dismantle{hold:false}{structure:"+this.info.params.name+"}")); return true;</getSelection>
+	</structure>
+	<structure id="desk_blueprint" extends="blueprint" type="decor" info="desk" recipe="build_factory" />
+
+	<structure id="desk_broken" extends="debris" recipe="debris1" static="true" modelBottom="true" model="desk_broken">
+		<shape type="box" width="2" height="1" depth="0.6" z="-0.2" />
+		<shape type="box" width="1.7" height="0.2" depth="0.3" z="0.25" y="0.3" />
+		<transform>matrix.setScale(0.5,0.5,0.5); matrix.set(3,1,-0.5);</transform>
+	</structure>
+
+	<structure id="com" extends="base_structure" model="com" tooltip="actions.use">
+		<shape type="box" width="1" height="2" depth="1" z="-0.7" />
+		<shape type="box" x="-0.75" width="0.5" height="0.5" depth="2.4"  />
+		<shape type="cylinder" x="0.75" y="0.15" radius="0.25" height="1.8" z="-0.3"  />
+		<transform>matrix.setScale(0.5,0.5,0.5); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+        this.models[0].setAnimation("dish_spin", true);
+        </script></init>
+		<onSelect>
+			<blockingEvent>
+				<dialogue text="This is the end of the current update. Look forward to sending a distress signal, building your first spaceship, and more!" pai="true" expression="sad" />
+				<save /><newGame campaign="credits" />TODO: window where you can send a distress signal
+			</blockingEvent>
+		</onSelect>
+	</structure>
+	<recipe id="build_com" cost="50" time="6"><requires id="exotic_matter" count="4" /><requires id="ai_core" count="1" /><requires id="chromium" count="5" /><requires id="steel" count="10" /></recipe>
+	<structure id="com_blueprint" extends="blueprint" type="decor" info="com" recipe="build_com">
+		<infoInit>
+		this.params.checkPlace = function(area, selection, item){
+			if(selection == null) return null; var dz = 84-Math.round(selection.pos.z); if(dz > 0) return getText('warning.too_low{structure:'+this.params.build.params.name+'}{height:'+dz+'}'); else return null;
+		};
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); ret.models[0].setAnimation("dish_spin", true);
+			ret.step = function(icon, frames){ret.models[0].step(frames); ret.update(icon, frames);}
+			return ret;
+		}
+		</infoInit>
+	</structure>
+</data>

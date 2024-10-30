@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <object id="friend" extends="fake_npc" model="hunter_bot" talk_sfx="talking7" health="100" speed="0.033" modelBottom="true" defense="4" health_bar="Icon.fromTile(getTile('health_bar'),TYPE_EMISSIVE,1)" health_bar_z="0.1">
+        <infoInit>this.params.defense = eval(this.xml.get("defense")); for(s in this.shapes) s.density = 1;</infoInit>
+        <shape type="capsule" radius="0.22" height="0.52" /><shape stop="true" />
+        <transform>matrix.setScale(0.033,0.033,0.033); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+        <init><script>can_target = false;
+        this.models[0].emissionTint.set(0.3,1,0.3); this.models[0].setAnimation("stand", true); this.fadeSpeed = 4;
+
+		function playIdle(){this.models[0].setAnimation("stand", true, null, 1, ANIM_TRANSITION); this.fadeEmissive = 0;}
+		function playTalk(){playIdle(); this.fadeEmissive = 0.25;}
+		function playWalk(){this.models[0].setAnimation("walk", true, null, 1, ANIM_TRANSITION); this.fadeEmissive = 0;}
+		function waitForPathfind(){this.addHealth(1); this.fadeEmissive = 0.25; this.models[0].setAnimation("stand", false, playIdle, 0.1, ANIM_TRANSITION, true);}
+
+        function getDestination(frames){
+            var dy = random()>0.5?1:-1, p = pace(area, this.info.self, Math.floor(this.getX()), Math.floor(this.getY()), Math.round(this.getZ()+this.info.aabb.min_z), 0, dy, 5);
+            if(p == null) waitForPathfind(); else {to = new Node3D(p.x, p.y+dy, p.z); path = reversePath(p); nextPath();}
+        }
+        function handleDestination(){waitForPathfind();}
+
+        function getIndicator(){return this.storage.get("locate").getBool() == true?Icon.fromTile(getTile("worker"),TYPE_INDICATOR,0.6):null;}
+		updateIndicator = handleIndicator(this, false);
+        </script></init>
+        <stateLoaded><script>updateIndicator()</script></stateLoaded>
+        <onHit>
+            <script>this.lerp(new RotateKeyframe(0,0, getAngle(this.getRotation().z, Math.atan2(point.y-this.getY(), point.x-this.getX())+PI/2)), 10);</script>
+            <blockingEvent wait="false" if="this.health.get() > 0 && attacker != null && attacker.isPlayer()">
+                <script>stop_movement = true</script><dialogue section="friend" id="no_attack" speaker="this" /><script>stop_movement = false</script>
+                <onSkip><script>attacker.dispatchEvent(new ObjectEvent("warning", getText('friend.help')));</script></onSkip>
+            </blockingEvent>
+            <script if="this.health.get() > 0">waitForPathfind()</script></onHit>
+        <talk><choose>
+            <section if="this.storage.get('intro').getBool() != true">
+                <quest /><achievement id="friend" />
+                <script>this.storage.get("indicator").setBool(false); this.storage.get('intro').setBool(true); state.dispatchEvent(new Event("update_indicators"));</script>
+                <dialogue section="friend" id="intro1" speaker="object" />
+                <dialogue section="friend" id="intro2" speaker="this" />
+                <dialogue section="friend" id="intro3" pai="true" expression="happy" />
+                <dialogue section="friend" id="intro4" speaker="object" />
+                <script>this.models[0].emissionTint.set(0.3,0.5,1);</script><dialogue section="friend" id="intro5" speaker="this" />
+                <dialogue section="friend" id="intro6" speaker="object" />
+                <script>this.models[0].emissionTint.set(0.3,1,0.3);</script><dialogue section="friend" id="intro7" speaker="this" />
+                <dialogue section="friend" id="intro8" pai="true" />
+                <dialogue section="friend" id="intro9" speaker="this" />
+                <save />
+            </section>
+            <dialogue section="friend" id="default2" speaker="this" if="object.questComplete('com_station')" />
+            <dialogue section="friend" id="default1" speaker="this" />
+        </choose></talk>
+        <footstep><script if="type == 0 && this.area != null">playSoundAt(this.area, this, "bot_step", false, 0.7)</script><stop /></footstep>
+		<onDeath><script>playSoundAt(this.area, vec3(this.getX(), this.getY(), this.getZ()), "bot_death", false, 2); this.models[0].setAnimation("death", false, null, 1, ANIM_TRANSITION); this.lerp(new ModelScaleKeyframe(0.25,0.25,0.25), 30, function(){this.dropItem(makeItem('ai_core', 1), 0.25); this.remove();});</script></onDeath>
+    </object>
+</data>

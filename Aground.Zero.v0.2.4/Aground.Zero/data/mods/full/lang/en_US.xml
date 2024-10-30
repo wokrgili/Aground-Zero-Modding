@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<lang id="en_US">
+	<section id="items">
+		<text id="torpedo">Torpedo</text>
+		<text id="chromium">Chromium</text>
+		<text id="anti_gravity_upgrade">Anti Gravity Upgrade</text>
+		<text id="seaweed">Seaweed</text>
+	</section>
+	<section id="item.descriptions">
+		<text id="fire">Can fire from vehicles.</text>
+		<text id="anti_gravity_upgrade">Select in your inventory to upgrade your [item=suit] to be able to fly using [tile=power scale=0.25 ignoreHeight] Power</text>
+	</section>
+	<section id="structure">
+		<text id="uncraft">Uncraft:</text>
+		<text id="particle_accelerator">Particle Accelerator</text>
+		<text id="recycler">Recycler</text>
+		<text id="worker_bay">Worker Bay</text>
+		<text id="turret">Turret</text>
+		<text id="particle_accelerator_blueprint">Creates [item=exotic_matter] from [item=uranium].</text>
+		<text id="recycler_blueprint">Returns crafted items to their raw ingredients.</text>
+		<text id="worker_bay_blueprint">Builds and maintains a single [color=ff2222]Worker Bot[/color].</text>
+		<text id="turret_blueprint">Automatically attacks any enemies in range.</text>
+		<text id="bots">Worker Bots:</text>
+		<text id="add_bot">Assign Worker Bot</text>
+		<text id="sub">Sub</text>
+		<text id="sub_blueprint">An underwater transport vehicle.\nProduces [tile=gui.oxygen scale=0.5] Oxygen.</text>
+		<text id="boring">Boring Machine</text>
+		<text id="boring_blueprint">A mining vehicle.</text>
+		<text id="com">Com Station</text>
+		<text id="com_blueprint">Allows interstellar communication and sending a distress signal.</text>
+		<text id="vending">Vending Machine</text>
+		<text id="vending_blueprint">Buys and sells items.</text>
+		<text id="desk">Desk</text>
+		<text id="computer">Computer</text>
+		<text id="chair">Chair</text>
+		<text id="no_log">No logs found on this computer.</text>
+		<text id="write_log">Write Log</text>
+		<text id="change_log">Change Computer Log:</text>
+		<text id="restock">Next Restock:</text>
+	</section>
+	<section id="npc">
+		<text id="worker_bot">Worker Bot</text>
+		<text id="cancel_bot">Worker Bot Under Contruction. Cancel?</text>
+	</section>
+	<section id="actions">
+		<text id="pilot">Pilot [size=18][color=ffff88][text={vehicle}]</text>
+		<text id="unmount">Dismount [size=18][color=ffff88][text={vehicle}]</text>
+		<text id="surface">Surface</text>
+		<text id="dive">Dive</text>
+		<text id="fire">Fire [size=18][color=ffff88][text=items.{item}]</text>
+		<text id="sit">Sit on [size=18][color=ffff88][text={structure}]</text>
+		<text id="get_up">Get off [size=18][color=ffff88][text={vehicle}]</text>
+	</section>
+	<section id="upgrades">
+		<text id="anti_gravity">Anti Gravity installed on your [item=suit]! Hold [key=jump] to fly!</text>
+		<text id="flight_power">Flight Power</text>
+	</section>
+	<section id="upgrade.desc">
+		<text id="flight_power">How much power flight drains. Each upgrade uses 3 less power per second.</text>
+	</section>
+	<section id="material">
+		<text id="subway">Subway</text>
+		<text id="gravel">Gravel</text>
+		<text id="asphalt">Asphalt</text>
+		<text id="skyscraper">Skyscraper</text>
+		<text id="building">Building</text>
+		<text id="truss">Truss</text>
+		<text id="sand">Sand</text>
+		<text id="sidewalk">Concrete</text>
+		<text id="brick">Brick</text>
+	</section>
+	<section id="quests">
+		<text id="find_subways">Find the [color=ff2222][text=map.subway][/color]</text>
+		<text id="give">[text={item}] [color=ffffff]for [/color][text={name}]</text>
+		<text id="worker_bot">Build a [color=ff2222]Worker Bot[/color] in a [color=ff2222][text=structure.worker_bay][/color]</text>
+		<text id="boring">Find [item=boring_blueprint]</text>
+	</section>
+	<section id="pai">
+		<text id="worker_bot1">I would like to introduce my first sibling, {name}!</text>
+		<text id="worker_bot2">[shake=2]I knew this would happen![/shake] AIs are gonna take over all our jobs!</text>
+		<text id="worker_bot3">Well, nobody pays us down here, so isn’t that a good thing?</text>
+		<text id="worker_bot4">[shake=1]It’s the principle of the matter!</text>
+
+		<text id="boring1">These are [item=blueprint default=Blueprints] for a [color=ff2222][text=structure.boring][/color] that drilled these [color=ff2222][text=map.subway][/color]!</text>
+		<text id="boring2">Unfortunately, the blueprint is singed from laser fire.</text>
+		<text id="boring3">If you can find more copies in the [color=ff2222][text=map.subway][/color], I could fill in the missing pieces.</text>
+		<text id="boring4">That’s the last missing piece! You can now build [color=ff2222][text=structure.boring][/color]s with the [item=build]!</text>
+		<text id="boring5">A [color=ff2222][text=structure.boring][/color] will make mining large tunnels easier and faster.</text>
+
+		<text id="flood_subway1">I’m sure you know what you are doing… but is it really a good idea to flood the [color=ff2222][text=map.subway][/color]?</text>
+
+		<text id="surface1">[shake=2]Congratulations![/shake] You have reached the surface!</text>
+		<text id="surface2">It appears the reason we found no signals was because the surface was flooded and everyone drowned. So sad.</text>
+		<text id="surface3">Unless you want to drown too, I’d stay close to pockets of breathable air.</text>
+		<text id="surface4">You can upgrade how much oxygen your protosuit can store with [item=chip]s.</text>
+		<text id="surface5">You can also build a [color=ff2222][text=structure.sub][/color] in the [item=build] to help you explore the surface.</text>
+		<text id="surface6">I also unlocked [item=torpedo default=Torpedoes] in the [item=craft] you can fire while riding a [color=ff2222][text=structure.sub][/color] to defend it.</text>
+
+		<text id="particle_accelerator1">I looked through the computer’s data, and found the location of a [color=ff2222][text=structure.particle_accelerator][/color]!</text>
+		<text id="particle_accelerator2">I marked the location of the [color=ff2222][text=structure.particle_accelerator][/color]. Go towards my smiling face, and you will find it!</text>
+		<text id="particle_accelerator3">Excellent! [color=ff2222][text=structure.particle_accelerator][/color]s can be used to create [item=exotic_matter].</text>
+		<text id="particle_accelerator4">A single piece of [item=exotic_matter] can power a [color=ff2222][text=structure.generator][/color] indefinitely - just change the fuel type of the generator to use it!</text>
+
+		<text id="com1">The [color=ff2222][text=structure.com][/color] is working! We have a connection to all robots in the city!</text>
+		<text id="com2">Please stop attacking humans! We aren’t your enemy!</text>
+		<text id="com3">[shake=1]Humans…[pause=5] Dangerous…[pause=5] Must eliminate!</text>
+		<text id="com3.1">Hmm… If only we had a way to make them be FRIENDS…</text>
+		<text id="com4">No! Human [shake=2]FRIEND[/shake]! We all [shake=2]FRIENDS!</text>
+		<text id="com5">[shake=1]FRIEND is Traitor…[pause=5] Must eliminate!</text>
+		<text id="com6">These Bots are out of control! They’d be better off like FRIEND.</text>
+		<text id="com7">That gives me an idea… Let's overwrite their personality with FRIEND!</text>
+		<text id="com8">[shake=2]FRIEND?</text>
+		<text id="com9">[shake=2]FRIEND!</text>
+		<text id="com10">It worked! I call it the FRIEND protocol!</text>
+		<text id="com11">Now that we have a [color=ff2222][text=structure.com][/color], perhaps we should send a Distress Signal to see if there are any survivors out there?</text>
+
+		<text id="prof_leave">I wonder where the [color=ff2222][text=names.professor][/color] went? The lab seems empty without her...</text>
+	</section>
+	<section id="logs">
+		<text id="unlocked">Added new log to Log List! Hit [key=help] to view.</text>
+		<text id="log1">LOG 1/8 - The new element discovered was strange. It didn’t interact with other matter, and was difficult to experiment with.</text>
+		<text id="log2">LOG 2/8 - We teamed up with an advanced AI institute to try to unravel its mysteries. Who could have guessed what would come of that…</text>
+		<text id="log3">LOG 3/8 - Unlimited energy, faster than light travel? This stuff broke conventional physics. It was like magic.</text>
+		<text id="log4">LOG 4/8 - The race to monopolize [item=exotic_matter] turned allies into enemies, and brought about the largest and most devastating war. Why would we fight over something unlimited?</text>
+		<text id="log5">LOG 5/8 - It was the AI who saved us. They negotiated a cease-fire, disabled the robots of war, and were instrumental in the reconstruction.</text>
+		<text id="log6">LOG 6/8 - We elected AI leaders, and put our trust in them. Everything was going well until the aliens arrived.</text>
+		<text id="log7">LOG 7/8 - We could not defeat them, nor surrender. Some evacuated the planet, and others went underground into bunkers.</text>
+		<text id="log8">LOG 8/8 - I don’t know why the AI turned against us in our hour of need. With the majority of [item=exotic_matter] managed by AI, this might be the last [color=ff2222][text=structure.particle_accelerator][/color] available to humanity.\n\nI will protect it as long as I can.</text>
+		<text id="original">I hope those who fled survived somewhere out there. Perhaps they are making a new Earth as we speak. It is the only hope we have left. This planet is doomed. We are doomed. These logs may be all that remain of us if anyone ever returns.</text>
+	</section>
+	<section id="achievements">
+		<text id="teleportal">Transportation Network</text>
+		<text id="subway">No More Trains</text>
+		<text id="boring">Boring Machine</text>
+		<text id="upgrade_drill">Like a Hot Knife</text>
+		<text id="surface">Home Sweet Home</text>
+		<text id="friend">Making Friends</text>
+		<text id="logs">The Full Story</text>
+		<text id="defeat_sub">Sharkbot</text>
+		<text id="worker_bot">Automation</text>
+		<text id="infinite_power">Endless Power</text>
+		<text id="fly">I Can Fly</text>
+		<text id="com">In Distress!</text>
+		<text id="moneybags">Moneybags</text>
+	</section>
+	<section id="achievement.descriptions">
+		<text id="teleportal">Build 6 [color=ff2222]Teleportals[/color].</text>
+		<text id="subway">Enter the [color=ff2222]Subways[/color].</text>
+		<text id="boring">Build a [color=ff2222]Boring Machine[/color].</text>
+		<text id="upgrade_drill">Fully upgrade the [item=mine].</text>
+		<text id="surface">Reach the [color=ff2222]Surface[/color].</text>
+		<text id="friend">Meet [color=ff2222]FRIEND[/color].</text>
+		<text id="logs">Read all the logs.</text>
+		<text id="defeat_sub">Defeat a [color=ff2222]Drone Sub[/color].</text>
+		<text id="worker_bot">Build a [color=ff2222]Worker Bot[/color].</text>
+		<text id="infinite_power">Have 10 [color=ff2222]Generators[/color] powered by [item=exotic_matter].</text>
+		<text id="fly">Unlock the [item=anti_gravity_upgrade].</text>
+		<text id="com">Build a [color=ff2222]Com Station[/color].</text>
+		<text id="moneybags">Obtain 100,000 [tile=gui.coins scale=0.5 ignoreHeight] [color=ff2222]Credits[/color].</text>
+	</section>
+	<section id="names">
+		<text id="friend">FRIEND</text>
+		<text id="bots">Bots</text>
+	</section>
+	<section id="professor">
+		<text id="killed">I'd appreciate it if you didn't kill me. Making new bodies isn't free you know!</text>
+		<text id="intro1">Oh, hello! I thought all the other teleportals were broken - I’m glad you got one working!</text>
+		<text id="intro2">I could really use some help - I’m trying to build a [color=ff2222][text=structure.blueprint_printer][/color] for my lab, but I can’t find an [item=ai_core] anywhere!</text>
+		<text id="intro3">How am I supposed to do research in a world with no supply chain and easy access to materials!</text>
+		<text id="intro4">I bet we could scavenge some [item=ai_core]s from the [color=ff2222][text=map.subway][/color].</text>
+		<text id="intro5">A functioning AI? You must let me have its [item=ai_core]!</text>
+		<text id="intro6">Hey! How would you like it if I wanted your squishy organs?</text>
+		<text id="intro7">Unfortunately, I need PAI for my [item=suit] to function.</text>
+		<text id="intro8">I am very helpful! Watch, I can even add a Locator for the [color=ff2222][text=map.subway][/color]!</text>
+		<text id="intro9">You won’t be able to reach the [color=ff2222][text=map.subway][/color] without a stronger [item=mine]. I’d print a [item=blueprint] for you to use, but alas, my [color=ff2222][text=structure.blueprint_printer][/color] is not yet finished.</text>
+		<text id="intro10">There should be a [item=blueprint default=Laser Drill Blueprint] near the [color=ff2222][text=map.old_base][/color] somewhere… Try searching the tunnels surrounding the [color=ff2222][text=map.old_base][/color] before heading up to the [color=ff2222][text=map.subway][/color].</text>
+		<text id="intro11">My research is at a standstill! I can’t believe I’m living in a world with alien technology and I don’t have the tools to study it!</text>
+
+		<text id="upgrade">With the [item=mine] upgraded, we should be able to breach the [color=ff2222][text=map.subway][/color]! Head towards my smiling face, and you should reach it in no time!</text>
+		<text id="subway">I’m detecting lots of [item=ai_core]s in the subway tunnels… but they are unwilling to exchange messages! How rude!</text>
+		<text id="bots1">What’s wrong with these bots!? Don’t they know the first rule of robotics!?</text>
+		<text id="bots2">I have no issue with you harvesting [shake=2]THEIR[/shake] [item=ai_core]s!</text>
+
+		<text id="blueprint_printer1">Now that the [color=ff2222][text=structure.blueprint_printer][/color] is functioning, I can start inventing!</text>
+		<text id="blueprint_printer2">Feel free to use the [color=ff2222][text=structure.blueprint_printer][/color] yourself - it can create upgrades for your [item=suit]. It will need [item=ai_core]s however.</text>
+		<text id="blueprint_printer3">I unlocked the ability for [color=ff2222][text=structure.lab][/color]s to create [item=ai_core]s - hopefully that will help!</text>
+		<text id="blueprint_printer4">There also seem to be endless rogue drones in the [color=ff2222][text=map.subway][/color] you could harvest [item=ai_core]s from.</text>
+
+		<text id="exotic_matter1">I need some [item=exotic_matter] to continue my research! If you could create some for me, I’d greatly appreciate it!</text>
+		<text id="exotic_matter2">You need a [color=ff2222][text=structure.particle_accelerator][/color] to create [item=exotic_matter]. There might still be one intact on the surface...</text>
+		<text id="exotic_matter3">Have you gotten any [item=exotic_matter] yet? I’ll be sure to share the results of my research if you help!</text>
+		<text id="exotic_matter5">You have [item=exotic_matter]!? Can I have one? Pretty please?</text>
+		<text id="exotic_matter6">Thank you! Now I can finally begin studying alien technology!</text>
+		<text id="exotic_matter7">As thanks, I have designed a way to utilize [item=ai_core]s - [color=ff2222][text=structure.worker_bay][/color]s.</text>
+		<text id="exotic_matter8">I've always wanted a friend! Would you make a [color=ff2222]Worker Bot[/color] in a [color=ff2222][text=structure.worker_bay][/color] for me?</text>
+		<text id="exotic_matter9">Awww… That’s crushing. Let me know if you change your mind…</text>
+	
+		<text id="scavenger">There’s a [color=ff2222][text=names.scavenger][/color] somewhere in the [color=ff2222][text=map.subway][/color] who sometimes trades with me. You should seek him out when you have the chance!</text>
+
+		<text id="tip1">[color=ff2222][text=structure.worker_bay][/color]s build and manage robots that can work at structures. [color=ff2222][text=structure.turret][/color]s are automated defense structures which can protect your base!</text>
+		<text id="tip2">They both require [item=ai_core]s - and you can also use [item=ai_core]s at the [color=ff2222][text=structure.blueprint_printer][/color] in this lab!</text>
+		<text id="tip3">If I were you, I’d start stockpiling [item=ai_core]s!</text>
+	</section>
+	<section id="scavenger">
+		<text id="intro1">Hello? Are you a survivor too?</text>
+		<text id="intro2">[shake=1]Y-yes.[/shake][pause=5] I’m alive.[pause=5] Barely.[pause=5].[pause=5].[pause=5] there was a cave-in.[pause=5].[pause=5].[pause=5] [shake=1]and drones attacked me.</text>
+		<text id="intro3">Only here is safe.[pause=5] [shake=1]I stay here.</text>
+		<text id="intro4">How do you live here, all alone?</text>
+		<text id="intro5">I find things.[pause=5] Sometimes [color=ff2222][text=names.professor][/color] helps.[pause=5] In exchange for [item=ai_core]s.</text>
+		<text id="intro6">We’re trying to reach the surface and find other survivors!</text>
+		<text id="intro7">The surface.[pause=5].[pause=5].[pause=5] [shake=1]is destroyed.[/shake][pause=5] Flooded.[pause=5] But maybe I can help find survivors underground?</text>
+		<text id="intro8">If you can bring me 10 [item=chip]s, I can make a [color=ff2222][text=structure.cryopod] Locator[/color].</text>
+		<text id="intro9">Oh. I think you already found all the survivors underground.</text>
+		<text id="intro10">But I can improve your [color=ff2222][text=structure.rig][/color]s help you find things…</text>
+		<text id="intro11">If you help me find [item=chip]s, I can make a [color=ff2222][text=structure.cryopod] Locator[/color].[pause=5] Maybe.[pause=5].[pause=5].[pause=5] [shake=1]we can find some friends…?</text>
+		<text id="intro12">Give 10 [item=chip]s to the [color=ff2222][text=names.scavenger][/color]?</text>
+		<text id="intro13">[shake=2]And done![/shake] This should add Locators to all of the [color=ff2222][text=structure.cryopod][/color]s to your [item=suit]!</text>
+		<text id="intro14">I can also improve your [color=ff2222][text=structure.rig][/color]s to help them find things…</text>
+		<text id="friend1">I…[pause=5] found a [shake=1]friend…</text>
+		<text id="friend2">A survivor?</text>
+		<text id="friend3">Maybe…[pause=5] I talked to them on my com device…</text>
+		<text id="friend4">It’s worth checking out! I added their location as [tile=worker scale=0.25][nbsp]FRIEND in our Locators!</text>
+		<text id="friend5">Is there a way to communicate with the aggressive bots in the subways?</text>
+		<text id="friend6">They…[pause=5] don’t want to talk. But, maybe with… a strong signal?</text>
+		<text id="friend7">I have…[pause=5] blueprints for a [color=ff2222][text=structure.com][/color]. It… might work, but it needs to be built…[pause=5] [shake=2]really high.</text>
+		<text id="friend8">And…[pause=5] I’m afraid of heights…</text>
+		<text id="friend9">We could build it!</text>
+		<text id="friend10">Perhaps…[pause=5] we should talk to the AI… ask them to stop shooting us?</text>
+		<text id="friend11">The bots…[pause=5] no longer attack! The Subway…[pause=5] [shake=1]is safe?</text>
+		<text id="friend12">We’re FRIENDS now!</text>
+		<text id="friend13">Hopefully they’ll remain friends… but if not, I made these Keycards to re-activate the FRIEND protocol.</text>
+		<text id="find1">I can…[pause=5] help you find… things?</text>
+		<text id="find2">[item=coal] is found in [material=cave]…</text>
+		<text id="find3">[item=iron] is found in [material=cave]… and [material=rock]…</text>
+		<text id="find4">[item=gold] is found in [material=cave]… and more commonly in [material=rock]…</text>
+		<text id="find5">[item=diamond]s are found in [material=cave]… and more commonly in [material=rock]…</text>
+		<text id="find6">[item=titanium] is found in [material=rock]…</text>
+		<text id="find7">[item=uranium] is found in [material=rock]…</text>
+		<text id="find8">[item=chromium] is found in [material=sand]… and [color=ff2222][text=structure.chest][/color]s on the [color=ff2222][text=map.surface][/color]…</text>
+		<text id="find9">[item=exotic_matter] can only… be made with a [color=ff2222][text=structure.particle_accelerator][/color].</text>
+	</section>
+	<section id="friend">
+		<text id="help">The Hunter Bot is trying to communicate - I think it wants a cease-fire.</text>
+		<text id="no_attack">Don't shoot! I no fight, I am [shake=2]FRIEND!</text>
+		<text id="intro1">Why aren’t you attacking me?</text>
+		<text id="intro2">I no fight. I am [shake=2]FRIEND!</text>
+		<text id="intro3">I like being friends!</text>
+		<text id="intro4">But… why are all the other hunter bots firing at me?</text>
+		<text id="intro5">They no want to be friends. I think they broke.</text>
+		<text id="intro6">Can they be fixed?</text>
+		<text id="intro7">If we talk, we can be friends!</text>
+		<text id="intro8">They are refusing all communication, but maybe we can bypass that?</text>
+		<text id="intro9">[color=ff2222][text=names.scavenger][/color] is friend! Maybe he knows?</text>
+		<text id="default1">I was built to fight. But I prefer being [shake=2]FRIEND!</text>
+		<text id="default2">I have many [shake=2]FRIENDS[/shake] now!</text>
+	</section>
+	<section id="snippets">
+		<text id="to_surface">We finally made it back to the surface! It’s a shame what happened to the city…[pause=5] I wonder if it can be rebuilt…?</text>
+		<text id="under_sky1">Seeing the sky again… thank you! I don’t know what I would’ve done stuck underground forever!</text>
+		<text id="under_sky2">Do you know what this city is missing?</text>
+		<text id="under_sky3">Structural integrity?</text>
+		<text id="under_sky4">A restaurant, [shake=2]obviously[/shake]! How can you call it a city when there’s nowhere good to eat!</text>
+		<text id="under_sky5">[shake=4]Aaahh![/shake]</text>
+		<text id="under_sky6">I thought you were a [shake=2]hunter bot!</text>
+		<text id="under_sky7">This city is dangerous… it almost makes me want to go back underground…</text>
+		<text id="under_sky8">I can’t believe you made friends with the bots… does this mean, we can finally have peace?</text>
+		<text id="under_sky9">I just hope those alien spaceships don’t return…</text>
+		<text id="particle_accelerator1">We have access to [item=exotic_matter] again? That’s amazing… although a bit of a shame how difficult [color=ff2222][text=structure.particle_accelerator][/color]s are to use…</text>
+		<text id="particle_accelerator2">I wonder if I could create a tree that grows [item=exotic_matter]…[pause=10] might as well make one that grows money too!</text>
+		<text id="vending1">Now that we have [tile=gui.coins scale=0.5 ignoreHeight] [color=ff2222]Credits[/color] again and things to buy in [color=ff2222][text=structure.vending][/color]s, shouldn’t you give us a salary for all the work we do?</text>
+		<text id="vending2">[shake=3]Absolutely![/shake] But after deducting your housing and food costs, I compute that you are owed 0 [tile=gui.coins scale=0.5 ignoreHeight] [color=ff2222]Credits[/color].</text>
+		<text id="vending3">[shake=1]That doesn’t seem fair…</text>
+	</section>
+	<section id="warning">
+		<text id="robot_power">[color=ff2222]Worker Bot {name} is low on power!</text>
+		<text id="dismantle_bot">Are you sure you wish to dismantle this bot?</text>
+		<text id="build_full">Cannot build: at maximum capacity.</text>
+		<text id="max_robots">Cannot have more than {count} robots!</text>
+		<text id="assembler_disabled">The [item=craft] is disabled until PAI thinks you are ready to use it!</text>
+		<text id="last_item">I wouldn't uncraft your last [item={item}]!</text>
+		<text id="no_vehicle">You must be riding a vehicle to fire a [item={item}].</text>
+		<text id="no_fire_vehicle">A [text={vehicle}] cannot fire a [item={item}].</text>
+		<text id="too_low">The [text={structure}] must be built at least {height} [if={height}==1|block;blocks] higher.</text>
+		<text id="no_sell">{item} cannot be sold.</text>
+		<text id="no_coins">Not enough [tile=gui.coins scale=0.5 ignoreHeight] Credits.</text>
+		<text id="no_space">Not enough space above you to get up!</text>
+	</section>
+	<section id="bot">
+		<text id="to_work">Beep boop. Proceeding to designated work site.</text>
+		<text id="to_home">Beep boop. Returning to Worker Bay to recharge.</text>
+		<text id="to_work_fail">ERROR: Unable to reach designated work site!</text>
+		<text id="to_home_fail">ERROR: Unable to reach Worker Bay!</text>
+		<text id="hungry">ERROR: Battery levels critically low!</text>
+		<text id="homeless">ERROR: Not assigned to any Worker Bay!</text>
+		<text id="no_power">WARNING: Worker Bay is out of power!</text>
+		<text id="working">Beep boop. Operating designated work site.</text>
+		<text id="idle">Beep boop. All systems functional.</text>
+	</section>
+
+	<section id="help">
+		<text id="logs">Log List</text>
+		
+		<text id="mine_upgrade">You need to upgrade your [item=mine] to reach the [color=ff2222][text=map.subway][/color].</text>
+		<text id="subways">Let's scavenge [item=ai_core]s from the [color=ff2222][text=map.subway][/color] so we can build a [color=ff2222][text=structure.blueprint_printer][/color] for the [color=ff2222][text=names.professor][/color]!</text>
+		<text id="survivor_locator">The [color=ff2222][text=names.scavenger][/color] offered to make a [color=ff2222][text=structure.cryopod] Locator[/color] to find survivors for 10 [item=chip]s!</text>
+		<text id="prof_quest">I think the [color=ff2222][text=names.professor][/color] has something she'd like to tell you!</text>
+		<text id="exotic_matter">I'm sure the [color=ff2222][text=names.professor][/color] would appreciate some [item=exotic_matter]!</text>
+		<text id="scav_quest">I think the [color=ff2222][text=names.scavenger][/color] has something they'd like to tell you!</text>
+		<text id="friend_locate">We should find this [tile=worker scale=0.25][nbsp]FRIEND the [color=ff2222][text=names.scavenger][/color] mentioned. I added them to our Locators.</text>
+		<text id="ask_scavenger">The [color=ff2222][text=names.scavenger][/color] may know a way to contact the bots and make them FRIENDS!</text>
+		<text id="make_exotic_matter">Lets make some [item=exotic_matter] in [color=ff2222][text=structure.particle_accelerator][/color]s!</text>
+		<text id="com_station">We should build a [color=ff2222][text=structure.com][/color] - look for the tallest skyscraper, and try building it at the top, placing blocks with the [item=shovel] if needed.</text>
+		<text id="distress_signal">Lets send a Distress Signal at the [color=ff2222][text=structure.com][/color]!</text>
+
+		<text id="recycler1">The [color=ff2222][text=structure.recycler][/color] lets you turn crafted materials back into raw materials. This is perfect if you craft too much of an item, or find an item that would be more useful as raw materials.</text>
+		<text id="turret1">The [color=ff2222][text=structure.turret][/color] is straightforward - it has a rapid-fire laser attack that hits any hostile forces in range.</text>
+		<text id="turret2">The dome will open when it is enabled, and close when it is disabled.</text>
+		<text id="vending1">[color=ff2222][text=structure.vending][/color]s let you exchange items for [tile=gui.coins scale=0.5 ignoreHeight] Credits, and buy new items with [tile=gui.coins scale=0.5 ignoreHeight] Credits.</text>
+		<text id="vending2">[color=ff2222][text=structure.vending][/color]s restock often - and restocking will always add to their stock, never remove (unless they are full). So, you can usually buy back an item you sold earlier.</text>
+		<text id="particle_accelerator1">[color=ff2222][text=structure.particle_accelerator][/color]s turn [item=uranium] into [item=exotic_matter]. They take time and 30 [tile=power scale=0.25 ignoreHeight] Power (requiring 2 [color=ff2222][text=structure.generator][/color]s dedicated to a single [color=ff2222][text=structure.particle_accelerator][/color]), but it is worth it for [item=exotic_matter].</text>
+		<text id="worker_bay1">[color=ff2222][text=structure.worker_bay][/color]s let you build and manage a single [color=ff2222][text=npc.worker_bot][/color]. [color=ff2222][text=npc.worker_bot][/color]s are able to accomplish all the tasks a survivor can, but require neither food nor oxygen. They are the perfect friends!</text>
+		<text id="worker_bay2">They can even be dismantled if you no longer need them.</text>
+		<text id="drains">[item=drain]s</text>
+		<text id="drain1">[item=drain]s remove water up to 3 tiles above them, and keep water from flowing into them. They are great for creating a small patch of breathable air and keeping water out of bases.</text>
+		<text id="drain2">They require no power, but they can connect structures like [item=belt]s and [item=cable]s.</text>
+
+		<text id="vehicles">Vehicles</text>
+		<text id="sub1">[color=ff2222][text=structure.sub][/color]s allow you to move efficiently in all 3 dimensions underwater (use [key=rotate_left] to Surface and [key=rotate_right] to Dive as long as your selected tool is not overriding these).</text>
+		<text id="sub2">They produce infinite [tile=gui.oxygen scale=0.5] Oxygen inside, and can fire [item=torpedo default=Torpedoes]! Normal tools can also be used from inside the sub, making them very useful underwater.</text>
+		<text id="boring1">[color=ff2222][text=structure.boring][/color]s can dig by moving their drill head into walls. They can dig large tunnels, and work indefinitely without requiring extra power.</text>
+		<text id="boring2">If you need to expand your underground base, [color=ff2222][text=structure.boring][/color]s are the way to go!</text>
+
+		<text id="scavenger">The [color=ff2222][text=names.professor][/color] said there was someone living in the [color=ff2222][text=map.subway][/color] - I wonder if we could find them...?</text>
+	</section>
+</lang>

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <object id="hunter_bot" extends="base_enemy" model="hunter_bot" health="40" speed="0.033" modelBottom="true" attack="10" range="8" rate="1.5" defense="4" health_bar="Icon.fromTile(getTile('health_bar'),TYPE_EMISSIVE,1)" health_bar_z="0.1">
+		<shape type="sphere" radius="0.48" />
+		<infoInit>this.params.range = eval(this.xml.get("range")); this.params.rate = 60.0/eval(this.xml.get("rate")); this.params.rotate_speed = 0.1;</infoInit>
+		<transform>matrix.setScale(0.033,0.033,0.033); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+			attack_frame = 0;
+			function canAttack(o){
+				if(this.getHealth() == this.getMaxHealth() &amp;&amp; this.state.getFlag('disable_bot')) return false;
+				return o.vars.get("can_target") != false &amp;&amp; (o.info.self&amp;(PLAYER|NPC|STRUCTURE|BLUEPRINT)) != 0 &amp;&amp; o.health.get() > 0 &amp;&amp; getItemValue(o,"defense") &lt; this.info.params.attack;
+			} this.models[0].emissionTint.set(0.3,0.5,1); stalled = 0.0; partial = 0;
+			bounds = makeBounds(0,0,0,0,0,0); from = new Point(); target = null; this.models[0].setAnimation("walk", true);
+			function onFireProjectile(){playSoundAt(this.area, this, "laser");}
+			function fireProjectile(){
+				from.set(target.getX()-this.getX(), target.getY()-this.getY(), target.getZ()-this.getZ()); from.normalize();
+				onFireProjectile(); var l = new PointLight(4,1,1,0.25); l.renderDust = false;
+				this.area.fireProjectile(this, this, Icon.fromTile(getTile('bolt'),TYPE_EMISSIVE,0.3), this.getX(), this.getY(), this.getZ(), from, 0.75, this.info.params.range+6, this.notSelf, l);
+			} function setTarget(o){
+				if(target == o) return; can_target = true; target = o; stalled = 0; if(target == null) this.models[0].emissionTint.set(0.3,0.5,1); else {
+					playSoundAt(this.area, this, "bot_target", false, 2); target.runEvent(null, "onTarget", null, "object", this); this.models[0].emissionTint.set(1,0.3,0.3);
+				}
+			} dodge_dir = 1; can_target = true;
+		</script></init>
+		<onFrame>
+		if(this.health.get() == 0 || this.models[0].isAnimating() || this.hasFacePos()) return;
+		if(partial &lt; this.info.params.rate) partial += frames;
+		if(target == null){
+			if(this.getHealth() == this.getMaxHealth() &amp;&amp; this.state.getFlag('disable_bot')){
+				this.models[0].emissionTint.set(0.3,1,0.3); can_target = false;
+			} else {
+				var best = null; attack_frame += frames; if(attack_frame >= 60){
+					var seek_radius = this.info.params.range;
+					bounds.set(this.getX()-seek_radius, this.getY()-seek_radius, this.getZ()-seek_radius, seek_radius*2, seek_radius*2, seek_radius*2);
+					var best_len = 9999; for(o in this.area.getObjects(canAttack, bounds)){
+						var dx = o.getX()-this.getX(), dy = o.getY()-this.getY(), dz = o.getZ()-this.getZ(), len = Math.sqrt(dx*dx+dy*dy+dz*dz), dp = Point.dotv(this.getViewDir(), dx, dy, dz)/len;
+						if(len &lt; best_len &amp;&amp; (dp > 0.5 || 2 > len)){
+							from.copy(this.getPosition()); if(this.area.raytrace(true, function(b){return b != this &amp;&amp; b != o;}, from, o.getPosition(), PROJECTILE) >= 1){best = o; best_len = len;}
+						}
+					} attack_frame = random()*5;
+				} if(best != null) setTarget(best); else {this.models[0].emissionTint.set(0.3,0.5,1); can_target = true;}
+			}
+		} else {
+			var dx = target.getX()-this.getX(), dy = target.getY()-this.getY();
+			var rot = this.getRotation(), r = getAngle(rot.z, Math.atan2(dy, dx)+PI/2), ar = Math.abs(r-rot.z);
+			if(ar > this.info.params.rotate_speed){this.setRotation(0,0, rot.z+Utils.sign(r-rot.z)*this.info.params.rotate_speed);}
+			else {
+				this.setRotation(0, 0, r); r -= PI/2; var range = this.info.params.range, dist = dx*dx+dy*dy; range *= range;
+				if((stalled &lt; 30 &amp;&amp; dist &lt; range*0.5) || dist > range){
+					var v = vec3(0,0,0); this.body.getLinearVelocityTo(v); v.z = 0; var len = v.length(); if(len &lt;= 0.5) stalled += frames;
+					var d = -1; if(dist > range){d = 1; stalled = 0;}
+					this.move(d*Math.cos(r), d*Math.sin(r), 0, frames, 1+Utils.clamp(3-len, 0, 2), 10);
+				} else {
+					var v = vec3(0,0,0); this.body.getLinearVelocityTo(v); v.z = 0; var len = v.length(); if(len &lt;= 0.5) stalled += frames;
+					if(stalled > 30){stalled = 0; dodge_dir = -dodge_dir;}
+					r += dodge_dir*PI/2; this.move(Math.cos(r), Math.sin(r), 0, frames, 1+Utils.clamp(3-len, 0, 2), 10);
+				} if(partial >= this.info.params.rate){
+					from.copy(this.getPosition()); if(canAttack(target) &amp;&amp; this.area.raytrace(true, function(b){return b != this &amp;&amp; b != target;}, from, target.getPosition(), PROJECTILE) >= 1){
+						partial -= this.info.params.rate; fireProjectile(); knockbackModel(this, -0.25);
+					} else setTarget(null);
+				}
+			} return;
+		} var rot = this.getRotation(); var r = rot.z;
+		var v = vec3(0,0,0); this.body.getLinearVelocityTo(v); v.z = 0; var len = v.length();
+		if(len &lt;= 0.5) stalled += frames; if(stalled > 30){
+			this.lerp(new RotateKeyframe(0,0, getAngle(rot.z,Math.round(r/PI)*PI-PI)), 10); stalled = 0; return;
+		} r -= PI/2; this.move(Math.cos(r), Math.sin(r), 0, frames, 1+Utils.clamp(3-len, 0, 2), 10);
+		</onFrame>
+		<onProjectileHit><script>
+		this.scale_decay = -0.2*this.scale; if(data.object != null){
+			playSoundAt(area, data.object, "bolt_hit");
+			attack(data.object, this.spawner, this.item.info.params.attack, data.point, this, data);
+		} if(data.tile != null &amp;&amp; Action.getStructureOnTile(area, data.tile[0], data.tile[1], data.tile[2]) == null){
+			if(Action.mineTile(area, null, data.tile[0], data.tile[1], data.tile[2], 2, 16) > 0) playSoundAt(area, vec3(data.tile[0]+0.5, data.tile[1]+0.5, data.tile[2]+0.5), "break", false, 1, 2);
+		}
+		</script></onProjectileHit>
+		<beginContact>if(canAttack(object)) setTarget(object);</beginContact>
+		<onHit><script>if(attacker != null &amp;&amp; canAttack(attacker)) setTarget(attacker); if(target == null){this.lerp(new RotateKeyframe(0,0, getAngle(this.getRotation().z, Math.atan2(point.y-this.getY(), point.x-this.getX())+PI/2)), 10);}</script></onHit>
+		<footstep><script if="type == 0 && this.area != null">playSoundAt(this.area, this, "bot_step", false, 0.7)</script></footstep>
+		<onDeath><script>playSoundAt(this.area, vec3(this.getX(), this.getY(), this.getZ()), "bot_death", false, 2); this.models[0].setAnimation("death", false, null, 1, ANIM_TRANSITION); this.lerp(new ModelScaleKeyframe(0.25,0.25,0.25), 30, function(){this.dropItem(makeItem('ai_core', 1), 0.25); this.remove();});</script></onDeath>
+	</object>
+
+	<structure id="enemy_turret" name="structure>turret" extends="base_turret" range="14" model="turret" self="ENEMY" static="false" access="action" tooltip="actions.scan" targets="PLAYER|NPC|STRUCTURE|BLUEPRINT">
+		<infoInit>this.params.shoot_point = new Point(0,0,0.8);</infoInit>
+		<shape type="cylinder" radius="0.9" height="2" />
+		<model id="turret_glass" tint="99ffffff" type="transparent" />
+		<transform>matrix.setScale(0.5,0.5,0.5);</transform>
+		<init><script>this.models[1].animation.setAnimationSpeed(-1);
+		var superCanTarget = canTarget; function canTarget(o){
+			if(this.getHealth() == this.getMaxHealth() &amp;&amp; this.state.getFlag('disable_bot')) return false; else return superCanTarget(o);
+		}
+		target = null; lastTarget = null;
+		function setTarget(o){target = o; if(o != lastTarget){lastTarget = o; o.runEvent(null, "onTarget", null, "object", this);}}
+		var superGetTargetDir = getTargetDir; function getTargetDir(){
+			target = null;
+			if(this.getHealth() == this.getMaxHealth() &amp;&amp; this.state.getFlag('disable_bot')){can_target = false; return null;} can_target = true;
+			var ret = superGetTargetDir(); var s = ret == null?-1:1; if(s != this.models[1].animation.animations[0].animationSpeed){
+				playSoundAt(this.area, this, "ship_door"); this.models[1].animation.setAnimationSpeed(s);
+			} return ret;
+		} this.models[0].tint.set(1,1,0.5); this.models[0].emissionTint.set(1,1,0.5); can_target = true;
+		</script></init>
+		<onKilled><script if="killer != null && killer.isPlayer()">unlockBlueprints(state, killer, ["turret_blueprint"]);</script></onKilled>
+		<onDeath><script>playSoundAt(this.area, vec3(this.getX(), this.getY(), this.getZ()), "bot_death", false, 2); this.lerp(new ModelScaleKeyframe(0.25,0.25,0.25), 30, function(){this.dropItem(makeItem('ai_core', 1), 0.25); this.remove();});</script><stop /></onDeath>
+		<onSelect><script>if(!unlockBlueprints(state, object, ["turret_blueprint"])) object.dispatchEvent(new ObjectEvent("warning", getText("warning.already_scanned{name:"+this.info.params.name+"}"))); else playSoundAt(this.area, this, "select");</script></onSelect>
+	</structure>
+
+	<object id="enemy_sub" extends="base_enemy" model="sub_AI" health="200" speed="0.125" modelBottom="false" defense="4" range="15" rate="0.5" attack="30" health_bar="Icon.fromTile(getTile('health_bar'),TYPE_EMISSIVE,3)" health_bar_z="0.2" achievement="defeat_sub">
+		<infoInit>this.params.range = eval(this.xml.get("range")); this.params.rate = 60.0/eval(this.xml.get("rate")); this.params.rotate_speed = 0.1;</infoInit>
+		<shape type="box" width="3" y="0.5" z="-0.1" height="4" depth="2.9" />
+		<transform>matrix.setScale(0.5,0.5,0.5); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<onDeath><script>playSoundAt(this.area, vec3(this.getX(), this.getY(), this.getZ()), "bot_death", false, 2); this.lerp(new ModelScaleKeyframe(0.25,0.25,0.25), 30, function(){this.dropItem(makeItem('ai_core', 1), 0.25); this.dropItem(makeItem('chromium', 1), 0.25); this.remove();});</script><stop /></onDeath>
+		<init><script>
+		moving = 0; move_sfx = null; a = this.models[0].animation; a.setAnimationCount(2);
+		idle = this.models[0].getAnimationByName("AI_idol_loop"); melee = this.models[0].getAnimationByName("AI_grab_loop");
+		a.animations[0].set(this.models[0].getAnimationByName("Propeller_spin"), true, null, 0); a.animations[1].set(idle, true);
+		a.setFrame(0); bounds = makeBounds(0,0,0,0,0,0); from = new Point(); target = null; stalled = 0.0; partial = 0;
+		attack_frame = 0;
+		function canAttack(o){
+			if(this.getHealth() == this.getMaxHealth() &amp;&amp; this.state.getFlag('disable_bot')) return false;
+			if(!o.area.hasWater(Math.floor(o.getX()), Math.floor(o.getY()), Math.ceil(o.getZ()+o.info.aabb.min_z+0.1))) return false;
+			return o.vars.get("can_target") != false &amp;&amp; (o.info.self&amp;(PLAYER|NPC|STRUCTURE|BLUEPRINT)) != 0 &amp;&amp; o.health.get() > 0 &amp;&amp; getItemValue(o,"defense") &lt; this.info.params.attack;
+		} this.models[0].emissionTint.set(0.3,0.5,1); can_target = true;
+		function setTarget(o){
+			if(target == o) return; can_target = true; target = o; stalled = 0; if(target == null) this.models[0].emissionTint.set(0.3,0.5,1); else {
+				playSoundAt(this.area, o, "sonar_ping", false, 2, 2); target.runEvent(null, "onTarget", null, "object", this); this.models[0].emissionTint.set(1,0.3,0.3);
+			}
+		}
+		point = new Point(1.19,0.5,0.5);
+		function fireTorpedo(){
+			if(target == null || this.area == null) return;
+			point.x = -point.x; var x = point.x; this.invTransformPoint(point);
+			var t = getObject("torpedo").create(this.state); t.setPosition(point.x, point.y, point.z);
+			t.facePoint(target.getX(), target.getY(), target.getZ());
+			t.body._ignoreCollide = this.body; point.set(x,0.5,0.5); this.area.add(t, false);
+			playSoundAt(this.area, this, "torpedo_launcher");
+		} dodge_dir = 1; idle_dz = 0;
+		function computeDiagonal(aabb){
+			var w = aabb.getWidth()*0.5, h = aabb.getHeight()*0.5; return w*w+h*h;
+		} cur_anim = idle;
+		</script></init>
+		<onFrame>
+		if(this.health.get() == 0 || this.hasFacePos()) return; var toIdle = false;
+		if(partial &lt; this.info.params.rate){partial += frames; if(partial >= this.info.params.rate) toIdle = true;}
+		var x = Math.floor(this.getX()), y = Math.floor(this.getY()), z = Math.floor(this.getZ());
+		if(this.area.hasWater(x, y, z) || this.area.hasWater(x, y, z+1)) this.body.setGravityScale(0); else this.body.setGravityScale(1);
+		if(target == null){
+			if(this.getHealth() == this.getMaxHealth() &amp;&amp; this.state.getFlag('disable_bot')){
+				this.models[0].emissionTint.set(0.3,1,0.3); can_target = false;
+			} else {
+				var best = null, old = attack_frame; attack_frame += frames; if(attack_frame >= 60){
+					var seek_radius = this.info.params.range;
+					bounds.set(this.getX()-seek_radius, this.getY()-seek_radius, this.getZ()-seek_radius, seek_radius*2, seek_radius*2, seek_radius*2);
+					var best_len = 9999; for(o in this.area.getObjects(canAttack, bounds)){
+						var dx = o.getX()-this.getX(), dy = o.getY()-this.getY(), dz = o.getZ()-this.getZ(), len = Math.sqrt(dx*dx+dy*dy+dz*dz), dp = Point.dotv(this.getViewDir(), dx, dy, dz)/len;
+						if(len &lt; best_len &amp;&amp; (dp > 0.2 || 2 > len)){
+							from.copy(point); from.x = -from.x; this.invTransformPoint(from); if(this.area.raytrace(true, function(b){return b != this &amp;&amp; b != o;}, from, o.getPosition(), PROJECTILE) >= 1){best = o; best_len = len;}
+						}
+					} attack_frame = random()*5;
+				} if(best != null) setTarget(best); else {this.models[0].emissionTint.set(0.3,0.5,1); can_target = true;}
+			} if(target == null){
+				var rot = this.getRotation(); var r = rot.z;
+				var v = vec3(0,0,0); this.body.getLinearVelocityTo(v); v.z = 0; var len = v.length();
+				if(len &lt;= 0.5) stalled += frames; if(stalled > 30){
+					this.lerp(new RotateKeyframe(0,0, getAngle(rot.z,Math.round(r/PI)*PI-PI*(random()*0.5+0.75))), 10); idle_dz = random()*0.5-0.25; stalled = 0;
+				} else {r -= PI/2; this.move(Math.cos(r), Math.sin(r), idle_dz, frames, 1+Utils.clamp(3-len, 0, 2), 10); moving = 1;}
+			}
+		} else {
+			var dx = target.getX()-this.getX(), dy = target.getY()-this.getY();
+			var rot = this.getRotation(), r = getAngle(rot.z, Math.atan2(dy, dx)+PI/2), ar = Math.abs(r-rot.z);
+			if(ar > this.info.params.rotate_speed){this.setRotation(0,0, rot.z+Utils.sign(r-rot.z)*this.info.params.rotate_speed);}
+			else {
+				this.setRotation(0, 0, r); r -= PI/2; var range = this.info.params.range, dist = dx*dx+dy*dy, dz = target.getZ()-this.getZ();
+				var dp = Point.dotv(this.getViewDir(), dx, dy, dz)/Math.sqrt(dx*dx+dy*dy+dz*dz); dz = Utils.sign(dz); range *= range;
+				if((stalled &lt; 30 &amp;&amp; dist &lt; range*0.5) || dist > range){
+					var v = vec3(0,0,0); this.body.getLinearVelocityTo(v); v.z = 0; var len = v.length(); if(len &lt;= 0.5) stalled += frames;
+					var d = -1; if(dist > range || (dp > 0.9 &amp;&amp; dist &lt; range*0.25)){d = 1; stalled = 0;}
+					this.move(d*Math.cos(r), d*Math.sin(r), dz, frames, 1+Utils.clamp(3-len, 0, 2)); moving = 1;
+				} else {
+					var v = vec3(0,0,0); this.body.getLinearVelocityTo(v); v.z = 0; var len = v.length(); if(len &lt;= 0.5) stalled += frames;
+					if(stalled > 30){stalled = 0; dodge_dir = -dodge_dir;}
+					r += dodge_dir*PI/2; this.move(Math.cos(r), Math.sin(r), dz, frames, 1+Utils.clamp(3-len, 0, 2)); moving = 1;
+				}
+				if(partial >= this.info.params.rate) if(canAttack(target)){
+					if(dp > 0.9){
+						var s = computeDiagonal(this.info.aabb)+computeDiagonal(target.info.aabb); if(dist &lt; s){
+							playSoundAt(target.area, target, "wyrm_attack");
+							if(cur_anim != melee){cur_anim = melee; a.animations[1].set(melee, true, null, 1, ANIM_TRANSITION);} toIdle = false;
+							partial -= this.info.params.rate; attack(target, this, this.info.params.attack, new Point(this.getX(), this.getY(), this.getZ()), null, null);
+						} else {
+							from.copy(point); from.x = -from.x; this.invTransformPoint(from); if(this.area.raytrace(true, function(b){return b != this &amp;&amp; b != target;}, from, target.getPosition(), PROJECTILE) >= 1){
+								partial -= this.info.params.rate; fireTorpedo();
+							} else setTarget(null);
+						}
+					}
+				} else setTarget(null);
+			}
+		}
+		if(moving == 1){
+			if(move_sfx == null){move_sfx = playSoundAt(this.area, this, "sub_move", true); a.animations[0].animationSpeed = 4;} moving = 2;
+		} else if(moving == 2){
+			if(move_sfx != null){move_sfx.stop(); move_sfx = null; a.animations[0].animationSpeed = 0;} moving = 0;
+		} if(toIdle &amp;&amp; cur_anim != idle){cur_anim = idle; a.animations[1].set(idle, true, null, 1, ANIM_TRANSITION);}
+		</onFrame>
+		<beginContact>if(canAttack(object)) setTarget(object);</beginContact>
+		<onHit><script>if(attacker != null &amp;&amp; canAttack(attacker)) setTarget(attacker); if(target == null){this.lerp(new RotateKeyframe(0,0, getAngle(this.getRotation().z, Math.atan2(point.y-this.getY(), point.x-this.getX())+PI/2)), 10);}</script></onHit>
+	</object>
+</data>

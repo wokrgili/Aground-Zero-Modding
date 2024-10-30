@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<quest id="survivor_locator" extends="item_quest" global="true" text="quests.give{name:names.scavenger}">
+		<requires id="chip" count="10" />
+        <initQuest>function canComplete(){object.state.dispatchEvent(new Event("update_indicators")); return false;}</initQuest>
+        <completeQuest>
+            <script>object.completeQuest(this);</script>
+			<choose><section if="fireComplete">
+				<wait seconds="1" modal="false" /><run xml="BaseInfo.get('quest', 'survivor_locator').xml" event="doComplete" />
+			</section><blockingEvent><run xml="BaseInfo.get('quest', 'survivor_locator').xml" event="doComplete" /></blockingEvent>
+			</choose>
+        </completeQuest>
+        <doComplete>
+            <script>scav = state.getArea('default').getById('scavenger');</script>
+            <dialogue section="scavenger" id="intro13" speaker="scav" />
+            <dialogue section="scavenger" id="intro14" speaker="scav" />
+            <script>unlockRecipes(object, "rig", state.storage, ["mine_titanium","mine_uranium"])</script><wait seconds="1" modal="false" />
+        </doComplete>
+	</quest>
+	<quest id="com_station" extends="build_blueprint" global="true" achievement="com">
+		<requires id="com" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+                <dialogue section="pai" id="com1" pai="true" expression="smile" />
+                <dialogue section="pai" id="com2" speaker="object" />
+                <dialogue section="pai" id="com3" name="names.bots" talk_sfx="talking1" />
+                <choose>
+                    <dialogue section="pai" id="com3.1" pai="true" expression="sad" if="state.areas[0].getById('friend') == null" />
+                    <section>
+                        <dialogue section="pai" id="com4" name="names.friend" talk_sfx="talking7" />
+                        <dialogue section="pai" id="com5" name="names.bots" talk_sfx="talking1" />
+                        <dialogue section="pai" id="com6" pai="true" expression="angry" />
+                        <dialogue section="pai" id="com7" pai="true" expression="happy" />
+                        <dialogue section="pai" id="com8" name="names.bots" talk_sfx="talking1" />
+                        <dialogue section="pai" id="com9" name="names.friend" talk_sfx="talking7" />
+                        <script>state.setFlag('disable_bot', true)</script>
+                        <dialogue section="pai" id="com10" pai="true" expression="smile" />
+                    </section>
+                </choose>
+                <dialogue section="pai" id="com11" pai="true" expression="smile" />
+			</blockingEvent>
+		</completeQuest>
+	</quest>
+    <script>function pace(area, self, x, y, z, dx, dy, max_dist){
+        var p = new Node3D(x, y, z); while(max_dist > 0){
+            max_dist--; var z = p.z; if(area.isBlocking(p.x+dx,p.y+dy,z) != -1) z++; else while(area.isBlocking(p.x+dx, p.y+dy, z-1) == -1) z--;
+            if(area.canEnter(p.x+dx, p.y+dy, z, self)) p = new Node3D(p.x+dx, p.y+dy, z, p); else break;
+        } if(p.parent == null) return null; else return p;
+    }</script>
+    <object id="scavenger" extends="scavenger">
+        <model id="shield" type="selection" tint="22ffffff"><transform>matrix.setScale(1.3,1.3,1.7); var b = new Basis(); b.pan(PI/2); matrix.append(b.getMatrix());</transform></model>
+		<init><script>
+        var idles = ["idle1", "idle2", "idle3"];
+		function playIdle(){
+			this.models[0].setAnimation(random()>0.5?selectRandom(idles):"idle3", false, playIdle, 0.5, ANIM_TRANSITION, true); this.models[0].animation.isAnimating = false;
+		}
+		function workAnim(){this.models[0].setAnimation("work", false, null, 0.5, ANIM_TRANSITION, true);}
+        invulnerable = true; this.models[1].visible = 0;
+		function getIndicator(){return this.storage.get("found").getBool() == true?Icon.fromTile(getTile("worker"),TYPE_INDICATOR,0.6):null;}
+		updateIndicator = handleIndicator(this, false); to = null;
+
+        function onFrame(){
+            var m = this.models[1]; m.texCrop.x = Utils.mod(m.texCrop.x+frames*0.006, 1); m.tint.a = Math.max(m.tint.a-frames*0.001, 0.1333333);
+            m.texCrop.y -= frames*0.015; if(m.texCrop.y &lt;= -0.125){
+                m.visible = 0; m.texCrop.y = -0.125;
+            }
+        }
+        function getDestination(frames){
+            var dy = random()>0.5?1:-1, p = pace(area, this.info.self, Math.floor(this.getX()), Math.floor(this.getY()), Math.round(this.getZ()+this.info.aabb.min_z), 0, dy, 10);
+            if(p == null) this.models[0].setAnimation(random()>0.5?selectRandom(idles):"idle3", false, playIdle, 0.5, ANIM_TRANSITION, true);
+            else {to = new Node3D(p.x, p.y+dy, p.z); path = reversePath(p); nextPath();}
+        }
+        function isEmptyCoalGenerator(o){
+            return o.storage.get('recipe').getString() == 'fuel_coal' &amp;&amp; o.inventory.getCountById("coal") &lt; 2;
+        }
+        function handleDestination(){
+			this.models[0].setAnimation(random()>0.5?selectRandom(idles):"idle3", false, workAnim, 0.5, ANIM_TRANSITION, true);
+            if(to != null){
+                if(this.storage.get("found").getBool() == true){
+                    var o = this.area.getFirstInTile(to.x, to.y, to.z, isStorehouse); if(o != null) o.inventory.addItem(scavengeItem());
+                } var o = this.area.getFirstInTile(to.x, to.y, to.z, isEmptyCoalGenerator); if(o != null) o.inventory.addItem(makeItem('coal'));
+            }
+        }
+        function scavengeItem(){
+            switch(randInt(0,10)){
+                case 0: return makeItem('nutrient_bar');
+                case 1: return makeItem('steel');
+                case 2: return makeItem('wire');
+            }
+        }
+		</script></init>
+        <stateLoaded><script>updateIndicator()</script></stateLoaded>
+		<onSelect><script>var d = this.storage.get("found"); if(d.getBool() != true){d.setBool(true); this.storage.get("indicator").setBool(true);}</script></onSelect>
+		<talk><choose>
+            <section if="!hasRecipes('rig', state.storage, ['mine_titanium']) && !object.hasQuest('survivor_locator') && !object.questComplete('survivor_locator')">
+                <quest /><script modal="true">this.models[0].setAnimation("idle1", false, onComplete, 1, ANIM_TRANSITION);</script>
+                <script>this.vars.get("playIdle")();</script>
+                <dialogue section="scavenger" id="intro1" speaker="object" />
+                <dialogue section="scavenger" id="intro2" speaker="this" />
+                <dialogue section="scavenger" id="intro3" speaker="this" />
+                <dialogue section="scavenger" id="intro4" speaker="object" />
+                <dialogue section="scavenger" id="intro5" speaker="this" />
+                <dialogue section="scavenger" id="intro6" pai="true" expression="smile" />
+                <choose>
+                    <section if="getFrozenNPCCount(this.area) > 0">
+                        <dialogue section="scavenger" id="intro7" speaker="this" />
+                        <dialogue section="scavenger" id="intro8" speaker="this" />
+                        <script>object.addQuest("survivor_locator");</script><wait seconds="1" modal="false" />
+                    </section>
+                    <section>
+                        <dialogue section="scavenger" id="intro9" speaker="this" />
+                        <dialogue section="scavenger" id="intro10" speaker="this" />
+                        <script>unlockRecipes(object, "rig", state.storage, ["mine_titanium","mine_uranium"])</script><wait seconds="1" modal="false" />
+                    </section>
+                </choose><save />
+            </section>
+            <section if="object.hasQuest('survivor_locator') && getFrozenNPCCount(this.area) == 0">
+                <quest /><dialogue section="scavenger" id="intro9" speaker="this" />
+                <dialogue section="scavenger" id="intro10" speaker="this" />
+                <script>unlockRecipes(object, "rig", state.storage, ["mine_titanium","mine_uranium"]);
+                var q = object.getQuest("survivor_locator"); if(q != null) object.remQuest(q);</script><wait seconds="1" modal="false" />
+            </section>
+            <section if="object.hasQuest('survivor_locator') && object.getQuest('survivor_locator').requirementsMet()">
+                <quest /><menu section="common">
+                    <dialogue section="scavenger" id="intro12" />
+                    <choice id="yes" if="object.getQuest('survivor_locator').requirementsMet()">
+                        <script modal="true">object.inventory.removeById("chip", 10);
+                        for(o in this.area.getAllById('cryopod_broken')) if(o.vars.get('npc') != null){var d = o.storage.get("found"); if(d.getBool() != true){d.setBool(true); o.storage.get("indicator").setBool(true);}}
+                        var i = makeItem("chip"); i.storage.get("count").setString("-10");
+                        object.dispatchEvent(new ObjectEvent("collect_item", i));
+                        var q = object.getQuest("survivor_locator"); if(q != null) q.onComplete(object, onComplete); else onComplete();</script>
+                    </choice>
+                    <choice id="no">
+                        <dialogue section="scavenger" id="intro11" speaker="this" />
+                    </choice>
+                </menu>
+            </section>
+            <section if="state.getFlag('disable_bot')">
+                <dialogue section="scavenger" id="friend11" speaker="this" />
+                <dialogue section="scavenger" id="friend12" pai="true" expression="happy" />
+                <dialogue section="scavenger" id="friend13" speaker="object" />
+            </section>
+            <run xml="this.info.xml" event="noQuest" if="object.hasQuest('com_station') || object.questComplete('com_station')" />
+            <choose if="f = this.area.getById('friend'); return f != null">
+                <section if="f.storage.get('intro').getBool() == true">
+                    <quest /><dialogue section="scavenger" id="friend5" speaker="object" />
+                    <dialogue section="scavenger" id="friend6" speaker="this" />
+                    <dialogue section="scavenger" id="friend7" speaker="this" />
+                    <dialogue section="scavenger" id="friend8" speaker="this" />
+                    <dialogue section="scavenger" id="friend9" pai="true" expression="smile" />
+                    <script>unlockBlueprints(state, object, ["com_blueprint"]); object.addQuest("com_station");</script>
+                    <save />
+                </section>
+                <section if="(object.questComplete('survivor_locator') || getFrozenNPCCount(this.area) == 0) && hasRecipes('lab', state.storage, ['craft_ai_core']) && f.storage.get('locate').getBool() != true">
+                    <quest /><dialogue section="scavenger" id="friend1" speaker="this" />
+                    <dialogue section="scavenger" id="friend2" speaker="object" />
+                    <dialogue section="scavenger" id="friend3" speaker="this" />
+                    <script>var d = f.storage.get("locate"); if(d.getBool() != true){d.setBool(true); f.storage.get("indicator").setBool(true);}</script>
+                    <dialogue section="scavenger" id="friend4" pai="true" expression="smile" />
+                    <save />
+                </section>
+                <run xml="this.info.xml" event="noQuest" />
+            </choose>
+            <section if="(object.questComplete('survivor_locator') || getFrozenNPCCount(this.area) == 0)">
+                <quest /><dialogue section="scavenger" id="friend10" speaker="this" />
+                <dialogue section="scavenger" id="friend7" speaker="this" />
+                <dialogue section="scavenger" id="friend8" speaker="this" />
+                <dialogue section="scavenger" id="friend9" pai="true" expression="smile" />
+                <script>unlockBlueprints(state, object, ["com_blueprint"]); object.addQuest("com_station");</script>
+                <save />
+            </section>
+            <run xml="this.info.xml" event="noQuest" />
+		</choose></talk>
+        <noQuest>
+            <group>
+                <dialogue section="scavenger" id="intro11" speaker="this" if="object.hasQuest('survivor_locator')" />
+                <section>
+                    <dialogue section="scavenger" id="find1" speaker="this" />
+                    <menu section="items" closeable="true">
+                        <choice id="coal"><dialogue section="scavenger" id="find2" speaker="this" /></choice>
+                        <choice id="iron"><dialogue section="scavenger" id="find3" speaker="this" /></choice>
+                        <choice id="gold"><dialogue section="scavenger" id="find4" speaker="this" /></choice>
+                        <choice id="diamond"><dialogue section="scavenger" id="find5" speaker="this" /></choice>
+                        <choice id="titanium"><dialogue section="scavenger" id="find6" speaker="this" /></choice>
+                        <choice id="uranium"><dialogue section="scavenger" id="find7" speaker="this" /></choice>
+                        <choice id="chromium"><dialogue section="scavenger" id="find8" speaker="this" /></choice>
+                        <choice id="exotic_matter"><dialogue section="scavenger" id="find9" speaker="this" /></choice>
+                    </menu>
+                </section>
+            </group>
+        </noQuest>
+        <onBlocked><script>var m = this.models[1]; m.visible = 1; m.texCrop.y = 0.375; m.tint.a = 0.25; playSoundAt(this.area, this, "shield");</script></onBlocked>
+	</object>
+</data>

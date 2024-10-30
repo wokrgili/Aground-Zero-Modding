@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<include id="structures.xml" />
+	<include id="enemies.xml" />
+	<include id="scavenger.xml" />
+	<include id="subway.xml" />
+	<include id="vehicles.xml" />
+	<include id="friend.xml" />
+
+	<script>
+	MAX_ROBOTS = 32767;
+	function createRobotName(){
+		var ret = new StringBuf(); ret.addChar(randInt(65,91)); ret.add("-"); ret.add(StringTools.hex(randInt(256,1048575))); return ret.toString();
+	} function isRobot(i){return i.info.params.robot == true;}
+	function isWorkerBot(i){return i.info.self == NPC &amp;&amp; i.info.params.robot == true;}
+	function getTotalObjectCount(state, accept){
+		var ret = 0; for(area in state.areas) for(o in area.objects) if(accept(o)) ret++; return ret;
+	}
+	</script>
+	<character id="worker_bot" extends="npc" talk_sfx="talking3" model="worker_bot" job="worker_bot" defense="4" power="0" power_gen="0" oxygen="0" talk_section="bot" access="">
+		<model id="bot_treads" />
+		<infoInit>this.params.robot = true; this.params.name = this.xml.exists("name")?parseString(this.xml.get("name")):'npc>'+this.id;</infoInit>
+		<transform>matrix.setScale(0.053,0.053,0.053); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+		var n = this.storage.get("name"); if(!n.isString()) n.setString(createRobotName()); this.fadeSpeed = 4;
+		function getTotalFood(inv){return 1000;}
+		function eatFood(inventory, power, frames){
+			if(!power) return false;
+			var es = frames*eatSpeed; partialHunger += es; var eat = Math.floor(partialHunger);
+			if(eat > 0){
+				partialHunger -= eat; this.addHunger(eat); this.addHealth(eat);
+				if(this.getHungerPercent() > 0.99) return false;
+			} return true;
+		}
+		function findHome(area){
+			for(o in area.objects) if(o.info.params.acceptBot == true){
+				var max = o.info.params.maxNPCs; if(max != null &amp;&amp; o.vars.get("npcCount") &lt; max) return o;
+			} return null;
+		}
+		function playSleep(){this.models[0].setAnimation("walk_loop", true, null, 0, ANIM_TRANSITION, true); this.fadeEmissive = 0;}
+		function playIdle(){this.models[0].setAnimation("walk_loop", true, null, 0, ANIM_TRANSITION, true); this.fadeEmissive = 0;}
+		function playWork(w){
+			playSoundAt(this.area, this, "bot_arm");
+			this.models[0].setAnimation(w.info.id+"_intro", false, function(){
+				this.models[0].setAnimation(w.info.id+"_loop", true, null, 1, ANIM_TRANSITION);
+			}, 1, ANIM_TRANSITION); this.fadeEmissive = 0;
+		}
+		function playWalk(){this.models[0].setAnimation("walk_loop", true, null, 1, ANIM_TRANSITION); this.fadeEmissive = 0;}
+		walk_sfx = null;
+		function stopWalkSfx(){if(walk_sfx != null){walk_sfx.stop(); walk_sfx = null;}}
+		function waitForPathfind(){
+			this.fadeEmissive = 0.25; this.models[0].setAnimation("walk_loop", false, playIdle, 0.3, ANIM_TRANSITION, true); stopWalkSfx();
+		}
+		var superFollowPath = followPath;
+		function followPath(frames){
+			superFollowPath(frames); this.models[1].texCrop.x -= frames*0.005;
+		} function onFrame(frames){if(this.hasMoveTo()) this.models[1].texCrop.x -= frames*0.005;}
+		function adjustEnterPos(o, p){p.y += 0.1;}
+		var superSetPath = setPath;
+		function setPath(n){
+			superSetPath(n); if(path == null) stopWalkSfx(); else if(walk_sfx == null &amp;&amp; this.area != null) walk_sfx = playSoundAt(this.area, this, "bot_treads", true, 0.7);
+		}
+		</script></init>
+		<getEvent><break /></getEvent>
+		<getSelection>selection.bounds.copy(this.info.aabb); selection.setTooltips(getTextTemplate('actions.talk', {name:this.vars.get('getName')()}), getText("actions.dismantle{hold:false}{structure:"+this.info.params.name+"}")); return true;</getSelection>
+		<footstep><stop /></footstep>
+		<onAlternate><sound id="select" source="this" />
+		<window type="prompt" message="warning.dismantle_bot"><script>var o = this.info.params.blueprint.create(this.state); if(o != null){
+			if(this.getMaxHealth() == o.getMaxHealth()-1) o.setHealth(this.getHealth()+1); else o.restoreHealth(); o.copyTransform(this);
+			o.storage.get("name").set(this.storage.get("name").get()); this.area.add(o,false);
+		} else o = this; this.remove(); if(this.inventory != null) for(i in this.inventory) if(i.count > 0) o.dropItem(i, 0.25);</script></window></onAlternate>
+		<onHungry><script>npcWarning(state, getTextTemplate('warning.robot_power', {name:getName()}));</script><stop /></onHungry>
+	</character>
+	<structure id="build_bot" extends="build_object" character="worker_bot" npc="true">
+		<infoInit>this.params.robot = true;</infoInit>
+		<init><script>
+		var n = this.storage.get("name"); if(!n.isString()) n.setString(createRobotName());
+		function getName(){var n = this.storage.get("name"); return n.isString()?n:getText(this.info.params.name);}
+		home = new Mutable(); home.set(null); atHome = new Mutable(); atHome.set(true);
+		function setHome(s){
+			var h = home.get(); if(s == h) return;
+			if(h != null) h.vars.get("__removeNPC")(this); home.set(s); h = s;
+			if(h == null) this.remove(); else h.vars.get("__addNPC")(this);
+		}
+		</script></init>
+		<addedToArea><script>
+		var ar = this.area.getObjects(function(o){return o.info.params.acceptBot == true;}, makeBounds(this.getX(), this.getY(), this.getZ(), 0, 0, 0));
+		if(ar.length == 1) setHome(ar[0]);
+		</script></addedToArea>
+		<removedFromArea><script>setHome(null);</script></removedFromArea>
+	</structure>
+	<recipe id="worker_bot" cost="50" time="10" type="worker_bay" structure="build_bot"><requires id="ai_core" count="2" /><requires id="titanium" count="5" /><requires id="cable" count="15" /></recipe>
+
+	<onScreen id="enter_surface">
+		<script if="player == state.host && state.areas[0].getById('subway_sensor') == null && !hasBlueprints(state, ['sub_blueprint'])">player.runEvent(container, "enterSurface");</script>
+	</onScreen>
+	<upgrade id="flight_power" extends="add" max_level="4" strength="-3" start="20" />
+	<character id="player" extends="player" flight_sfx="anti_grav">
+		<infoInit>
+		this.params.getUpgrades = function(o){
+			var ar = this.params.upgrades; if(o.storage.get('flight_power').isFloat()){ar = ar.copy(); ar.unshift("flight_power");} return ar;
+		}
+		</infoInit>
+		<init><script>
+		function updateCoins(e){
+			var c = getScreenForPlayer(this); if(c != null) setStat(c, this.state, "moneybags", this.storage.get("coins").getInt());
+		}
+		this.storage.get("coins").addEventListener("updated", updateCoins);
+		function onBuild(e){
+			var c = getScreenForPlayer(this); if(c == null) return;
+			switch(e.object.info.id){
+				case "boring": this.state.setAchievement(c, "boring", true);
+				case "teleportal": var ct = 0; for(a in this.state.areas) ct += a.countById("teleportal"); setStat(c, this.state, "teleportal", ct);
+			}
+		} this.addEventListener("build_blueprint", onBuild);
+		function onUpgrade(e){
+			var c = getScreenForPlayer(this); if(c == null) return;
+			var item = e.object.item; if(item.info.id == "mine"){
+				var ct = 0; for(id in item.info.params.upgrades){var u = getData("upgrade", id); if(id != null) ct += u.getLevel(item.storage);}
+				if(ct > 0) setStat(c, this.state, "upgrade_drill", ct);
+			}
+		}
+		this.addEventListener("upgrade", onUpgrade);
+		</script></init>
+		<onTarget><script if="this == state.localPlayers[0]">var m = getCurrentMusic(); if(m != null){var f = m.vars.get("onTarget"); if(f != null) f(object);}</script>
+		<section if="(object.info.id == 'hunter_bot' || object.info.id == 'enemy_turret') && this.hasQuest('blueprint_printer') && this.storage.get('bots').getBool() != true">
+			<script>this.storage.get('bots').setBool(true);</script>
+			<blockingEvent>
+				<dialogue section="professor" id="bots1" pai="true" expression="angry" />
+				<dialogue section="professor" id="bots2" pai="true" expression="angry"  />
+			</blockingEvent>
+		</section></onTarget>
+		<enterSurface>
+			<achievement id="surface" />
+			<blockingEvent>
+				<dialogue section="pai" id="surface1" pai="true" expression="happy" />
+				<dialogue section="pai" id="surface2" pai="true" expression="sad" />
+				<script>gui.vars.get('oxygen').setAdd(-10000);</script>
+				<dialogue section="pai" id="surface3" pai="true" />
+				<script>gui.vars.get('oxygen').setAdd(0);</script>
+				<dialogue section="pai" id="surface4" pai="true" expression="smile" />
+				<script>state.areas[0].timers.get('respawn_sub').remaining = 1800; unlockBlueprints(state, this, ["sub_blueprint"]); unlockRecipes(object, "basic", state.storage, ["craft_torpedo"], "craft");</script>
+				<dialogue section="pai" id="surface5" pai="true" expression="smile" />
+				<dialogue section="pai" id="surface6" pai="true" expression="smile" />
+			</blockingEvent>
+		</enterSurface>
+	</character>
+
+	<procedure id="npc.toSurface">
+		<run procedure="npcCutsceneStart" />
+		<dialogue section="snippets" id="to_surface" speaker="this" />
+		<run procedure="npcCutsceneEnd" />
+		<script>this.state.setFlag('npc_surface', true);</script>
+	</procedure>
+	<procedure id="npc.farmerSky">
+		<run procedure="npcCutsceneStart" />
+		<dialogue section="snippets" id="under_sky1" speaker="this" />
+		<run procedure="npcCutsceneEnd" />
+		<script>this.state.setFlag('farmer_sky', true);</script>
+	</procedure>
+	<procedure id="npc.chefSky">
+		<run procedure="npcCutsceneStart" />
+		<dialogue section="snippets" id="under_sky2" speaker="this" />
+		<dialogue section="snippets" id="under_sky3" pai="true" />
+		<dialogue section="snippets" id="under_sky4" speaker="this" />
+		<run procedure="npcCutsceneEnd" />
+		<script>this.state.setFlag('chef_sky', true);</script>
+	</procedure>
+	<procedure id="npc.vending">
+		<run procedure="npcCutsceneStart" />
+		<dialogue section="snippets" id="vending1" speaker="this" />
+		<dialogue section="snippets" id="vending2" pai="true" expression="happy" />
+		<dialogue section="snippets" id="vending3" speaker="this" />
+		<run procedure="npcCutsceneEnd" />
+		<script>this.state.setFlag('npc_vending', true);</script>
+	</procedure>
+	<script>var superGetNPCEvent = getNPCEvent; function getNPCEvent(npc, object){
+		var ret = superGetNPCEvent(npc, object); if(ret != null) return ret;
+		if(npc.getZ() >= 37 &amp;&amp; npc.storage.get('surface').getBool() != true){
+			if(!npc.state.getFlag('farmer_sky') &amp;&amp; StringTools.startsWith(npc.info.id, "farmer")) return "npc.farmerSky";
+			else if(!npc.state.getFlag('chef_sky') &amp;&amp; StringTools.startsWith(npc.info.id, "chef")) return "npc.chefSky";
+			else if(npc.info.xml.elementsNamed("underSky").hasNext()) return "underSky";
+		} if(npc.info.id == "soldier" &amp;&amp; npc.storage.get('peace').getBool() != true &amp;&amp; npc.state.getFlag('disable_bot')) return "underSky";
+		if(npc.info.id == "scientist" &amp;&amp; hasBlueprints(npc.state, ['particle_accelerator_blueprint']) &amp;&amp; npc.storage.get('exotic_matter').getBool() != true) return "particleAccelerator";
+		if(!npc.state.getFlag('npc_surface') &amp;&amp; hasBlueprints(npc.state, ['sub_blueprint'])) return "npc.toSurface";
+		if(!npc.state.getFlag('npc_vending') &amp;&amp; object.storage.get('coins').isInt()) return "npc.vending";
+		return null;
+	}</script>
+	<character id="soldier" extends="soldier">
+		<underSky>
+			<run procedure="npcCutsceneStart" />
+			<choose><section if="this.state.getFlag('disable_bot')">
+				<dialogue section="snippets" id="under_sky8" speaker="this" />
+				<dialogue section="snippets" id="under_sky9" speaker="this" />
+			</section><section>
+				<dialogue section="snippets" id="under_sky5" speaker="this" />
+				<script modal="true">this.models[0].setAnimation("idle1", false, onComplete, 1, ANIM_TRANSITION);</script>
+				<dialogue section="snippets" id="under_sky6" speaker="this" />
+				<dialogue section="snippets" id="under_sky7" speaker="this" />
+			</section></choose>
+			<run procedure="npcCutsceneEnd" />
+			<script>this.storage.get('surface').setBool(true); if(this.state.getFlag('disable_bot')) this.storage.get('peace').setBool(true);</script>
+		</underSky>
+	</character>
+	<character id="scientist" extends="scientist">
+		<particleAccelerator>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="snippets" id="particle_accelerator1" speaker="this" />
+			<dialogue section="snippets" id="particle_accelerator2" speaker="this" />
+			<run procedure="npcCutsceneEnd" />
+			<script>this.storage.get('exotic_matter').setBool(true);</script>
+		</particleAccelerator>
+	</character>
+	<structure id="frozen_scientist" extends="frozen_scientist" />
+	<structure id="frozen_soldier" extends="frozen_soldier" />
+</data>
