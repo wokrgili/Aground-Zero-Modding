@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <model id="sub" path="sub.wobj" texture="sub_D.png" normal="sub_N.png" emission="sub_E.png" />
+    <model id="sub_glass" path="sub_glass.wobj" texture="sub_glass.png" />
+    <model id="torpedo" path="torpedo.wobj" texture="torpedo_D.png" normal="torpedo_N.png" />
+    <setSpecular normal="sub_N.png" specular="white" scale="0.7" />
+    <setSpecular normal="torpedo_N.png" specular="white" scale="0.7" />
+
+    <model id="boring" path="boring.wobj" texture="boring_D.png" normal="boring_N.png" emission="boring_E.png" />
+    <model id="boring_screen" path="boring_screen.wobj" />
+    <setSpecular normal="boring_N.png" specular="white" scale="0.7" />
+</data>
