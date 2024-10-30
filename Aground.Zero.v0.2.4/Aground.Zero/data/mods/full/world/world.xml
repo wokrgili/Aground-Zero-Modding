@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<include id="materials/materials.xml" />
+    <include id="lab.xml" />
+    <script>
+    function isDynamicObject(o){return o.body._type != BODY_STATIC;}
+    function makeSubwayTunnel(area, x, y, z, h){
+        Generate.setCube(area, "gravel", 7, h, 1, x, y, z); Generate.setCube(area, "subway", 7, h, 1, x, y, z+6);
+        Generate.setCube(area, "gravel", 1, h, 1, x, y, z+1); Generate.setCube(area, "gravel", 1, h, 1, x+6, y, z+1);
+        Generate.setCube(area, "subway", 1, h, 4, x, y, z+2); Generate.setCube(area, "subway", 1, h, 5, x+6, y, z+2);
+        Generate.setCube(area, "subway_ramp", 1, h, 1, x+1, y, z+5, null, RAMP_TOP|RAMP_INNER|RAMP_LEFT); Generate.setCube(area, "subway_ramp", 1, h, 1, x+5, y, z+5, null, RAMP_TOP|RAMP_INNER|RAMP_RIGHT);
+    }
+    function makeSubwayStation(area, x, y, z){
+        Generate.setCube(area, "gravel", 1, 8, 1, x+5, y, z-1);
+        Generate.setCube(area, "subway_edge", 1, 8, 1, x+5, y, z);
+        Generate.setCube(area, "subway", 4, 8, 1, x, y, z);
+        Generate.setCube(area, "subway", 4, 8, 1, x, y, z+4);
+        Generate.mine(area, 2, 8, 3, x+4, y, z+1);
+        Generate.setCube(area, "subway", 4, 1, 5, x, y-1, z);
+        Generate.setCube(area, "subway", 4, 1, 5, x, y+8, z);
+    }
+    function makeStair(area, id, x, y, z, w, h, ?sides, ?overlay_l, ?overlay_r){
+        Generate.mine(area, w, 1, 2, x, y, z+1); var rb = RAMP_BOTTOM|RAMP_INNER|RAMP_BACK, rt = RAMP_TOP|RAMP_INNER|RAMP_FRONT;
+        for(i in 0...h){
+            area.set(x, y-i, z+i, id, overlay_l, rb);
+            for(tx in 1...(w-1)) area.set(x+tx, y-i, z+i, id, null, rb);
+            area.set(x+w-1, y-i, z+i, id, overlay_r, rb);
+            Generate.setCube(area, id, w, 1, 1, x, y-i, z+i+3, null, rt);
+            if(sides != null &amp;&amp; i &gt; 0){Generate.setCube(area, sides, 1, 1, 4, x-1, y-i, z+i); Generate.setCube(area, sides, 1, 1, 4, x+w, y-i, z+i);}
+        }
+    }
+    function makeSubwayExit(area, x, y, z){
+        makeStair(area, "subway_ramp", x, y, z, 3, 6, "subway", "subway_ramp_l", "subway_ramp_r");
+        Generate.setCube(area, "subway", 5, 3, 1, x-1, y-8, z+9); Generate.setCube(area, "subway", 5, 3, 1, x-1, y-8, z+5);
+        Generate.setCube(area, "subway", 1, 3, 3, x+3, y-8, z+6); Generate.setCube(area, "subway", 1, 3, 3, x-1, y-8, z+6);
+        Generate.mine(area, 1, 2, 1, x-1, y-8, z+7); Generate.mine(area, 1, 2, 1, x+3, y-8, z+7);
+    }
+    function makeRoadH(area, y, z, ?x){
+        if(x == null) x = 0; var seed = area.state.storage.get("seed").getFloat();
+        Generate.setCube(area, "asphalt", 64, 1, 1, x, y, z, "road_edge_h", 0, false);
+        Generate.setCube(area, "asphalt", 64, 2, 1, x, y+2, z, "road_h", 0, false);
+        Generate.setCubeRandomOverlay(area, "asphalt", "cracks", 0.75, 64, 4, 1, x, y+1, z, 0.7, seed);
+        Generate.setCube(area, "asphalt", 64, 1, 1, x, y+5, z, "road_edge_h", 0, false);
+    }
+    function makeRoadV(area, x, z, ?y){
+        if(y == null) y = 0; var seed = area.state.storage.get("seed").getFloat();
+        Generate.setCube(area, "asphalt", 1, 64, 1, x, y, z, "road_edge_v", 0, false);
+        Generate.setCube(area, "asphalt", 2, 64, 1, x+2, y, z, "road_v", 0, false);
+        Generate.setCubeRandomOverlay(area, "asphalt", "cracks", 0.75, 4, 64, 1, x+1, y, z, 0.7, seed);
+        Generate.setCube(area, "asphalt", 1, 64, 1, x+5, y, z, "road_edge_v", 0, false);
+    }
+    function makeRoadVOneWay(area, x, z, ?y){
+        if(y == null) y = 0; var seed = area.state.storage.get("seed").getFloat();
+        Generate.setCube(area, "asphalt", 1, 64, 1, x, y, z, "road_edge_v", 0, false);
+        Generate.setCubeRandomOverlay(area, "asphalt", "cracks", 0.75, 2, 64, 1, x+1, y, z, 0.7, seed);
+        Generate.setCube(area, "asphalt", 1, 64, 1, x+3, y, z, "road_edge_v", 0, false);
+    }
+    function makeRoadIntersection(area, x, y, z){
+        var seed = area.state.storage.get("seed").getFloat();
+        Generate.setCubeRandomOverlay(area, "asphalt", "cracks", 0.75, 6, 6, 1, x, y, z, 0.7, seed);
+        area.set(x, y, z, "asphalt", "road_edge_x"); area.set(x+5, y, z, "asphalt", "road_edge_x");
+        area.set(x, y+5, z, "asphalt", "road_edge_x"); area.set(x+7, y+5, z, "asphalt", "road_edge_x");
+        area.set(x+6, y+5, z, "asphalt", "cracks");
+    }
+    function makeRoadIntersectionOneWay(area, x, y, z){
+        var seed = area.state.storage.get("seed").getFloat();
+        Generate.setCubeRandomOverlay(area, "asphalt", "cracks", 0.75, 4, 6, 1, x, y, z, 0.7, seed);
+        area.set(x, y, z, "asphalt", "road_edge_x"); area.set(x+3, y, z, "asphalt", "road_edge_x");
+        area.set(x, y+5, z, "asphalt", "road_edge_x"); area.set(x+3, y+5, z, "asphalt", "road_edge_x");
+    }
+    function damageBuildingTop(area, x, y, z, depth){
+        if(area.getIndex(x, y, z) > 0) area.setOverlay(x, y, z, "black"); z++;
+        var e = Utils.min(depth, 3); for(i in 0...e){var mat = area.get(x, y, z); if(mat.flagsSet(FLAG_BLOCK)){
+            var truss = mat.info == null?null:mat.info.params.truss; area.set(x, y, z, (truss == null || mat.ramp == 0)?truss:truss+"_ramp", null, mat.ramp);
+        } z++;}
+        for(i in e...depth){if(area.getIndex(x, y, z) > 0) area.set(x, y, z, null); z++;}
+    }
+    function makeCraftBlueprint(item){
+        var b = makeItem("blueprint", 1); b.storage.get("id").setString("basic"); b.storage.get("recipe").setString("craft_"+item); b.storage.get("name").setString("items>blueprint_item{item:>>items>"+item+"}");
+		b.storage.get("lvl").setInt(0); b.storage.get("item").setString("craft"); return b;
+    }
+    function spawnDesks(area, sx, sy, z, w, h, ct, ?spawn){
+        if(ct &lt;= 0) return 0;
+        var ar = []; var ex = Math.floor((w-3)/4), ey = Math.floor((h-2)/3), b = makeBounds(0,0,0,0,0,0);
+        for(ty in 0...ey) for(tx in 0...ex){
+            var x = sx+4+tx*4, y = sy+1+ty*3; b.set(x-1, y, z, 2, 2, 2);
+            if(Generate.isFilled(area, 2, 2, 1, x-1, y, z+3) &amp;&amp; Generate.isEmpty(area, 2, 2, 2, x-1, y, z) &amp;&amp; area.getObjects(null, b).length == 0) ar.push(new Point2D(x,y+0.5));
+        } if(ct >= ar.length) ct = ar.length; else shuffle(ar); for(i in 0...ct){
+            var p = ar[i]; if(spawn == null) area.spawn("structure", "desk_broken", p.x, p.y, z, PI); else spawn(p, i);
+        } return ct;
+    }
+    function makeDefaultFloor(area, x, y, z, w, h){
+        area.spawn("structure", "vending_debris", x+4, y+4.5, z, PI);
+        var c = area.spawn("structure", "chest", x+8.5, y+1.5, z, PI); c.storage.get("defense").setInt(99);
+        c.addItem(makeCraftBlueprint("drain")); c.addItem(makeItem("chromium", 2));
+        area.spawn("object", "hunter_bot", x+5.5,y+5,z);
+        spawnDesks(area, x, y, z, w, h, randInt(1, 3));
+    }
+    function makeParticleAcceleratorFloor(area, x, y, z, w, h){
+        area.spawn("structure", "particle_accelerator", x+4, y+8, z).storage.get("defense").setInt(99);
+        makeLogFloor(area, x, y, z, w, h, 8); //NOTE: this is against the wall of the minimum width building
+    }
+    function makeLogFloor(area, x, y, z, w, h, i){
+        var c = area.spawn("structure", "chest", x+8.5, y+1.5, z, PI); c.storage.get("defense").setInt(99);
+        if(i &lt;= 4) c.addItem(makeCraftBlueprint("drain")); c.addItem(makeItem("chromium", 2));
+        area.spawn("object", "hunter_bot", x+5.5,y+5,z);
+        function spawn(p, ct){
+            if(ct == 0){
+                var d = area.spawn("structure", "desk", p.x, p.y, z, PI); d.storage.get("defense").setInt(99); d.storage.get("log").setString("logs>log"+i);
+                area.spawn("structure", "chair", p.x, p.y+1, z, 0).storage.get("defense").setInt(99);
+            } else area.spawn("structure", "desk_broken", p.x, p.y, z, PI);
+        } if(spawnDesks(area, x, y, z, w, h, 1+randInt(0, 3), spawn) == 0) spawn(new Point2D(x+4, y+4.5), 0);
+    }
+    function notBlockWater(area, x, y, z){return area.isBlockingWater(x,y,z) != 0;}
+    function makeFriendFloor(area, x, y, z, w, h){
+        var c = area.spawn("structure", "chest", x+8.5, y+1.5, z, PI); c.storage.get("defense").setInt(99);
+        c.addItem(makeItem("chromium", 2));
+        area.spawn("object", "friend", x+5.5,y+5,z);
+        spawnDesks(area, x, y, z, w, h, randInt(1, 3));
+        if(area.isBlocking(x+1,y+3,z) == -1){area.setGround(x+1,y+3,z,DRAIN); Generate.setWaterLevel(area, 0, 1, 1, 3, x+1,y+3,z);}
+        if(area.isBlocking(x+6,y+3,z) == -1){area.setGround(x+6,y+3,z,DRAIN); Generate.setWaterLevel(area, 0, 1, 1, 3, x+6,y+3,z);}
+        z--; Generate.setCubeIf(area, "gravel", notBlockWater, w, 1, 4, x, y, z);
+        Generate.setCubeIf(area, "gravel", notBlockWater, 1, h, 4, x, y, z);
+        Generate.setCubeIf(area, "gravel", notBlockWater, w, 1, 4, x, y+h-1, z);
+        Generate.setCubeIf(area, "gravel", notBlockWater, 1, h, 4, x+w-1, y, z);
+        Generate.setCubeIf(area, "gravel", notBlockWater, w-9, h-2, 1, x+8, y+1, z); Generate.setCubeIf(area, "gravel", notBlockWater, w-2, h-5, 1, x+1, y+4, z);
+        Generate.setCubeIf(area, "gravel", notBlockWater, w-9, h-2, 1, x+8, y+1, z+4); Generate.setCubeIf(area, "gravel", notBlockWater, w-2, h-5, 1, x+1, y+4, z+4);
+        Generate.setWaterLevel(area, 0, w-9, h-2, 5, x+8, y+1, z); Generate.setWaterLevel(area, 0, w-2, h-5, 5, x+1, y+4, z);
+    }
+    function makeBuilding(area, id, x, y, z, w, h, floors, ?interior, ?water){
+        var seed = area.state.storage.get("seed").getFloat();
+        Generate.setCube(area, "subway", w, h, 1, x, y, z);
+        for(i in 1...floors) Generate.setCube(area, "subway", w-2, h-2, 1, x+1, y+1, z+i*4);
+        var zCt = 2, alt = null, p = 0.1; if(id == "brick"){zCt = 1; p = 0.4; id = "brick_window"; alt = "brick";}
+        Generate.setCubeRandomOverlay(area, id, id+"_cracks", p, w, 1, floors*4/zCt, x, y, z+1, 0.3, seed, zCt, alt);
+        Generate.setCubeRandomOverlay(area, id, id+"_cracks", p, 1, h, floors*4/zCt, x, y, z+1, 0.3, seed, zCt, alt);
+        Generate.setCubeRandomOverlay(area, id, id+"_cracks", p, w, 1, floors*4/zCt, x, y+h-1, z+1, 0.3, seed, zCt, alt);
+        Generate.setCubeRandomOverlay(area, id, id+"_cracks", p, 1, h, floors*4/zCt, x+w-1, y, z+1, 0.3, seed, zCt, alt);
+        var ht = floors*4+1; var ex = x+w, ey = y+h, scale = 0.3; var top_z = z+ht; for(ty in y...ey) for(tx in x...ex){
+            var depth = Math.floor(6-noise(tx*scale, ty*scale, top_z*scale+seed)*8); if(depth > ht) depth = ht; damageBuildingTop(area, tx, ty, top_z-depth, depth);
+        } if(interior != null){
+            Generate.mine(area, 6, 2, ht-2, x+1, y+1, z+1);
+            Generate.setCube(area, "subway", 6, 1, ht-2, x+1, y+3, z+1);
+            Generate.setCube(area, "subway", 1, 3, ht-2, x+7, y+1, z+1);
+            var floor = randInt(1, floors-1), func = interior.length == 0?null:interior.pop();
+            for(i in 0...floors){
+                var fz = z+1+i*4;
+                if((i%2) == 0){
+                    Generate.mine(area, 1, 1, 2, x+1, y+3, fz);
+                    Generate.setCube(area, "subway", 1, 2, 1, x+6, y+1, fz+3);
+                    for(r in 0...4){
+                        area.set(x+2+r, y+2, fz+r, "subway_ramp", null, 73);
+                        if(i > 0 || r > 0) area.set(x+2+r, y+2, fz+r-1, "subway_ramp", null, 70);
+                    }
+                } else {
+                    Generate.mine(area, 1, 1, 2, x+6, y+3, fz);
+                    Generate.setCube(area, "subway", 1, 2, 1, x+1, y+1, fz+3);
+                    for(r in 0...4){
+                        area.set(x+5-r, y+1, fz+r, "subway_ramp", null, 69);
+                        area.set(x+5-r, y+1, fz+r-1, "subway_ramp", null, 74);
+                    }
+                }
+            } var top = z+1+(floors-1)*4; if(floors > 7) area.spawn("structure", "enemy_turret", x+w*0.5, y+h*0.5, top);
+            if(water != false) Generate.setWaterLevel(area, 7, w-2, h-2, Utils.min(57,top)-z-1, x+1, y+1, z+1);
+            for(i in 0...floors){
+                var fz = z+1+i*4; if(func != null &amp;&amp; i == floor) func(area, x, y, fz, w, h); else if(floor &lt; floors-1) spawnDesks(area, x, y, fz, w, h, randInt(-1, 2));
+            }
+        }
+    }
+    var DOODAD_DIST = 12;
+    function makeDoodad(area, x, y, z, rot){
+        if(area.getFirstInTile(x, y, z) == null) area.spawn("structure", random()>0.8?"mailbox":"trashcan", x+0.5, y+0.5, z, rot);
+    }
+    function makeSidewalkH(area, x, y, z, w, h, ?doodads){
+        Generate.setCubeRandomOverlay(area, "sidewalk", "cracks", 0.5, w, h, 1, x, y, z, 0.7);
+        if(doodads == false || w &lt; 3 || h &lt; 3) return; var rot = 0;
+        if(area.getId(x, y-1, z) == "asphalt"){y = y+1; rot = Math.PI;}
+        else if(area.getId(x, y+h, z) == "asphalt") y = y+h-2;
+        else return; var ex = x+w-1, ct = randInt(0,DOODAD_DIST);
+        for(tx in (x+1)...ex) if(area.getId(tx, y, z) == "sidewalk" &amp;&amp; area.getId(tx-1, y, z) == "sidewalk" &amp;&amp; area.getId(tx+1, y, z) == "sidewalk"){
+            ct--; if(ct &lt;= 0){ct = DOODAD_DIST; makeDoodad(area, tx, y, z+1, rot);}
+        }
+    }
+    function makeSidewalkV(area, x, y, z, w, h, ?doodads){
+        Generate.setCubeRandomOverlay(area, "sidewalk", "cracks", 0.5, w, h, 1, x, y, z, 0.7);
+        if(doodads == false || w &lt; 3 || h &lt; 3) return; var ex = x+w-1, rot = Math.PI/2;
+        if(area.getId(x-1, y, z) == "asphalt") x = x+1;
+        else if(area.getId(x+w, y, z) == "asphalt"){x = x+w-2; rot = -Math.PI/2;}
+        else return; var ey = y+h-1, ct = randInt(0,DOODAD_DIST);
+        for(ty in (y+1)...ey){
+            var tx = x, id = area.getId(tx, ty, z); if(id != "sidewalk"){
+                while(tx &lt; ex &amp;&amp; id == "asphalt"){tx++; id = area.getId(tx, ty, z);}
+                tx++; if(area.getId(tx, ty, z) != "sidewalk") continue;
+            } if(area.getId(tx, ty-1, z) == "sidewalk" &amp;&amp; area.getId(tx, ty+1, z) == "sidewalk"){
+                ct--; if(ct &lt;= 0){ct = DOODAD_DIST; makeDoodad(area, tx, ty, z+1, rot);}
+            }
+        }
+    }
+    function makeCityBlock(area, x, y, z, w, h, rnd, ?interior, ?ht){
+        var split = rnd.nextInt(10, h-9); if(ht == null) ht = 12;
+        var f = interior != null &amp;&amp; interior.length == 12?ht:rnd.nextInt(ht>>1,ht);
+        if(rnd.nextFloat() &lt; 0.6){
+            var fs = rnd.nextInt(3,6); makeBuilding(area, fs == 3?"brick":"building", x, y, z, w, split, fs, interior);
+            makeBuilding(area, f >= 5?"skyscraper":"building", x, y+split, z, w, h-split, f, interior);
+        } else {
+            makeBuilding(area, f >= 5?"skyscraper":"building", x, y, z, w, split, f, interior);
+            var fs = rnd.nextInt(3,6); makeBuilding(area, fs == 3?"brick":"building", x, y+split, z, w, h-split, fs, interior);
+        }
+    }
+    function spawnStreetLight(area, x, y, z, rot, ar){
+        if(ar.length == 0){for(i in 1...8) ar.push(i); ar.push(randInt(1,8)); shuffle(ar);}
+        area.spawn("structure", "streetlight"+ar.pop(), x, y, z, rot);
+    }
+    function spawnStreetLightsV(area, x, y, z, w, h, ar){
+        var ct = Math.floor(h/10); for(i in 0...ct){
+            var left = ar.length%2 == 0;
+            spawnStreetLight(area, left?x-0.5:x+w+0.5, y+2.5+i*10, z, left?-Math.PI/2:Math.PI/2, ar);
+        }
+    }
+    function spawnStreetLightsH(area, x, y, z, w, h, ar){
+        var ct = Math.floor(w/10); for(i in 0...ct){
+            var left = ar.length%2 == 0;
+            spawnStreetLight(area, x+5+i*10, left?y-0.5:y+h+0.5, z, left?0:Math.PI, ar);
+        }
+    }
+    function makeCityBlocks(area, x, y, z, rnd){
+        var aht = (y > 0)?8:10, bht = (y>0)?10:8;
+        makeCityBlock(area, x, y+39, z, 14, 25, rnd, null, aht); makeCityBlock(area, x, y, z, 14, 25, rnd, null, bht);
+        makeCityBlock(area, x+30, y+39, z, 13, 25, rnd, null, aht); makeCityBlock(area, x+30, y, z, 13, 25, rnd, null, bht);
+        makeCityBlock(area, x+51, y+39, z, 11, 25, rnd, null, aht); makeCityBlock(area, x+51, y, z, 11, 25, rnd, null, bht);
+        makeSidewalkH(area, x, y, z, 64, 64, false);
+    }
+    function makeCityBlocks2(area, x, y, z, rnd){
+        var ht = (x > 0)?10:8, dht = (x > 0)?-1:1;
+        makeCityBlock(area, x, y, z, 13, 20, rnd, null, ht); makeCityBlock(area, x, y+32, z, 13, 30, rnd, null, ht); ht += dht;
+        makeCityBlock(area, x+30, y, z, 13, 20, rnd, null, ht); makeCityBlock(area, x+30, y+32, z, 13, 30, rnd, null, ht); ht += dht;
+        makeCityBlock(area, x+51, y, z, 13, 20, rnd, null, ht); makeCityBlock(area, x+51, y+32, z, 13, 30, rnd, null, ht);
+        makeSidewalkH(area, x, y, z, 64, 64, false);
+    }
+    </script>
+
+    <structure id="subway_exit" self="STRUCTURE|BLUEPRINT" block="WORLD|STRUCTURE|BLUEPRINT|PLAYER|NPC|ENEMY|ITEM" static="true">
+        <shape type="box" width="7" height="9" depth="1.1" />
+    </structure>
+
+    <structure id="subway_sensor" self="WORLD" block="PLAYER|STRUCTURE" static="true">
+        <shape type="box" width="5.5" height="7.5" depth="5" detector="true" />
+        <endContact>
+        if(object.isPlayer() &amp;&amp; object.getZ() > 36){
+            var c = getScreenForPlayer(object); if(c != null){object.runEvent(c, "enterSurface"); this.remove(); save(c);}
+        }
+        </endContact>
+    </structure>
+
+    <area id="default" extends="default">
+        <generate if="data == null || data == 'subway'">
+        //Third Floor [24-34] - Subway
+        Generate.setCube(this, "bedrock", 1, 64, 11, 0, 0, 24); Generate.setCube(this, "bedrock", 1, 64, 11, 63, 0, 24);
+        Generate.setCube(this, "bedrock", 64, 1, 11, 0, 0, 24); Generate.setCube(this, "bedrock", 64, 1, 11, 0, 63, 24);
+        Generate.setCube(this, "rock", 19, 62, 11, 1, 1, 24); Generate.setCube(this, "rock", 20, 62, 11, 43, 1, 24);
+        Generate.setCube(this, "rock", 4, 62, 2, 32, 1, 24); Generate.setCube(this, "rock", 5, 62, 2, 20, 1, 24);
+        makeSubwayTunnel(this, 25, 1, 24, 62); makeSubwayTunnel(this, 36, 1, 24, 62);
+        var ar = []; for(i in 1...9) ar.push(getStructure('subway'+i)); shuffle(ar); var s = getStructure('subway4'); ar.remove(s); ar.insert(4, s);
+        for(i in 0...8){var o = ar[i].create(state); o.setPosition(28.5, 4+i*8, 25); if(ar[i] == s) o.storage.get("ads").setInt(0x01); this.add(o);}
+        shuffle(ar); ar.remove(s); ar.insert(4, s);
+        for(i in 0...8){var o = ar[i].create(state); o.setPosition(39.5, 4+i*8, 25); if(ar[i] == s) o.storage.get("ads").setInt(0x23); this.add(o);}
+        makeSubwayStation(this, 32, 4*8, 26);
+        makeSubwayStation(this, 21, 4*8, 26);
+        Generate.setCube(this, "subway", 1, 10, 5, 20, 4*8-1, 26);
+        makeStair(this, "subway_ramp", 32, 31, 27, 2, 4, "subway", "subway_ramp_l", "subway_ramp_r");
+        makeStair(this, "subway_ramp", 21, 31, 27, 2, 4, "subway", "subway_ramp_l", "subway_ramp_r");
+        Generate.setCube(this, "subway", 3, 4, 1, 32, 24, 30);
+        Generate.setCube(this, "subway", 5, 4, 1, 20, 24, 30);
+        Generate.setCube(this, "subway", 1, 4, 4, 34, 24, 31);
+        Generate.setCube(this, "subway", 1, 4, 4, 20, 24, 31);
+        Generate.setCube(this, "subway", 13, 4, 1, 21, 24, 34);
+        Generate.setCube(this, "subway", 13, 1, 3, 21, 24, 31);
+        Generate.setCube(this, "subway", 7, 1, 3, 24, 28, 31);
+        Generate.setCube(this, "bedrock", 62, 62, 1, 1, 1, 35);
+        makeSubwayExit(this, 26, 24, 31); Generate.mine(this, 3, 2, 1, 26, 21, 35);
+        Generate.mine(this, 1, 1, 2, 25, 28, 32); Generate.setCube(this, "metal2", 1, 3, 2, 24, 29, 32);
+        Generate.setCube(this, "metal2", 1, 4, 2, 26, 29, 32); Generate.setCube(this, "metal2", 7, 1, 2, 20, 33, 32);
+        Generate.setCube(this, "metal2", 1, 4, 1, 25, 29, 31); Generate.setCube(this, "metal2", 1, 5, 1, 25, 28, 34);
+        Generate.setCube(this, "metal2", 4, 1, 2, 20, 31, 32);
+        Generate.setCube(this, "metal2", 5, 1, 1, 20, 32, 31); Generate.setCube(this, "metal2", 5, 1, 1, 20, 32, 34);
+        Generate.setCube(this, "metal2", 9, 9, 7, 11, 28, 28); Generate.mine(this, 7, 7, 5, 12, 29, 29); Generate.mine(this, 1, 1, 2, 19, 32, 32);
+        for(z in 29...32) this.setGround(19, 32, z, LADDER_L); this.setGround(12, 31, 29, CABLE); this.setGround(12, 33, 29, CABLE);
+        addSubwayDesk();
+        this.spawn("structure", "storehouse", 13, 30, 29); this.spawn("structure", "light", 12.5, 32.5, 29, PI/2); this.spawn("structure", "recycler", 15, 35, 29);
+        this.spawn("structure", "generator", 13, 35, 29).inventory.addItem(makeItem('coal'));
+        this.spawn("object", "scavenger", 13.5, 33, 29); Generate.fill(this, "rock", 34,16,26);
+        addRockOres(this, 62, 62, 11, 1, 1, 24);
+        this.spawn("structure", "enemy_turret", 28.5, randInt(4,60)+0.5, 25);
+        this.spawn("structure", "enemy_turret", 39.5, randInt(4,60)+0.5, 25);
+        for(i in 0...6) spawnHunterBot();
+        </generate>
+        <generate if="data == null || data == 'city'">
+        function addBoringChest(area, x, y, z){
+            area.set(x,y,z,null); var o = area.spawn("structure", "chest", x+0.5, y+0.5, z, PI/2);
+            o.storage.get("defense").setInt(99); o.inventory.addItem(makeItem("boring_blueprint"));
+        } addBoringChest(this, 36,61,27); addBoringChest(this, 36,2,27); addBoringChest(this, 25,61,27); addBoringChest(this, 25,2,27);
+        if(!state.storage.get("seed").isFloat()) state.storage.get("seed").setFloat(random()*12345.6789);
+        Generate.setCube(this, "bedrock", 1, 64, 1, 0, 0, 35); Generate.setCube(this, "bedrock", 1, 64, 1, 63, 0, 35);
+        Generate.setCube(this, "bedrock", 64, 1, 1, 0, 0, 35); Generate.setCube(this, "bedrock", 64, 1, 1, 0, 63, 35);
+        for(x in 25...30) for(z in 0...4) this.set(x, 22-z, 37+z, "subway_ramp", null, 81);
+        for(x in 26...29) this.setGround(x,16,37,DRAIN); this.setGround(26,17,37,DRAIN); this.setGround(28,17,37,DRAIN);
+        Generate.setCubeRandomOverlay(this, "asphalt", "cracks", 0.75, 2, 34, 1, 23, 30, 36, 0.7);
+        Generate.setCube(this, "asphalt", 1, 34, 1, 25, 30, 36, "road_edge_v", 0, false);
+        makeRoadIntersection(this, 18, 24, 36); makeRoadIntersectionOneWay(this, 46, 24, 36);
+        makeRoadV(this, 18, 36); makeRoadVOneWay(this, 46, 36); makeRoadH(this, 24, 36);
+        var ar = []; spawnStreetLightsV(this, 18, 1, 37, 6, 20, ar); spawnStreetLightsV(this, 18, 35, 37, 8, 30, ar);
+        spawnStreetLightsV(this, 46, 1, 37, 4, 20, ar); spawnStreetLightsV(this, 46, 35, 37, 4, 30, ar);
+        spawnStreetLightsH(this, 1, 24, 37, 14, 6, ar); spawnStreetLightsH(this, 31, 24, 37, 13, 6, ar); spawnStreetLightsH(this, 52, 24, 37, 11, 6, ar);
+        ar = [1, 2, 3]; shuffle(ar);
+        this.spawn("structure", "traffic_light"+ar.pop(), 17.5,23.5,37);
+        this.spawn("structure", "traffic_light"+ar.pop(), 24.5,23.5,37,Math.PI/2);
+        this.spawn("structure", "traffic_light"+ar.pop(), 45.5,23.5,37);
+        this.spawn("structure", "sign_stop", 50.5,30.5,37);
+        this.spawn("structure", "sign_no_enter", 45.5,30.5,37, Math.PI);
+        this.spawn("structure", "sign_street", 50.5,23.5,37); this.spawn("structure", "sign_street", 26.5,30.5,37, Math.PI);
+        this.spawn("structure", "sign_highway", 17.5,30.5,37,-Math.PI/2);
+        this.spawn("structure", "sign_crossing", 30.5,23.5,37,-Math.PI/2); this.spawn("structure", "sign_crossing", 45.5,32.5,37);
+        for(i in 0...6){
+            for(x in 24...26) this.set(x,31+i*5,36,"asphalt","parking");
+            this.spawn("structure", "meter"+randInt(1,3), 26.5,34.5+i*5,37,Math.PI/2);
+        } for(x in 24...26) this.set(x,31+6*5,36,"asphalt","parking");
+        makeSidewalkV(this, 15, 1, 36, 3, 62); makeSidewalkV(this, 24, 1, 36, 7, 15); makeSidewalkV(this, 24, 23, 36, 7, 40);
+        makeSidewalkV(this, 44, 1, 36, 2, 62); makeSidewalkV(this, 50, 1, 36, 2, 62);
+        makeSidewalkH(this, 1, 21, 36, 24, 3); makeSidewalkH(this, 30, 21, 36, 33, 3); makeSidewalkH(this, 1, 30, 36, 62, 3);
+        makeSidewalkV(this, 24, 16, 36, 1, 6); makeSidewalkV(this, 30, 16, 36, 1, 6);
+        makeSidewalkV(this, 0, 0, 36, 1, 64, false); makeSidewalkV(this, 63, 0, 36, 1, 64, false);
+        makeSidewalkV(this,0, 0, 36, 64, 1, false); makeSidewalkV(this, 0, 63, 36, 64, 1, false);
+        var rnd = Random.create(); var interior = []; for(i in 1...8) interior.push(function(area,x,y,z,w,h){makeLogFloor(area,x,y,z,w,h,i);});
+        interior.push(makeParticleAcceleratorFloor); interior.push(makeFriendFloor); for(i in 9...12) interior.push(makeDefaultFloor); shuffle(interior);
+        makeCityBlock(this, 1, 1, 36, 14, 20, rnd, interior); makeCityBlock(this, 31, 1, 36, 13, 20, rnd, interior); makeCityBlock(this, 52, 1, 36, 11, 20, rnd, interior);
+        makeCityBlock(this, 1, 33, 36, 14, 30, rnd, interior); makeCityBlock(this, 31, 33, 36, 13, 30, rnd, interior); makeCityBlock(this, 52, 33, 36, 11, 30, rnd, interior);
+        this.spawn("structure", "enemy_turret", 21, 27, 37);
+        this.spawn("structure", "enemy_turret", 48, 27, 37);
+        var scale = 0.1, seed = this.state.storage.get("seed").getFloat(), ar = [], array = []; for(y in 1...63) for(x in 1...63){
+            var id = this.getId(x, y, 36); if((this.getGround(x,y+1,37)&amp;DRAIN) == 0 &amp;&amp; !StringTools.startsWith(id, "subway") &amp;&amp; id != null){
+                var ht = Math.floor(noise(x*scale, y*scale, seed)*6); if(ht > 0){
+                    for(o in this.getObjects(isDynamicObject, makeBounds(x, y, 37, 1, 1, ht))){var p = o.getPosition(); if(o.info.rotationFactor.x != 0) o.setRotation(1, 1, 1); o.setPosition(p.x, p.y, p.z+ht);}
+                    Generate.setCube(this, "sand", 1, 1, ht, x, y, 37, null, 0, false); var z = 37+ht-1;
+                    for(tz in 37...z) if(this.getId(x, y, tz) == "sand") Generate.addArray(array, x, y, tz, seed);
+                    if(this.getId(x, y, z) == "sand" &amp;&amp; ((x > 0 &amp;&amp; Math.floor(noise((x-1)*scale, y*scale, seed)*6) &lt;ht) ||
+                        (x &lt; 63 &amp;&amp; Math.floor(noise((x+1)*scale, y*scale, seed)*6) &lt; ht) ||
+                        (y > 0 &amp;&amp; Math.floor(noise(x*scale, (y-1)*scale, seed)*6) &lt; ht) ||
+                        (y &lt; 63 &amp;&amp; Math.floor(noise(x*scale, (y+1)*scale, seed)*6) &lt; ht))){
+                            this.set(x, y, z, "sand_ramp"); ar.push(new Node3D(x,y,z));
+                        }
+                    else if(random() &lt; 0.1) this.spawn("structure","seaweed",x+0.5,y+0.5,z+1);
+                    if(random() &lt; 0.07) this.setOverlay(x, y, z, "shells");
+                }
+            }
+        } for(p in ar) Generate.autoRamp(this, p.x, p.y, p.z);
+        array.sort(Generate.sortPoints); var ct = Math.floor(array.length*0.025); if(ct &lt; 30) ct = Utils.min(30, array.length);
+        for(i in 0...ct){var p = array[i]; this.set(p.x, p.y, p.z, "sand", "chromium");}
+        Generate.autoFlood(this, 32, 0, 57);
+        for(z in 37...58){
+            for(x in 0...64){this.set(x,0,z,"window"); this.set(x,63,z,"window");}
+            for(y in 1...63){this.set(0,y,z,"window"); this.set(63,y,z,"window");}
+        }
+        this.spawn("structure", "subway_sensor", 27.5,19.5,35.9);
+        </generate>
+        <init>
+            <script>
+            function addSubwayDesk(){
+                Generate.setCube(this, "metal", 8, 6, 4, 17, 40, 27);
+                Generate.setCube(this, "metal_door", 2, 1, 2, 22, 40, 28);
+                Generate.mine(this, 6, 4, 2, 18, 41, 28); this.set(23,39,27,"subway_ramp","subway_ramp_r",97); this.set(22,39,27,"subway_ramp","subway_ramp_l",97);
+                this.spawn("structure", "battery", 19.5, 41.5, 28, PI/2).power.set(randInt(200,400)); this.spawn("structure", "light", 20.5, 41.5, 28, PI).storage.get("enabled").setBool(false);
+                this.spawn("structure", "desk", 20, 43, 28, PI/2).storage.get("log").setString("logs>original");
+                this.spawn("structure", "chair", 21, 43, 28, -PI/2);
+                var inv = this.spawn("structure", "chest", 22.5, 44.5, 28).inventory;
+                var b = makeItem("blueprint", 1); b.storage.get("id").setString("rig"); b.storage.get("recipe").setString("mine_chromium"); b.storage.get("name").setString("items>blueprint_item{item:>>items>chromium}");
+                b.storage.get("lvl").setInt(0); inv.addItem(b); inv.addItem(makeItem("chromium", 2));
+            }
+            function hunterBotSpawn(o){
+                return o.info.xml.get("subway") != "true" &amp;&amp; getObject("hunter_bot").blockedBy(o);
+            }
+            function spawnHunterBot(){
+                var lr = 0, info = getObject("hunter_bot"); for(b in this.getAllById('hunter_bot')) if(b.getZ() &lt; 30){if(b.getX() > 31) lr++; else lr--;}
+                if(lr == 0) lr += random()>0.5?1:-1; var x = lr > 0?randInt(27,30):randInt(38,41), z = 25;
+                for(i in 0...20){
+                    var y = randInt(1,63); if(this.isBlocking(x,y,z) == -1 &amp;&amp; this.getFirstInTile(x, y, z, hunterBotSpawn) == null){
+                        var o = info.create(this.state); if(o != null){
+							o.setPosition(x+0.5, y+0.5, z-info.aabb.min_z); this.add(o);
+						} return true;
+                    }
+                } return false;
+            } SPAWN_SUB = []; function spawnEnemySub(){
+                var bounds = makeBounds(0,0,0,0,0,0);
+                var info = getObject("enemy_sub"), w = Math.ceil(info.aabb.getWidth()), h = Math.ceil(info.aabb.getHeight()), sz = Utils.max(w, h), d = Math.ceil(info.aabb.getDepth())+2;
+                if(SPAWN_SUB.length == 0){var end = 64-sz; for(y in 1...end) for(x in 1...end){SPAWN_SUB.push(x); SPAWN_SUB.push(y);}}
+                var n = SPAWN_SUB.length>>1; while(n > 0){
+                    var i = randInt(0, n); var x = SPAWN_SUB[2*i], y = SPAWN_SUB[2*i+1]; n--; if(i != n){
+                        SPAWN_SUB[2*i] = SPAWN_SUB[2*n]; SPAWN_SUB[2*i+1] = SPAWN_SUB[2*n+1]; SPAWN_SUB[2*n] = x; SPAWN_SUB[2*n+1] = y;
+                    } var z = 45; bounds.set(x, y, z, sz, sz, d);
+                    if(Generate.isEmpty(this, sz, sz, d, x, y, z) &amp;&amp; this.getObjects(info.blockedBy, bounds).length == 0){
+                        var o = info.create(this.state); if(o != null){
+                            o.setPosition(x+sz*0.5, y+sz*0.5, z-info.aabb.min_z); o.setRotation(0,0,random()*PI*2); this.add(o);
+                        } return true;
+                    }
+                } return false;
+            } if(this.getId(32,32,24) == 'bedrock'){
+                for(y in 27...36) for(x in 27...36) if(this.getId(x,y,16) == 'bedrock') this.set(x,y,16,'rock');
+                this.generate('subway'); this.generate('city');
+            } else {
+                var o = this.getById('subway_exit'); if(o != null){
+                    for(y in 27...36) for(x in 27...36) if(this.getId(x,y,16) == 'bedrock') this.set(x,y,16,'rock');
+                    o.remove(); Generate.mine(this, 5, 7, 5, 25, 16, 36); makeSubwayExit(this, 26, 24, 31); addSubwayDesk(); this.generate('city');
+                }
+            } this.addWorldBlock(0,0,35,1,64,92); this.addWorldBlock(63,0,35,1,64,92);
+            this.addWorldBlock(0,0,35,64,1,92); this.addWorldBlock(0,63,35,64,1,92); this.addWorldBlock(0,0,127,64,64,1);
+            Generate.setCubeRandomOverlay(this, "asphalt", "cracks", 0.75, 2, 64, 1, 23, 64, 36, 0.7);
+            Generate.setCube(this, "asphalt", 1, 64, 1, 25, 64, 36, "road_edge_v", 0, false);
+            makeRoadV(this, 18, 36, 64); makeRoadVOneWay(this, 46, 36, 64); makeRoadH(this, 24, 36, 64);
+            makeRoadV(this, 18, 36, -64); makeRoadVOneWay(this, 46, 36, -64); makeRoadH(this, 24, 36, -64);
+            var rnd = Random.createFromInt(Math.round(this.state.storage.get("seed").getFloat()));
+            makeCityBlocks(this, 1, -64, 36, rnd); makeCityBlocks(this, 1, 64, 36, rnd);
+            makeCityBlocks2(this, -64, 1, 36, rnd); makeCityBlocks2(this, 64, 1, 36, rnd);
+
+            function changeWaterLevel(x, y, z, old, cur){
+                if(z == 35 &amp;&amp; old == 0 &amp;&amp; !this.state.getFlag('flood_subway')){this.state.setFlag('flood_subway', true); this.state.runEvent(getScreenForPlayer(this.state.localPlayers[0]), "floodSubway");}
+            }
+            </script>
+        </init>
+        <timer seconds="60" id="respawn_hunter_bot">if(this.countById('hunter_bot', makeBounds(0,0,0,1000,1000,30)) &lt; 8) spawnHunterBot();</timer>
+        <timer seconds="600" id="respawn_sub">if(this.countById('enemy_sub') &lt; 2 &amp;&amp; hasBlueprints(this.state, ['sub_blueprint'])) spawnEnemySub();</timer>
+        <timer seconds="60" id="spawn_meteor">
+        var r = getStructure("rock").create(this.state); r.setPosition(3+random()*(this.getWidth()-6),3+random()*(this.getHeight()-6),150);
+        r.storage.get('burn').setBool(true); this.add(r);
+        </timer>
+    </area>
+
+    <campaign id="default" extends="default">
+        <floodSubway>
+        	<blockingEvent><dialogue section="pai" id="flood_subway1" pai="true" expression="angry" /></blockingEvent>
+        </floodSubway>
+        <generatorFueled><script>
+            var ct = 0; for(a in this.areas) for(g in a.getAllById("generator")) if(g.vars.get('shouldProgress') == true &amp;&amp; g.storage.get('recipe').getString() == "fuel_exotic_matter") ct++;
+            if(ct > 0) setStat(game_screens[0], this, "infinite_power", ct);
+        </script></generatorFueled>
+        <workerBay><blockingEvent>
+            <dialogue section="professor" id="exotic_matter8" pai="true" expression="happy" />
+			<script>object.addQuest("worker_bot")</script>
+        </blockingEvent></workerBay>
+        <init><script>
+        function checkWorkerBay(container, player){
+            if(state.getFlag('prof_leave') &amp;&amp; hasBlueprints(state, ['worker_bay_blueprint']) &amp;&amp; !player.hasQuest('worker_bot') &amp;&amp; !player.questComplete('worker_bot'))
+                state.runEvent(container, "workerBay", null, "object", player);
+        }
+        state.storage.get("blueprints").addEventListener("updated", function(e){var p = state.localPlayers[0]; checkWorkerBay(getScreenForPlayer(p), p);});
+        </script></init>
+        <onScreen><script>checkWorkerBay(container, player);</script></onScreen>
+    </campaign>
+</data>

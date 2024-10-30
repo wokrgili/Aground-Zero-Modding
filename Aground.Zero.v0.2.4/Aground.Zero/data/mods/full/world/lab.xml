@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<recipe id="craft_ai_core" cost="400" time="100"><requires id="chip" count="1" /><requires id="titanium" count="1" /><creates id="ai_core" count="1" /></recipe>
+	<quest id="mine2" extends="upgrade" global="true">
+		<requires id="mine>mine" count="2" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="professor" id="upgrade" pai="true" expression="smile" />
+			</blockingEvent>
+		</completeQuest>
+	</quest>
+	<quest id="subways" extends="find_structure" global="true" text="quests.find_subways">
+		<requires id="subway4" tile="PAI" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="professor" id="subway" pai="true" expression="angry" />
+			</blockingEvent>
+		</completeQuest>
+		<initQuest>
+		function update_dig(e){
+			if(e.source.get() &gt; 0) this.requirementCheck[0].set(true);
+		} var d = object.storage.get("dig").forceObject(); d.get("subway").addEventListener("updated", update_dig);
+		d.get("subway_ramp").addEventListener("updated", update_dig); d.get("gravel").addEventListener("updated", update_dig);
+		</initQuest>
+		<addQuest>if(state.getFlag('subways')) this.requirementCheck[0].set(true);</addQuest>
+		<removeQuest>
+		var d = object.storage.get("dig").forceObject(); d.get("subway").removeEventListener("updated", update_dig);
+		d.get("subway_ramp").removeEventListener("updated", update_dig); d.get("gravel").removeEventListener("updated", update_dig);
+		</removeQuest>
+	</quest>
+	<quest id="blueprint_printer" extends="build_blueprint" global="true">
+		<requires id="blueprint_printer" />
+		<completeQuest>
+			<script>object.completeQuest(this); this = object.area.getById('professor');</script>
+			<choose>
+				<blockingEvent wait="false" if="!this.vars.get('talking')">
+					<script>var pos = object.getPosition().clone(); pos.subeq(this.getPosition());
+					if(pos.lengthSquared() > 9){
+						var p = this.getFacing(1.75), x = p.x, y = p.y; p = this.getViewDir(); x += Utils.sign(p.y, 0.3); y += Utils.sign(p.x, 0.3);
+						object.setPosition(x, y, this.getZ()-object.info.aabb.min_z+this.info.aabb.min_z+0.01);
+					} this.vars.set('talking', true);</script>
+					<run procedure="npcCutsceneStart" />
+					<run xml="BaseInfo.get('quest', 'blueprint_printer').xml" event="doComplete" />
+					<run procedure="npcCutsceneEnd" /><script>this.vars.set('talking', false);</script>
+					<onSkip><script>object.dispatchEvent(new ObjectEvent("warning", getText('npc.talk_skip{name:'+this.vars.get('getName')().get()+'}')));</script></onSkip>
+				</blockingEvent>
+				<script>object.dispatchEvent(new ObjectEvent("warning", getText('npc.only_one{name:'+this.vars.get('getName')().get()+'}')));</script>
+			</choose>
+		</completeQuest>
+		<doComplete>
+			<dialogue section="professor" id="blueprint_printer1" speaker="this" />
+			<dialogue section="professor" id="blueprint_printer2" speaker="this" />
+			<dialogue section="professor" id="blueprint_printer3" speaker="this" />
+			<script>unlockRecipes(object, "lab", state.storage, ["craft_ai_core"])</script><wait seconds="1" modal="false" />
+			<dialogue section="professor" id="blueprint_printer4" speaker="this" />
+		</doComplete>
+	</quest>
+	<quest id="exotic_matter" extends="item_quest" global="true"  text="quests.give{name:names.professor}">
+		<requires id="exotic_matter" count="1" />
+		<initQuest>function canComplete(){object.state.dispatchEvent(new Event("update_indicators")); return false;}</initQuest>
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<choose><section if="fireComplete">
+				<wait seconds="1" modal="false" /><run xml="BaseInfo.get('quest', 'exotic_matter').xml" event="doComplete" />
+			</section><blockingEvent><run xml="BaseInfo.get('quest', 'exotic_matter').xml" event="doComplete" /></blockingEvent>
+			</choose>
+		</completeQuest>
+		<doComplete>
+			<script>prof = state.getArea('lab').getById("professor");</script>
+			<dialogue section="professor" id="exotic_matter6" speaker="prof" />
+			<dialogue section="professor" id="exotic_matter7" speaker="prof" />
+			<script>unlockBlueprints(state, object, ["worker_bay_blueprint"])</script><wait seconds="1" modal="false" />
+			<dialogue section="professor" id="exotic_matter8" pai="true" expression="happy" />
+			<script>object.addQuest("worker_bot")</script><wait seconds="1" modal="false" />
+		</doComplete>
+	</quest>
+	<quest id="worker_bot" title="quests.worker_bot" extends="object_quest" global="true" achievement="worker_bot">
+		<requires id="worker_bot" accept="isWorkerBot"/>
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<closeWindows />
+				<script>worker_bot = state.areas[0].getById("worker_bot")</script>
+				<script with="fade">
+				bay = worker_bot.vars.get("home").get(); if(bay == null) bay = worker_bot;
+				ids = ['chef1','chef2','miner1','miner2','farmer1','farmer2','scientist','soldier']; npcs = [];
+				var bot_pos = [new Point(0.85,-0.75),new Point(-0.85,-0.75),new Point(0,1)];
+				var setPos = function(o){
+					o.body.setType(BODY_STATIC); o.vars.set("talking", true);
+					var p = bot_pos.pop(); bay.invTransformPoint(p); o.setPosition(p.x, p.y, bay.getZ()-o.info.aabb.min_z+bay.info.aabb.min_z);
+					o.facePos(bay.getX(), bay.getY(), 0);
+				} for(id in ids){
+					var n = state.areas[0].getById(id); if(n != null) npcs.push(n);
+				} while(npcs.length > 2) npcs.remove(selectRandom(npcs)); npcs.unshift(worker_bot);
+				object.stop(); object.saveTransform = object.getTransformCopy(); setPos(object); for(n in npcs){
+					n.clearTracks();
+					if(n.vars.get("atWork").get()) n.vars.get("exit")(n.vars.get("work").get(), null, true);
+					if(n.vars.get("atHome").get()) n.vars.get("exit")(n.vars.get("home").get(), null, true);
+					n.vars.get("playIdle")(); n.saveTransform = n.getTransformCopy(); if(n != worker_bot) setPos(n); else if(n != bay){
+						n.body.setType(BODY_STATIC); n.vars.set("talking", true);
+						n.setPosition(bay.getX(), bay.getY(), bay.getZ()-1-n.info.aabb.min_z); n.setRotation(0,0,bay.getRotation().z);
+					}
+				} cobj = container.object; container.setObject(null); zNear = container.camera.zNear; container.camera.zNear = 0.25; var p = new Point(0, -1.5); bay.invTransformPoint(p);
+				container.camera.lookTo(p.x, p.y, bay.getZ()+0.5, bay.getX(), bay.getY(), bay.getZ()-0.5);
+				</script>
+				<dialogue text="getText('pai.worker_bot1{name:'+worker_bot.vars.get('getName')().get()+'}')" pai="true" expression="happy" />
+				<dialogue section="bot" id="idle" speaker="worker_bot" />
+				<dialogue section="pai" id="worker_bot2" speaker="npcs[1]" if="npcs.length > 1" />
+				<section if="npcs.length > 2">
+					<dialogue section="pai" id="worker_bot3" speaker="npcs[2]" />
+					<dialogue section="pai" id="worker_bot4" speaker="npcs[1]" />
+				</section>
+				<wait seconds="1" modal="false" />
+				<script with="fade">
+				container.setObject(cobj); cobj = null; container.camera.zNear = zNear;
+				object.setTransform(object.saveTransform); object.saveTransform = null; object.body.setType(BODY_DYNAMIC); for(n in npcs){
+					n.setTransform(n.saveTransform); n.saveTransform = null; n.body.setType(BODY_DYNAMIC); n.vars.set("talking", false);
+				}</script>
+			</blockingEvent>
+		</completeQuest>
+	</quest>
+	<recipe id="print_worker_bay_blueprint" extends="print_blueprint">
+		<init>var s = new Storage(); s.get("id").setString("worker_bay_blueprint"); s.get("lvl").setInt(0); this.creates[0].storage = s; this.requirements[0].count = 4;</init>
+	</recipe>
+	<recipe id="print_titanium_blueprint" extends="print_blueprint">
+		<init>var s = new Storage(); s.get("id").setString("rig"); s.get("recipe").setString("mine_titanium"); s.get("name").setString("items>blueprint_item{item:>>items>titanium}"); s.get("lvl").setInt(0); this.creates[0].storage = s; this.requirements[0].count = 4;</init>
+	</recipe>
+	<recipe id="print_uranium_blueprint" extends="print_blueprint">
+		<init>var s = new Storage(); s.get("id").setString("rig"); s.get("recipe").setString("mine_uranium"); s.get("name").setString("items>blueprint_item{item:>>items>uranium}"); s.get("lvl").setInt(0); this.creates[0].storage = s; this.requirements[0].count = 4;</init>
+	</recipe>
+	<recipe id="print_ai_core_blueprint" extends="print_blueprint">
+		<init>var s = new Storage(); s.get("id").setString("lab"); s.get("recipe").setString("craft_ai_core"); s.get("name").setString("items>blueprint_item{item:>>items>ai_core}"); s.get("lvl").setInt(0); this.creates[0].storage = s; this.requirements[0].count = 4;</init>
+	</recipe>
+	<structure id="blueprint_printer" extends="blueprint_printer" access="">
+		<init><script>
+		function getRecipes(state, object){
+			var ar = []; if(state.getFlag('prof_leave')){
+				if(!hasBlueprints(state, ['worker_bay_blueprint'])) ar.push(getData("recipe", "print_worker_bay_blueprint"));
+				if(!hasRecipes('rig', state.storage, ['mine_titanium'])) ar.push(getData("recipe", "print_titanium_blueprint"));
+				if(!hasRecipes('rig', state.storage, ['mine_uranium'])) ar.push(getData("recipe", "print_uranium_blueprint"));
+				if(!hasRecipes('lab', state.storage, ['craft_ai_core'])) ar.push(getData("recipe", "print_ai_core_blueprint"));
+			} for(id in this.info.params.blueprints){
+				var cur = state.storage.get(id).getInt(); if(cur == null) cur = 1;
+				if(cur &lt; 4) ar.push(getData("recipe", "print_blueprint"+(cur+1)+id));
+			} return ar;
+		}
+		</script></init>
+		<onAlternate>
+			<section if="area.getId(0,0,0) == 'metal'"><script>object.dispatchEvent(new ObjectEvent("warning", getText('warning.professor_lab')));</script><stop /></section>
+			<script>unlockBlueprints(state, object, ["blueprint_printer_blueprint"]);</script>
+		</onAlternate>
+	</structure>
+	<structure id="blueprint_printer_blueprint" extends="blueprint_printer_blueprint">
+		<init><script>buildHold = superBuildHold; updateRemainingReqs = superUpdate;</script></init>
+		<onSelect><break /></onSelect>
+	</structure>
+	<object id="professor" extends="professor">
+		<talk><achievement id="professor" /><choose>
+			<section if="killed">
+				<script>killed = false</script>
+				<dialogue section="professor" id="killed" speaker="this" />
+			</section>
+			<section if="!object.hasQuest('mine2') && !object.questComplete('mine2')">
+				<quest /><dialogue section="professor" id="intro1" speaker="this" />
+				<choose><section if="this.area.getById('blueprint_printer') == null">
+					<dialogue section="professor" id="intro2" speaker="this" />
+					<script if="!object.hasQuest('blueprint_printer') && !object.questComplete('blueprint_printer')">object.addQuest("blueprint_printer");</script><wait seconds="1" modal="false" />
+					<dialogue section="professor" id="intro3" speaker="this" />
+					<dialogue section="professor" id="intro4" pai="true" expression="happy" />
+					<dialogue section="professor" id="intro5" speaker="this" />
+					<dialogue section="professor" id="intro6" pai="true" expression="angry" />
+					<dialogue section="professor" id="intro7" speaker="object" />
+					<section if="!state.getFlag('subways')">
+						<dialogue section="professor" id="intro8" pai="true" expression="happy" />
+						<script if="!object.hasQuest('subways') && !object.questComplete('subways')">object.addQuest("subways");</script><wait seconds="1" modal="false" />
+					</section>
+					<choose>
+						<section if="var i = state.storage.get('mine').getInt(); return i == null || i < 2">
+							<dialogue section="professor" id="intro9" speaker="this" />
+							<script>object.addQuest("mine2")</script><wait seconds="1" modal="false" />
+							<dialogue section="professor" id="intro10" speaker="this" />
+						</section>
+						<script>var info = BaseInfo.get('quest', 'mine2'); for(p in state.getPlayers()) p.setCompleteQuest(info);</script>
+					</choose>
+				</section>
+				<section>
+					<run xml="BaseInfo.get('quest', 'blueprint_printer').xml" event="doComplete" />
+					<script>var info = BaseInfo.get('quest', 'mine2'); for(p in state.getPlayers()) p.setCompleteQuest(info);</script>
+				</section></choose><save />
+			</section>
+			<section if="this.area.getById('blueprint_printer') == null">
+				<dialogue section="professor" id="intro11" speaker="this" />
+			</section>
+			<section if="!hasRecipes('lab', state.storage, ['craft_ai_core'])">
+				<quest /><run xml="BaseInfo.get('quest', 'blueprint_printer').xml" event="doComplete" />
+			</section>
+			<section if="!object.hasQuest('exotic_matter') && !object.questComplete('exotic_matter')">
+				<dialogue section="professor" id="exotic_matter1" speaker="this" />
+				<dialogue section="professor" id="exotic_matter2" speaker="this" />
+				<quest /><script>object.addQuest("exotic_matter")</script><wait seconds="1" modal="false" />
+			</section>
+			<choose if="!hasBlueprints(state, ['worker_bay_blueprint'])">
+				<section if="object.inventory.getById('exotic_matter') != null">
+					<quest /><dialogue section="professor" id="exotic_matter5" speaker="this" />
+					<menu section="common">
+						<choice id="yes" if="object.inventory.getById('exotic_matter') != null">
+							<script modal="true">object.inventory.removeById("exotic_matter", 1);
+							var i = makeItem("exotic_matter"); i.storage.get("count").setString("-1");
+							object.dispatchEvent(new ObjectEvent("collect_item", i));
+							var q = object.getQuest("exotic_matter"); if(q != null) q.onComplete(object, onComplete); else onComplete();</script>
+						</choice>
+						<choice id="no">
+							<dialogue section="professor" id="exotic_matter9" speaker="this" />
+						</choice>
+					</menu>
+				</section>
+				<dialogue section="professor" id="scavenger" if="this.state.getArea('default').getById('scavenger').storage.get('found').getBool() != true" speaker="this" />
+				<dialogue section="professor" id="exotic_matter3" speaker="this" />
+			</choose>
+			<dialogue section="professor" id="scavenger" if="this.state.getArea('default').getById('scavenger').storage.get('found').getBool() != true" speaker="this" />
+			<section>
+				<dialogue section="professor" id="tip1" speaker="this" />
+				<dialogue section="professor" id="tip2" speaker="this" />
+				<dialogue section="professor" id="tip3" speaker="this" />
+			</section>
+		</choose><break /></talk>
+	</object>
+
+	<structure id="professor_pod_blueprint" extends="blueprint" type="base" info="professor_pod" recipe="build_cryopod">
+		<init><script>for(m in this.models){m.tint.set(1,1,0.5); m.emissionTint.set(1,1,0.5);}</script></init>
+	</structure>
+	<script>function removeGlobalQuest(state, id){
+		for(p in state.players){var q = p.getQuest(id); if(q != null) p.remQuest(q);}
+	} function professorLeave(state){
+		var lab_id = state.areas.indexOf(state.getArea("lab")); for(p in state.players) if(p.area_id == lab_id){
+			var c = getScreenForPlayer(p); if(c != null) runProcedure("return_to_start", null, c);
+			else {
+				p.setPosition(state.campaign.x, state.campaign.y, state.campaign.z); var a = state.getArea(state.campaign.area);
+				if(a != null){adjustPos(p, a); p.area_id = state.areas.indexOf(a);}
+			}
+		} removeGlobalQuest(state, "blueprint_printer"); removeGlobalQuest(state, "survivor_locator"); removeGlobalQuest(state, "exotic_matter");
+		var l = state.getArea("lab"); var items = l.items.items.copy(); l.clear(); l.generate("prof_leave"); state.setFlag("prof_leave", true); var s = state.getArea("default").getById("scavenger"); if(s != null) s.remove();
+		var d = l.info.params.prof_lab; for(p in items){p.setPosition(null, p.x+d.x, p.y+d.y, p.z+d.z); l.items.add(p);}
+		state.setFlag('disable_bot', true); //TODO: if this was false before, we should probably have PAI mention that the bots are now friendly and wonder who did it (the original aground player)
+	}
+	</script>
+	<area id="lab" extends="lab">
+		<infoInit>
+		this.shadow_z = 28; this.infinite_water_z = -1; this.params.prof_lab = new Node3D(10,26,30);
+		this.params.getName = function(state, x, y, z){
+			var p = this.params.prof_lab; tmpBounds.set(p.x,p.y,p.z,16,10,8);
+			if(!state.getFlag('prof_leave') || tmpBounds.contains(x,y,z)) return getText("map.professor_lab");
+			else return getText("map.sandbox");
+		} </infoInit>
+		<atmosphere sun="{core}/world/star.png" moon="{core}/world/moon.png" stars="{core}/world/stars.png" axial_tilt="0" />
+		<generate if="data == 'prof_leave'">
+		Generate.setCube(this,"bedrock",64,64,1);
+		var scale = 0.1, seed = this.state.storage.get("seed").getFloat(), ar = [], array = [];
+		for(y in 1...63) for(x in 1...63){
+			var dx = x-32, dy = y-32, len = Math.sqrt(dx*dx+dy*dy), n = (noise(x*scale, y*scale, seed)*4+4);
+			len = Math.min(32, len)-n; var ht = Math.round(Utils.interp(1, 38, Utils.clamp((32-len)*0.125, 0, 1)));
+			var h = Utils.max(0, (ht>>1)-Math.floor(n));
+			if(h > 0) Generate.setCube(this,"rock",1,1,h,x,y,1);
+			if(len >= 20){
+				Generate.setCube(this,"sand",1,1,ht-h,x,y,h+1);
+				ar.push(new Node3D(x,y,ht)); for(z in (h+1)...(ht-5)) Generate.addArray(array, x, y, z, seed);
+			} else Generate.setCube(this,"cave",1,1,ht-h,x,y,h+1);
+		} var ramps = []; for(p in ar){
+			if(this.isBlocking(p.x-1,p.y,p.z) == -1 || this.isBlocking(p.x+1,p.y,p.z) == -1 || this.isBlocking(p.x,p.y-1,p.z) == -1 || this.isBlocking(p.x,p.y+1,p.z) == -1){this.set(p.x, p.y, p.z, "sand_ramp"); ramps.push(p);}
+			else if(p.z &lt; 36 &amp;&amp; random() &lt; 0.2) this.spawn("structure","seaweed",p.x+0.5,p.y+0.5,p.z+1);
+			if(random() &lt; 0.07) this.setOverlay(p.x, p.y, p.z, "shells");
+		} for(p in ramps) Generate.autoRamp(this, p.x, p.y, p.z); Generate.autoFlood(this, 0, 0, 38);
+        array.sort(Generate.sortPoints); var ct = Math.floor(array.length*0.025);
+        for(i in 0...ct){var p = array[i]; this.set(p.x, p.y, p.z, "sand", "chromium");}
+        for(z in 1...39){
+            for(x in 0...64){this.set(x,0,z,"window"); this.set(x,63,z,"window");}
+            for(y in 1...63){this.set(0,y,z,"window"); this.set(63,y,z,"window");}
+        } var p = this.info.params.prof_lab; Generate.mine(this, 15,9,7, p.x, p.y, p.z);
+		Generate.mine(this, 1,2,2, p.x+16, p.y+4, p.z+2);
+		for(z in 32...39){
+			Generate.mine(this, 1,2,2,z-5,30,z+1);
+			for(y in 30...32){this.set(z-5,y,z,"cave_ramp",null,73); if(z >= 34) this.set(z-8,y,z,"cave_ramp",null,70);}
+		} this.info.params.makeLab(this, p.x, p.y, p.z);
+		this.spawn("structure", "blueprint_printer", p.x+7, p.y+7, p.z+2, PI);
+		this.spawn("structure", "teleportal", p.x+4, p.y+5, p.z+2, -PI/2);
+		this.spawn("structure", "professor_pod", p.x+12, p.y+3, p.z+2, PI);
+		var g = this.spawn("structure", "generator", p.x+12, p.y+7, p.z+2);
+		g.inventory.addItem(makeItem('exotic_matter')); g.storage.get('recipe').setString("fuel_exotic_matter");
+		var interior = [];
+		makeBuilding(this, "brick", 32, 34, 38, 12, 10, 3, interior, false);
+		for(y in 25...38) for(x in 15...28){
+			var dx = x-21, dy = y-31, len = Math.sqrt(dx*dx+dy*dy), n = noise(x*scale, y*scale, seed)*2;
+			len -= n; var ht = Math.round((6-len)*3); if(ht > 0) Generate.setCube(this,"rock",1,1,ht,x,y,38);
+		} for(y in 14...27) for(x in 29...42){
+			var dx = x-35, dy = y-20, len = Math.sqrt(dx*dx+dy*dy), n = noise(x*scale, y*scale, seed)*2;
+			len -= n; var ht = Math.round((6-len)*0.5); if(ht >= 0){
+				if(ht > 0) Generate.mine(this, 1, 1, ht, x, y, 38-ht+1); this.set(x,y,38-ht,"cave","black");
+			}
+		}
+		this.spawn("structure", "bunker_broken4", 48, 28, 39).setRotation(0,0,1);
+		this.spawn("structure", "bunker_broken5", 42, 26, 39).setRotation(0,0,2);
+		this.spawn("structure", "bunker_broken6", 45, 25, 39).setRotation(0,0,-1);
+		this.spawn("structure", "vending_debris", 44.5, 41, 39, PI/2);
+		this.info.shadow_z = 0;
+		addCaveOres(this,62,62,37,1,1,1);
+		addRockOres(this,62,62,45,1,1,1);
+		</generate>
+		<init><script>
+		this.addWorldBlock(0,0,0,1,64,128); this.addWorldBlock(63,0,0,1,64,128);
+        this.addWorldBlock(0,0,0,64,1,128); this.addWorldBlock(0,63,0,64,1,128); this.addWorldBlock(0,0,127,64,64,1);
+		this.info.shadow_z = (this.getId(0,0,0) == 'metal')?28:0;
+		</script></init>
+		<screenEnter><super /><blockingEvent if="state.getFlag('prof_leave') && !state.getFlag('pai_prof_leave')"><section if="!state.getFlag('pai_prof_leave')">
+			<script>state.setFlag('pai_prof_leave', true)</script>
+			<dialogue section="pai" id="prof_leave" pai="true" expression="sad" />
+		</section></blockingEvent></screenEnter>
+	</area>
+</data>
