@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<texture id="subway" color="subway.png" normal="subway_n.png" />
+    <texture id="subway_floor" color="subway_floor.png" normal="subway_floor_n.png" />
+    <texture id="subway_ceiling" color="subway_ceiling.png" normal="subway_ceiling_n.png" />
+    <texture id="subway_ramp" color="subway_ramp.png" normal="subway_ramp_n.png" />
+    <texture id="subway_ramp_l" color="subway_ramp_l.png" normal="subway_ramp_l_n.png" />
+    <texture id="subway_ramp_r" color="subway_ramp_r.png" normal="subway_ramp_r_n.png" />
+    <texture id="subway_edge" color="subway_edge.png" normal="subway_edge_n.png" />
+    <texture id="gravel" color="gravel.png" normal="gravel_n.png" />
+    <setSpecular normal="subway_n.png" specular="white" scale="0.3" />
+    <setSpecular normal="subway_floor_n.png" specular="white" />
+    <setSpecular normal="subway_ceiling_n.png" specular="white" scale="0.7" />
+    <setSpecular normal="subway_ramp_n.png" specular="white" />
+    <setSpecular normal="subway_ramp_l_n.png" specular="white" />
+    <setSpecular normal="subway_ramp_r_n.png" specular="white" />
+    <setSpecular normal="subway_edge_n.png" specular="white" />
+    <setSpecular normal="gravel_n.png" specular="white" />
+    <material id="subway" sides="subway" top="subway_floor" bottom="subway_ceiling" mine_power="3" step="concrete">
+        <infoInit>this.params.truss = 'truss';</infoInit>
+        <onDig><script>state.setFlag('subways', true)</script><achievement id="subway" /></onDig>
+    </material>
+    <material id="subway_edge" name="material>subway" texture="subway_edge" mine_power="3" step="concrete" />
+    <material id="gravel" texture="gravel" mine_power="3">
+        <onDig><script>state.setFlag('subways', true)</script><achievement id="subway" /></onDig>
+    </material>
+    <material id="subway_ramp" name="material>subway" sides="subway" top="subway_ramp" bottom="subway_ceiling" ramp="true" mine_power="3" step="concrete">
+        <infoInit>this.params.truss = 'truss';</infoInit>
+        <onDig><script>state.setFlag('subways', true)</script><achievement id="subway" /></onDig>
+    </material>
+    <material id="subway_ramp_l" top="subway_ramp_l" paintable="true" />
+    <material id="subway_ramp_r" top="subway_ramp_r" paintable="true" />
+
+    <texture id="asphalt" color="asphalt.png" normal="asphalt_n.png" />
+    <texture id="cracks" color="cracks.png" normal="cracks_n.png" />
+    <texture id="road_edge_v" color="road_edge_v.png" normal="road_edge_v_n.png" />
+    <texture id="road_edge_h" color="road_edge_h.png" normal="road_edge_h_n.png" />
+    <texture id="road_edge_x" color="road_edge_x.png" normal="road_edge_x_n.png" />
+    <texture id="parking" color="parking.png" normal="road_edge_v_n.png" />
+    <texture id="road_v" color="road_v.png" normal="cracks_n.png" />
+    <texture id="road_h" color="road_h.png" normal="cracks_n.png" />
+    <texture id="skyscraper" color="skyscraper.png" normal="skyscraper_n.png" />
+    <texture id="building" color="building.png" normal="building_n.png" />
+    <texture id="brick" color="brick.png" normal="brick_n.png" />
+    <texture id="brick_window" color="brick_window.png" normal="brick_window_n.png" />
+    <texture id="brick_cracks" color="brick_cracks.png" normal="brick_cracks_n.png" />
+    <texture id="skyscraper_cracks" color="skyscraper_cracks.png" normal="skyscraper_cracks_n.png" />
+    <texture id="building_cracks" color="building_cracks.png" normal="building_cracks_n.png" />
+    <texture id="truss" color="truss.png" normal="truss_n.png" />
+    <setSpecular normal="asphalt_n.png" specular="white" scale="0.1" />
+    <setSpecular normal="road_edge_v_n.png" specular="white" scale="0.1" />
+    <setSpecular normal="road_edge_h_n.png" specular="white" scale="0.1" />
+    <setSpecular normal="road_edge_x_n.png" specular="white" scale="0.1" />
+    <setSpecular normal="cracks_n.png" specular="white" scale="0.1" />
+    <setSpecular normal="skyscraper_n.png" specular="skyscraper_s.png" scale="1" />
+    <setSpecular normal="building_n.png" specular="building_s.png" scale="1" />
+    <setSpecular normal="skyscraper_cracks_n.png" specular="black" />
+    <setSpecular normal="building_cracks_n.png" specular="black" />
+    <setSpecular normal="brick_cracks_n.png" specular="black" />
+    <setSpecular normal="truss_n.png" specular="white" scale="0.7" />
+    <setSpecular normal="brick_n.png" specular="black" />
+    <setSpecular normal="brick_window_n.png" specular="brick_window_s.png" scale="1" />
+    <material id="asphalt" texture="asphalt" mine_power="3" step="rock" />
+    <material id="cracks" texture="cracks" paintable="true" />
+    <material id="road_v" texture="cracks" top="road_v" paintable="true" />
+    <material id="road_h" texture="cracks" top="road_h" paintable="true" />
+    <material id="road_edge_v" texture="cracks" top="road_edge_v" paintable="true" />
+    <material id="road_edge_h" texture="cracks" top="road_edge_h" paintable="true" />
+    <material id="road_edge_x" texture="cracks" top="road_edge_x" paintable="true" />
+    <material id="parking" texture="cracks" top="parking" paintable="true" />
+    <material id="skyscraper" texture="subway_ceiling" sides="skyscraper" mine_power="4" step="metal" block_light="false">
+        <infoInit>this.params.truss = 'truss';</infoInit>
+    </material>
+    <material id="building" texture="subway_ceiling" sides="building" mine_power="4" step="concrete" block_light="false">
+        <infoInit>this.params.truss = 'truss';</infoInit>
+    </material>
+    <material id="brick" texture="brick" mine_power="3" step="concrete" />
+    <material id="brick_window" texture="brick" name="material>brick" sides="brick_window" mine_power="3" step="concrete" block_light="false" />
+    <material id="skyscraper_cracks" sides="skyscraper_cracks" paintable="true" />
+    <material id="building_cracks" sides="building_cracks" paintable="true" />
+    <material id="brick_window_cracks" sides="brick_cracks" paintable="true" />
+    <material id="truss" texture="truss" opaque="false" mine_power="3" block_water="false" step="metal" />
+    <material id="truss_ramp" name="material>truss" extends="truss" ramp="true" />
+
+    <texture id="sand" color="sand.png" normal="sand_n.png" />
+    <texture id="shells" color="shells.png" normal="shells_n.png" />
+    <setSpecular normal="sand_n.png" specular="black" />
+    <setSpecular normal="shells_n.png" specular="black" />
+    <material id="sand" texture="sand" mine_power="2" />
+    <material id="shells" top="shells" paintable="true" />
+    <material id="sand_ramp" name="material>sand" texture="sand" ramp="true" mine_power="2" />
+
+    <texture id="sidewalk" color="sidewalk.png" normal="sidewalk_n.png" />
+    <setSpecular normal="sidewalk_n.png" specular="black" />
+    <material id="sidewalk" texture="sidewalk" mine_power="3" />
+    
+    <texture id="chromium" color="chromium.png" normal="chromium_n.png" />
+    <material id="chromium" texture="chromium" item="chromium" />
+</data>
