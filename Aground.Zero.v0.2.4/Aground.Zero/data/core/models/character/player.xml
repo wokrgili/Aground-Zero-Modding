@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <data type="customOption">
+    this.type = this.xml.get("type"); this.name = this.xml.exists("name")?this.xml.get("name"):'customize>'+this.id;
+    this.hsv = eval(this.xml.get("hsv")); this.color = parseColor(this.xml.get("color")); this.value = this.xml.get("value");
+    this.getName = function(){var n = getText(this.name); if(n == null) return new Static(this.name); else return n;}
+    </data>
+
+    <model id="player" path="player.wobj" normal="playerN.png" emission="playerE.png" />
+    <setSpecular normal="playerN.png" specular="playerS.png" scale="1" />
+
+    <include id="player_body.xml" includeRoot="true" />
+    <tile id="player.suit">
+        <!-- BACKPACK -->
+        <tile sheet="player_body.png" x="0" />
+        <tile sheet="player_body.png" x="1" />
+        <tile sheet="player_body.png" x="2" />
+
+        <!-- BODY -->
+        <tile sheet="player_body.png" x="6" />
+        <tile sheet="player_body.png" x="7" />
+        <tile sheet="player_body.png" x="8" />
+        <tile sheet="player_body.png" x="9" />
+        <tile sheet="player_body.png" x="10" />
+    </tile>
+    <tile id="player.suit.color">
+        <!-- BACKPACK -->
+        <tile sheet="player_body.png" x="3" />
+        <tile sheet="player_body.png" x="4" />
+        <tile sheet="player_body.png" x="5" />
+
+        <!-- BODY -->
+        <tile sheet="player_body.png" x="11" />
+        <tile sheet="player_body.png" x="12" />
+        <tile sheet="player_body.png" x="13" />
+        <tile sheet="player_body.png" x="14" />
+        <tile sheet="player_body.png" x="15" />
+    </tile>
+    <tile id="player.face" sheet="player_body.png" x="16">
+        <tile sheet="player_body.png" x="17" />
+        <tile sheet="player_body.png" x="18" />
+    </tile>
+
+    <include id="player_head.xml" includeRoot="true" />
+    <tile id="player.eyes.cyborg">
+        <!-- LEFT -->
+        <tile sheet="player_head.png" x="0" />
+
+        <!-- RIGHT -->
+        <tile sheet="player_head.png" x="1" />
+    </tile>
+    <tile id="player.eyes.base">
+        <!-- LEFT -->
+        <tile sheet="player_head.png" x="3" />
+        <tile sheet="player_head.png" x="4" />
+
+        <!-- RIGHT -->
+        <tile sheet="player_head.png" x="5" />
+        <tile sheet="player_head.png" x="6" />
+    </tile>
+    <tile id="player.eyes.iris">
+        <!-- LEFT -->
+        <tile sheet="player_head.png" x="8" />
+
+        <!-- RIGHT -->
+        <tile sheet="player_head.png" x="10" />
+    </tile>
+    <tile id="player.eyes.pupil">
+        <!-- LEFT -->
+        <tile sheet="player_head.png" x="9" />
+
+        <!-- RIGHT -->
+        <tile sheet="player_head.png" x="11" />
+    </tile>
+
+    <tile id="player.hair" sheet="player_head.png" x="7">
+        <!-- EYEBROWS -->
+        <tile sheet="player_head.png" x="2" />
+
+        <!-- SCALP -->
+        <tile sheet="player_head.png" x="12" />
+        <tile sheet="player_head.png" x="13" />
+        <tile sheet="player_head.png" x="14" />
+    </tile>
+    <tile id="player.teeth" sheet="player_head.png" x="15" />
+
+    <script>
+    function getPlayerRenderable(storage){
+        var d = getData('customOption', storage.get('hair').getString()); var v = d == null?null:d.value;
+        var r = getModel('player').clone(); r.renderable = r.renderable.makeSubset(r.renderable.subsetMask(function(n){
+            return n == v || !StringTools.startsWith(n, "hair_");
+        })); return r;
+    }
+    function updatePlayerModel(storage, model, tex){
+        var m = getPlayerRenderable(storage), r = model.renderable;
+        if(r == null || r.renderable != m.renderable){
+            r = m; model.setRenderable(r); model.setAnimation("idle1", true, null, 1);
+        } r.set("colorTexture", tex);
+    }
+    function getCustomOptions(type){
+		var ret = []; for(r in getDataByType("customOption")) if(r.type == type) ret.push(r); return ret;
+    }
+    function makeOptionValue(c, mutable){
+        function getCur(){var id = mutable.getString(); for(i in 0...(c.options.length)) if(c.options[i].id == id) return i; return -1;}
+        var d = new Mutable(); d.set(getCur()); d.addEventListener("updated", function(e){mutable.setString(c.options[d.get()].id);});
+        mutable.addEventListener("updated", function(e){d.set(getCur());});
+        return new OptionValue(c.name == null?c.id:c.name, d, function(i){return (i == -1)?getText('customize>custom'):c.options[i].getName();}, 0, c.options.length);
+    }
+
+    function addPlayerHair(id, value){
+        evalXml("&lt;customOption id='player."+id+"' name='customize>"+id+"' type='player.hair' value='"+value+"' />");
+    }
+    var skin_colors = 1;
+    function addPlayerSkin(color){
+        var id = skin_colors++;
+        evalXml("&lt;customOption id='player.skin"+id+"' name='"+id+"' type='player.skin' color='"+color+"' />");
+    }
+    function addPlayerHairC(id, color){
+        evalXml("&lt;customOption id='player.hair"+id+"' name='customize>"+id+"' type='player.hairc' color='"+color+"' />");
+    }
+    function addPlayerEyeC(id, color){
+        evalXml("&lt;customOption id='player.eye"+id+"' name='customize>"+id+"' type='player.eyec' color='"+color+"' />");
+    }
+    function addPlayerSuit(id, hsv){
+        evalXml("&lt;customOption id='player.suit"+id+"' name='customize>"+id+"' type='player.suit' hsv='"+hsv+"' />");
+    }
+    for(id in ["bowl","ponytail","wavy","undercut","bald"]) addPlayerHair(id, "hair_"+id);
+    for(c in ["FFFFFF", "9E2BDB7", "11C59A90", "1AA87D71", "228A6356", "2B6D4C3F", "3350362B", "3C332219"]) addPlayerSkin(c);
+    var hairc = [{c:"130e01", id:"black"}, {c:"3c2004", id:"dbrown"}, {c:"5e310d", id:"brown"}, {c:"b97a42", id:"lbrown"}, {c:"ba590f", id:"orange"},
+        {c:"9fc1bb", id:"gray"}, {c:"bfa861", id:"blond"}, {c:"b49025", id:"dblond"}, 
+        {c:"0099cc", id:"blue"}, {c:"b21b1b", id:"red"}, {c:"d6639d", id:"pink"}, {c:"fff3dd", id:"white"}, {c:"719510", id:"green"},
+        {c:"916fb5", id:"purple"}, {c:"42c697", id:"teal"}];
+    for(c in hairc) addPlayerHairC(c.id, c.c);
+    var eyec = [{c:"130e01", id:"black"}, {c:"0c436e", id:"dblue"}, {c:"265cc5", id:"blue"}, {c:"5ab1ea", id:"lblue"}, {c:"0a7817", id:"green"}, {c:"82ea5a", id:"lgreen"},
+        {c:"4f2300", id:"dbrown"}, {c:"894900", id:"brown"},{c:"f6c757", id:"yellow"}, {c:"7f0a95", id:"purple"}, {c:"b02222", id:"red"}];
+    for(c in eyec) addPlayerEyeC(c.id, c.c);
+    var suit = [{id:"red", hsv:[0,10,0]},{id:"orange", hsv:[40,10,20]},{id:"yellow", hsv:[60,10,80]},{id:"green", hsv:[100,10,60]},
+        {id:"teal", hsv:[180,10,60]},{id:"blue", hsv:[230,10,60]},{id:"purple", hsv:[270,10,50]},{id:"pink", hsv:[305,10,70]},
+        {id:"white", hsv:[0,-100,100]}];
+    for(c in suit) addPlayerSuit(c.id, c.hsv);
+    </script>
+    <customOption id="player.human_eye" name="customize.human_eye" type="player.eye">
+        <texture>
+            <tile id="player.eyes.base" />
+            <tile id="player.eyes.iris" color="var d = getData('customOption', storage.get('eyec').getString()); return d == null?0xffffff:d.color;" white="204" />
+            <tile id="player.eyes.pupil" />
+        </texture>
+    </customOption>
+    <customOption id="player.cyborg_eye" name="customize.cyborg_eye" type="player.eye">
+        <texture>
+            <tile id="player.eyes.base" color="var d = getData('customOption', storage.get('eyec').getString()); return d == null?0xffffff:d.color;" white="204" />
+            <tile id="player.eyes.cyborg" color="var d = getData('customOption', storage.get('eyec').getString()); return d == null?0xffffff:d.color;" white="24" />
+        </texture>
+    </customOption>
+
+    <procedure id="player_diffuse" width="2048" height="2048" bg="0">
+        <tile id="player.suit.color" hsv="var d = getData('customOption', storage.get('suit').getString()); return d == null?null:d.hsv;" />
+        <tile id="player.suit" />
+        <tile id="player.teeth" />
+        <run xml="var d = getData('customOption', storage.get('eye').getString()); return d == null?null:d.xml;" event="texture" />
+        <script>var d = getData('customOption', storage.get('skin').getString()); skin_col = d == null?0xffffff:d.color;</script>
+        <tile id="player.face" color="skin_col&0xffffff" white="224" hsv="var c = (skin_col>>24)&0xff; [0,-c,0,c]" />
+        <tile id="player.hair" color="var d = getData('customOption', storage.get('hairc').getString()); return d == null?0xffffff:d.color;" white="216" />
+    </procedure>
+
+    <window id="player_customize" width="800" height="528" closeable="true">
+        <tile id="window.title" x="241" y="-14" />
+		<text text="getText(window.params.title==null?'customize.title':window.params.title)" size="20" color="dbc898" width="800" x="0" y="-12" />
+        <script>
+        window.params.id = eval(window.params.index);
+        window.params.orig = eval(window.params.storage); window.params.storage = new Storage(); window.params.storage.copy(window.params.orig);
+        window.params.info = eval(window.params.info); window.params.icon = makeIcon(384,512);
+        var dist = window.params.dist == null?1.3:eval(window.params.dist), offZ = window.params.offsetZ == null?0:eval(window.params.offsetZ);
+        var m = new Model(); m.transform.copy(window.params.info.modelTransform); window.params.camera = new Camera(); window.params.camera.fov = 60;
+        window.params.angle = -0.4; var wnd = window; window.params.updateTransform = function(){
+            var c = wnd.params.camera; c.reset(); c.rotation.pan(PI); c.rotation.tilt(0.1); c.rotation.pan(wnd.params.angle);
+            c.moveRelative(0, dist, -offZ);
+        } window.params.updateTransform();
+        var genTex = window.params.info.params.genTexture;
+        window.params.models = [m]; window.params.tex = makeIcon(eval(genTex.get("width")),eval(genTex.get("height")));
+        var l = Math.sqrt(dist)*12; window.params.light = new Color(l,l,l); window.params.ambient = new Color(0.25,0.25,0.25);
+        var batch_update = false; function updateCustomParams(e){
+            if(!batch_update){
+                setTexture(wnd.params.tex, genTex, "storage", wnd.params.storage); wnd.params.info.params.updateModel(wnd.params.storage, m, wnd.params.tex);
+            }
+        }
+        var ar = [], map = new StringMap(); window.params.options = ar; window.params.map = map;
+        for(c in window.params.info.params.customizations){
+            var d = window.params.storage.get(c.id), v = null;
+            switch(c.type){
+                case "option": if(!d.isString() &amp;&amp; c.options.length > 0){d.setString(c.value == null?c.options[0].id:c.value);} v = makeOptionValue(c, d);
+                case "array": if(!d.isInt()) d.setInt(c.value == null?0:c.value); v = new ArrayOptionValue(c.name == null?c.id:c.name, d, c.options);
+                case "float": if(!d.isFloat()) d.setFloat(c.value == null?0:c.value); v = new FloatValue(c.name == null?c.id:c.name, d, c.min, c.max);
+                case "bool": if(!d.isBool()) d.setBool(c.value == null?false:c.value); v = new BoolValue(c.name == null?c.id:c.name, d);
+                case "string": if(!d.isString()){if(c.value == null) d.setString(""); else {var m = getText(c.value); d.setString(m == null?c.value:m.get());}}
+                v = new StringValue(c.name == null?c.id:c.name, d);
+            } if(v != null){ar.push(v); map.set(v.id, c);}
+        }
+
+        window.params.randomize = function(){
+            batch_update = true;
+            for(c in wnd.params.info.params.customizations){
+                var d = wnd.params.storage.get(c.id);
+                switch(c.type){
+                    case "option": if(c.options.length > 0) d.setString(selectRandom(c.options).id);
+                    case "array": if(c.options.length > 0) d.setInt(randInt(0, c.options.length));
+                    case "float": d.setFloat(random()*(c.max-c.min)+c.min);
+                    case "bool": d.setBool(random() &lt; 0.5);
+                }
+            } batch_update = false; updateCustomParams(null);
+        }
+        if(window.params.newChara == "true"){
+            if(settings.get("customize_"+window.params.info.id+window.params.id).hasData()){
+                var o = settings.get("customize_"+window.params.info.id+window.params.id).getObject();
+                for(c in window.params.info.params.customizations) window.params.storage.get(c.id).copy(o.get(c.id));
+            } else {window.params.randomize(); return;}
+        } updateCustomParams(null);
+        </script>
+        <image image="window.params.icon" x="8" y="8" />
+        <border ui="box" x="8" y="8" width="384" height="512" />
+        <choose>
+            <formattedText section="customize" id="rotate.keyboard" width="384" x="16" y="512-40" align="left" if="isKeyboard()"/>
+            <formattedText section="customize" id="rotate.gamepad" width="384" x="16" y="512-40" align="left" />
+        </choose>
+		<list scroll="true" rows="13" cols="1" x="400" y="30">
+		    <renderer type="option" section="customize" width="391" paddingY="12" ui="item">
+				<onHover><script>var v = item == null?null:window.params.map.get(item); window.details.x = button.x; window.details.setStringPos(v == null?null:v.tooltip, button.y+36);</script></onHover>
+			</renderer>
+            <init>for(o in window.params.options) addItem(o);</init>
+		</list>
+		<button x="272" y="518" section="common" id="ok" width="160" height="30">
+			<onSelect>
+				<script>
+                loseFocus(container);
+                var o = settings.get("customize_"+window.params.info.id+window.params.id).setObject();
+                for(c in window.params.info.params.customizations){
+                    var d = window.params.storage.get(c.id); o.get(c.id).copy(d); window.params.orig.get(c.id).copy(d);
+                } settings.flush(); enterChild(); window.close();
+                </script>
+			</onSelect>
+		</button>
+        <button x="452" y="518" section="common" id="random" width="160" height="30">
+			<onSelect><script>window.params.randomize();</script></onSelect>
+		</button>
+		<button x="632" y="518" section="common" id="cancel" width="160" height="30">
+			<onSelect><script>window.close();</script></onSelect>
+		</button>
+        <onFrame>
+        if(this.params.icon == null) return; this.params.models[0].step(frames); renderIcon(this.params.icon, this.params.camera, this.params.models, null, this.params.light, this.params.ambient);
+        var dx = this.controls.getStrength(20)+this.controls.getStrength(28)-this.controls.getStrength(22)-this.controls.getStrength(30);
+        if(dx != 0){this.params.angle += 0.05*frames*dx; this.params.updateTransform();}
+        </onFrame>
+        <added><script>for(c in this.params.info.params.customizations) if(c.update != false) this.params.storage.get(c.id).addEventListener("updated", updateCustomParams);</script></added>
+        <removed><script>for(c in this.params.info.params.customizations) this.params.storage.get(c.id).removeEventListener("updated", updateCustomParams);</script>
+        <script if="!beforeInit">removeIcon(this.params.icon); removeIcon(this.params.tex); this.params.icon = null;</script></removed>
+    </window>
+</data>

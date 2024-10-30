@@ -1,0 +1,21 @@
+<tilesheet id='player_body.png' width='2048' height='2048'>
+	<image frame='0' x='0' y='675' width='605' height='1005' offsetX='1083' offsetY='990' />
+	<image frame='1' x='445' y='1684' width='128' height='269' offsetX='764' offsetY='986' />
+	<image frame='2' x='1616' y='0' width='331' height='593' offsetX='1693' offsetY='1442' />
+	<image frame='3' x='1652' y='1417' width='183' height='169' offsetX='1387' offsetY='1377' />
+	<image frame='4' x='1669' y='675' width='277' height='197' offsetX='1730' offsetY='1437' />
+	<image frame='5' x='1669' y='876' width='260' height='194' offsetX='1348' offsetY='1700' />
+	<image frame='6' x='609' y='1176' width='262' height='821' offsetX='1786' offsetY='584' />
+	<image frame='7' x='1467' y='503' width='71' height='58' offsetX='860' offsetY='1990' />
+	<image frame='8' x='609' y='675' width='1056' height='497' offsetX='3' offsetY='965' />
+	<image frame='9' x='1173' y='0' width='439' height='499' offsetX='1294' offsetY='510' />
+	<image frame='10' x='875' y='1176' width='428' height='479' offsetX='1616' offsetY='91' />
+	<image frame='11' x='875' y='1659' width='425' height='227' offsetX='1617' offsetY='115' />
+	<image frame='12' x='0' y='1684' width='441' height='276' offsetX='143' offsetY='1178' />
+	<image frame='13' x='1523' y='1176' width='430' height='237' offsetX='1299' offsetY='540' />
+	<image frame='14' x='1307' y='1176' width='212' height='679' offsetX='1836' offsetY='655' />
+	<image frame='15' x='1523' y='1417' width='125' height='266' offsetX='962' offsetY='1130' />
+	<image frame='16' x='0' y='0' width='1169' height='671' offsetX='0' offsetY='1377' />
+	<image frame='17' x='1173' y='503' width='143' height='143' offsetX='1820' offsetY='687' />
+	<image frame='18' x='1320' y='503' width='143' height='143' offsetX='444' offsetY='1043' />
+</tilesheet>
