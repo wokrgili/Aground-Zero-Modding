@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <sound id="step.concrete" path="concrete" count="8" />
+    <sound id="bot_treads" />
+    <sound id="bot_step" count="4" />
+
+    <volume name="bot_treads" value="70" />
+    <volume name="bot_step" value="50" />
+</data>
