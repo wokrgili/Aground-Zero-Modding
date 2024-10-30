@@ -107,8 +107,8 @@
     <recipe id="craft_1x_tomato" cost="495" time="4" type="basic"><requires id="tomatoes" count="99" /><creates id="1x_tomato" count="1" /></recipe>
     <recipe id="craft_1x_wheat" cost="495" time="4" type="basic"><requires id="wheat" count="99" /><creates id="1x_wheat" count="1" /></recipe>
     <recipe id="craft_1x_sugar" cost="990" time="4" type="basic"><requires id="sugar" count="99" /><creates id="1x_tomato" count="1" /></recipe>
-    <recipe id="craft_1x_meat" cost="1485" time="4" type="basic"><requires id="meat" count="99" /><creates id="1x_tomato" count="1" /></recipe>
-    <recipe id="craft_1x_milk" cost="1980" time="4" type="basic"><requires id="milk" count="99" /><creates id="1x_tomato" count="1" /></recipe>
+    <recipe id="craft_1x_meat" cost="1980" time="4" type="basic"><requires id="meat" count="99" /><creates id="1x_tomato" count="1" /></recipe>
+    <recipe id="craft_1x_milk" cost="1485" time="4" type="basic"><requires id="milk" count="99" /><creates id="1x_tomato" count="1" /></recipe>
 
 
 
