@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<light id="professor_pod" type="point" r="3" g="9" b="6" />
+	<structure id="professor_pod" extends="base_structure" model="cryopod" powered="true" power_use="2" defense="999" entrance="new Point(0,-1.5,0)">
+		<shape type="box" y="0.25" width="1.85" height="1.2" depth="2" />
+		<init><script>this.models[0].tint.set(1,1,0.5); this.models[0].emissionTint.set(1,1,0.5);</script></init>
+		<light id="professor_pod" />
+		<onSelect>
+			<script>object.dispatchEvent(new ObjectEvent("warning", getText('structure.professor_pod_use')));</script>
+		</onSelect>
+		<onAlternate><section if="area.getId(0,0,0) == 'metal'"><script>object.dispatchEvent(new ObjectEvent("warning", getText('warning.professor_lab')));</script><stop /></section></onAlternate>
+	</structure>
+	<structure id="lab_teleportal" name="structure>teleportal" indicator="false" extends="teleportal" teleport="teleportal" access="action" entrance="new Point(0,1.5,0)">
+		<init><script>
+		free_teleport = null;
+		var superSetTeleport = setTeleport; function setTeleport(s){
+			if(free_teleport != null &amp;&amp; free_teleport.area == null) free_teleport = null;
+			if(free_teleport == null) free_teleport = s; superSetTeleport(s);
+		} var superCanTeleportTo = canTeleportTo; function canTeleportTo(t){
+			return t != null &amp;&amp; (t == free_teleport || superCanTeleportTo(t));
+		}
+		</script></init>
+		<stateLoaded><script>
+		var ar = getTeleports(); if(ar.length > 0) free_teleport = ar[0];
+		</script></stateLoaded>
+	</structure>
+	<window id="bp_invcraft" extends="invcraft">
+		<script if="window.params.updateRecipes == null">var wnd = window; window.params.updateRecipes = function(e){wnd.update();}</script>
+		<added><script>for(id in ["blueprints", "suit", "mine", "craft", "build", "shovel", "laser_gun", "paint"]) state.storage.get(id).addEventListener("updated", this.params.updateRecipes)</script></added>
+		<removed><script>for(id in ["blueprints", "suit", "mine", "craft", "build", "shovel", "laser_gun", "paint"]) state.storage.get(id).removeEventListener("updated", this.params.updateRecipes)</script></removed>
+	</window>
+	<structure id="blueprint_printer" extends="inv_craft" ground="shadowL" power_use="5" model="lab" defense="9999" access="action" operate_particles="lab" loop_sfx="lab" entrance="new Point(-0.25,0.5,0)" viewPos="new Point(-0.25,0,0)">
+		<infoInit>
+		this.params.getEdgeTiles = structureLEdgeTiles; this.models[0].tint.set(1,0.8,0.6); this.params.blueprints = ["suit", "mine", "craft", "build", "shovel", "laser_gun", "paint"];
+		this.params.dispatchFrom.set(0,-0.5,0); this.params.dispatchTo = new Point(-1.5,-0.5,0);
+		</infoInit>
+		<shape type="box" y="-0.55" width="2" height="0.9" depth="1" />
+		<shape type="box" x="0.7" width="0.6" height="2" depth="1" />
+		<transform>matrix.setScale(0.5,0.5,0.5)</transform>
+        <model id="lab_glass" tint="55ffffff" type="transparent" />
+		<light id="lab" />
+		<recipe type="basic" />
+		<init><script>
+		this.models[0].setAnimation("lab|lab|arms|BaseLayer", true, null, 0);
+		function updateShouldProgress(){
+			if(!this.models[0].isAnimating()) this.models[0].animation.setAnimationSpeed(shouldProgress?1:0);
+		}
+		var superCompleteRecipe = completeRecipe;
+		function completeRecipe(r){superCompleteRecipe(r); this.models[0].setAnimation("lab|lab|flap|BaseLayer", false, function(){this.models[0].setAnimation("lab|lab|arms|BaseLayer", true); updateShouldProgress();}, 2);}
+		function getRecipes(state, object){return [];}
+		</script></init>
+		<onSelect><sound id="select" source="this" />
+		<window id="bp_invcraft" title="getText(this.info.params.name)" object="object" recipe="this.storage.get('recipe')" recipes="getRecipes(state, object)" progress="progress" enabled="this.storage.get('enabled')" />
+		<stop /></onSelect>
+	</structure>
+	<structure id="blueprint_printer_blueprint" extends="blueprint" type="base" info="blueprint_printer" recipe="build_blueprint_printer">
+		<infoInit>this.params.entrance = this.params.build.params.entrance; this.params.viewPos = this.params.build.params.viewPos;</infoInit>
+		<init><script>superBuildHold = buildHold; function buildHold(this, object, build, type, frames, recipe, partial, costs){return -1;}
+		superUpdate = updateRemainingReqs; function updateRemainingReqs(){}
+		</script></init>
+		<onSelect><script>container.gui.showWarning(getText('warning.professor_lab'));</script></onSelect>
+		<onDeath><section if="area.getId(0,0,0) == 'metal'"><script>this.setHealth(1); partial.set(0);</script><stop /></section></onDeath>
+	</structure>
+	<structure id="lab_generator" name="structure>generator" extends="base_generator" model="generator" power_gen="15" loop_sfx="generator" defense="9999" access="action" entrance="new Point(0,-1.5,0)">
+		<shape type="cylinder" radius="0.9" height="1.5" />
+		<transform>matrix.setScale(1.25,1.25,1.25); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<light id="exotic_matter_generator" /><particles id="exotic_matter_generator" />
+		<init><script>this.models[0].emissionTint.set(0.25,1.2,1.5);</script></init>
+	</structure>
+	<structure id="lab_door" self="STRUCTURE" block="WORLD|STRUCTURE|BLUEPRINT|PLAYER|NPC|ENEMY|ITEM|PROJECTILE" static="true" access="action">
+		<shape type="box" width="0.5" height="2" depth="2" />
+		<getSelection>selection.bounds.copy(this.info.aabb); selection.setTooltips(getText("actions.open{structure:structure>door}"), null); return true;</getSelection>
+		<onSelect>
+			<blockingEvent wait="false"><sound id="select" source="this" />
+			<dialogue section="npc" id="lab_door1" speaker="this.area.getById('professor')" />
+			<dialogue section="npc" id="lab_door2" speaker="this.area.getById('professor')" />
+			</blockingEvent>
+		</onSelect>
+	</structure>
+	<procedure id="demo_end">
+		<dialogue section="pai" id="outro1" pai="true" expression="happy" />
+		<save /><sound id="player_death" />
+		<lerp object="container.getChildAt(0)" hsv="[0,0,-100]" seconds="1" modal="false" />
+		<lerp object="container.gui" alpha="0" seconds="1" modal="true" />
+		<script>setGameSpeed(0)</script>
+		<window id="outro" />
+		<newGame campaign="credits" />
+	</procedure>
+	<object id="professor" extends="fake_npc" model="professor" talk_sfx="talking6" health_bar="Icon.fromTile(getTile('health_bar'),TYPE_EMISSIVE,0.8)">
+		<init><script>
+		var ar = ['lab_teleportal', 'blueprint_printer', 'blueprint_printer_blueprint', 'professor_pod', 'lab_generator'], cur = 0, to = null; shuffle(ar);
+		function getDestination(frames){
+			while(true){to = this.area.getById(ar[cur]); cur++; if(cur >= ar.length) cur = 0; if(to != null){go(to); break;}}
+		}
+		function playIdle(){this.models[0].setAnimation(random()>0.5?"idle2":"idle1", false, playIdle, 0.5, ANIM_TRANSITION, true); this.models[0].animation.isAnimating = false;}
+		function workAnim(){this.models[0].setAnimation("work", false, null, 0.5, ANIM_TRANSITION, true);}
+		function handleDestination(){
+			tmpPoint.copy(to.info.params.viewPos); to.invTransformPoint(tmpPoint); this.facePos(tmpPoint.x, tmpPoint.y, 15);
+			this.models[0].setAnimation(random()>0.5?"idle2":"idle1", false, workAnim, 0.5, ANIM_TRANSITION, true);
+		} killed = false;
+		</script></init>
+		<talk>
+			<achievement id="professor" /><quest /><run procedure="demo_end" />
+		</talk>
+		<onDeath>
+			<script>this.area.spawn("structure", "dead_professor", 12, 3, 2, PI); this.lerp(new ModelScaleKeyframe(0.25,0.25,0.25), 30, this.remove);</script>
+		</onDeath>
+	</object>
+	<recipe id="dead_professor" cost="3" />
+	<structure id="dead_professor" extends="build_object" object="professor" access="0" recipe="dead_professor">
+		<particles id="construct" />
+		<init><script>
+		function getName(){var n = this.storage.get("name"); return n.isString()?n:getText(this.info.params.name);}
+		</script></init>
+		<addedToArea><script>area.getById('professor_pod').loopLerp(new ModelScaleKeyframe(1.05,0.95,1.05), 20); this.loopLerp(new ModelScaleKeyframe(1.05,0.95,1.05), 20); sfx = playSoundAt(area, this, "fabricator", true);</script></addedToArea>
+		<removedFromArea><script>sfx.stop(); var pod = area.getById('professor_pod'); pod.clearTrack(ModelScaleKeyframe); pod.resetModelTransform();</script></removedFromArea>
+		<onFrame>if(fakeBuildHold(this, frames, recipe, partial)){
+			var a = this.area; this.remove(); var p = a.spawn("object", "professor", 12, 3, 2, PI); p.vars.set("killed", true); p.vars.get("exit")(a.getById('professor_pod'));
+		}</onFrame>
+	</structure>
+	<structure id="npc_block2x2" static="true" access="0" self="STRUCTURE" block="NPC">
+		<shape type="box" width="2" height="2" depth="1" />
+	</structure>
+	<area id="lab" width="64" height="64" depth="128" place_depth="95" ground="default" break_emit="666666">
+		<infoInit>
+		this.params.place_depth = eval(this.xml.get("place_depth"));
+		this.params.getName = function(state, x, y, z){return getText("map.professor_lab");};
+		this.params.checkMine = function(area, selection, s){return area.getId(0,0,0) == 'metal'?getText("warning.professor_lab"):null;};
+		this.params.checkPlace = function(area, selection, item){return area.getId(0,0,0) == 'metal'?getText("warning.professor_lab"):null;};
+		this.params.makeLab = function(area, x, y, z){
+			Generate.setCube(area, "metal", 16, 10, 2, x, y, z);
+			Generate.setCube(area, "metal2", 2, 10, 2, x, y, z+2);
+			Generate.setCube(area, "metal2", 2, 10, 2, x+14, y, z+2);
+			Generate.setCube(area, "metal2", 12, 2, 2, x+2, y, z+2);
+			Generate.setCube(area, "metal2", 12, 2, 2, x+2, y+8, z+2);
+			Generate.setCube(area, "metal", 2, 10, 2, x, y, z+4);
+			Generate.setCube(area, "metal", 2, 10, 2, x+14, y, z+4);
+			Generate.setCube(area, "metal", 12, 2, 2, x+2, y, z+4);
+			Generate.setCube(area, "metal", 12, 2, 2, x+2, y+8, z+4);
+			Generate.setCube(area, "metal", 16, 10, 2, x, y, z+6);
+			Generate.mine(area, 1, 2, 2, x+14, y+4, z+2);
+			Generate.setCube(area, "metal_door", 1, 2, 2, x+15, y+4, z+2);
+			Generate.setCube(area, "metal", 2, 2, 1, x+8, y+4, z+2);
+			for(tx in 8...11) area.setGround(x+tx,y+7,z+2,CABLE);
+			for(tx in 4...6) area.setGround(x+tx,y+7,z+2,CABLE);
+			for(ty in 0...2) for(tx in 0...2) area.setGround(8+x+tx, 4+y+ty, z+3, BELT);
+			area.setGround(x+9,y+6,z+2,CABLE); for(ty in 3...6) area.setGround(x+12,y+ty,z+2,CABLE);
+		}
+		</infoInit>
+		<generate if="data == null">
+		this.info.params.makeLab(this, 0, 0, 0);
+		for(x in 6...8) this.setGround(x,7,2,POWSTRUC);
+		this.spawn("structure", "npc_block2x2", 9, 5, 3);
+		this.spawn("structure", "blueprint_printer_blueprint", 7, 7, 2, PI).health.set(1);
+		this.spawn("structure", "lab_teleportal", 4, 5, 2, -PI/2);
+		this.spawn("structure", "professor_pod", 12, 3, 2, PI);
+		this.spawn("object", "professor", 13, 5, 2);
+		this.spawn("structure", "lab_generator", 12, 7, 2);
+		this.spawn("structure", "lab_door", 15.2, 5, 2);
+		</generate>
+		<init><script>mineGround = defaultMineGround; if(this.getId(0,0,0) == 'metal') for(x in 0...2){var l = new PointLight(18*0.75,15*0.75,12*0.75,0.1); l.renderDust = false; l.updatePos(4.5+7*x,5,5.5); this.point_lights.push(l);}</script></init>
+		<screenEnter><music id="earth_ruins" seconds="1" if="object == state.localPlayers[0]" /></screenEnter>
+	</area>
+</data>

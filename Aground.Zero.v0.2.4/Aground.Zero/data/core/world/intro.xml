@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <object id="scavenger" extends="fake_npc" model="scavenger" talk_sfx="talking5" />
+    <structure id="frozen_scavenger" extends="frozen_npc" info="scavenger" idle="idle3" />
+    <structure id="frozen_player" extends="frozen_npc" model="scavenger" info="player" idle="idle1">
+        <init><script>function updateAppearance(){
+			this.info.params.npc.params.updateModel(storage, this.models[0], this.setTexture(0, this.info.params.npc.params.genTexture));
+            this.models[0].animation.setAnimationSpeed(0);
+		}</script></init>
+        <addedToArea><script>if(this.textures.length == 0) updateAppearance();</script></addedToArea>
+    </structure>
+    <structure id="title_pod_broken" extends="cryopod_broken" powered="false" />
+	<particles id="dust_fall" type="transparent" sheet="{core}/items/icons.png" x="4" width="8" height="8" depth="0.125" speed="0.08" size="0.00390625" power="25" color="0xffffff" alpha="2" spawnCount="600">
+		<init>width = parseFloat(this.xml.get("width")); height = parseFloat(this.xml.get("height")); point = new Point(); alpha = parseFloat(this.xml.get("alpha"));
+		offsetX = parseFloat(this.xml.get("offsetX")); offsetY = parseFloat(this.xml.get("offsetY")); offsetZ = parseFloat(this.xml.get("offsetZ")); color = parseInt(this.xml.get("color"));
+		depth = parseFloat(this.xml.get("depth")); speed = parseFloat(this.xml.get("speed")); size = parseFloat(this.xml.get("size")); x = parseInt(this.xml.get('x'));</init>
+		<spawn x="x">
+			particle.x = (random()*2.0-1.0)*width; particle.y = (random()*2.0-1.0)*height; particle.z = (random()*2.0-1.0)*depth;
+			point.set(random()*2.0-1.0, random()*2.0-1.0, -2); point.normalize(); particle.scale_decay = 0.04*size;
+			particle.x += offsetX; particle.y += offsetY; particle.z += offsetZ; particle.color.setInt(color, false);
+			particle.velX = point.x*speed; particle.velY = point.y*speed; particle.velZ = point.z*speed; particle.scale = size; particle.alpha = alpha; particle.decay = 0.1;
+		</spawn>
+	</particles>
+	<area id="intro" width="16" height="16" depth="16" ground="default" break_emit="666666">
+		<generate>
+			Generate.setCube(this, "rock", 16, 16, 16); var ground = 2;
+			var cave = [0,0,1,1,1,1,1,1,1,1,1,0,0,
+						0,1,1,2,2,2,2,2,2,2,1,1,0,
+						1,1,2,2,4,4,4,4,4,2,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,2,4,4,4,4,4,3,2,1,1,
+						0,1,1,2,2,2,2,2,2,2,2,1,0,
+						0,0,1,1,1,1,1,1,1,1,1,0,0];
+			addCave(this, cave, "rock_ramp", 13, 11, (16-13)>>1, (16-11)>>1, ground);
+			Generate.autoRamps(this, 14, 14, 5, 1, 1, ground-1);
+            addRockOres(this,14,14,14,1,1,1);
+            var b = this.spawn("structure", "bunker", 9, 9, ground-1); b.storage.get("indicator").setBool(false); b.inventory.addItem(makeItem("nutrient_bar", 3));
+            this.spawn("structure", "title_pod", 7, 6, ground-1);
+            this.spawn("structure", "title_pod", 5, 6, ground-1);
+            this.spawn("structure", "frozen_scavenger", 5, 6, ground-1);
+            this.spawn("structure", "hydroponics", 10, 5, ground-1, -PI/2).storage.get("cost").setInt(80);
+			var g = this.spawn("structure", "generator", 5, 8, ground-1);
+			g.inventory.addItem(makeItem('exotic_matter')); g.storage.get('recipe').setString("fuel_exotic_matter");
+			this.setGround(6,7,ground-1,CABLE); this.setGround(10,6,ground-1,CABLE);
+		</generate>
+	</area>
+    <model id="rock_block" primitive="cube">
+        <infoInit>this.texCrop.set(0,0,0.5,0.5);</infoInit>
+    </model>
+    <assetsLoaded>
+    var tex = textureToImages(MaterialInfo.get("rock").getTextureForFace(TOP));
+    var m = getModel('rock_block'); m.set("colorTexture", tex.first); m.set("normalTexture", tex.second);
+    </assetsLoaded>
+    <object id="rock_block" model="rock_block" block="WORLD|PROJECTILE|STRUCTURE|BLUEPRINT|PLAYER|NPC|ENEMY" access="none" modelBottom="true">
+        <shape type="box" width="0.99" height="0.99" depth="0.99" />
+		<infoInit>this.shapes[0].density = 0.3; this.rotationFactor.init(1,1,1);</infoInit>
+        <init><script>this.body.setGravityScale(random()*0.25+0.25);</script></init>
+    </object>
+    <procedure id="intro">
+        <music seconds="1" />
+        <script>
+        var a = state.makeArea("intro"); container.setArea(a); container.setGUI(null); container.camera.lookTo(7.5, 2.2, 3.3, 7.6, 3.2, 3);
+        var o = getStructure("frozen_player").create(a.state); o.setPosition(7, 6, 1-o.info.aabb.min_z);
+        o.storage.copy(player.storage); a.add(o);
+        for(c in game_screens) if(c != container){c.gui.locked = true; c.getChildAt(0).colorTransform.setMultiplier(0);}
+        </script>
+        <wait seconds="0.5" />
+        <script>container.shake(5,0.02,30); container.getArea().addParticles("dust_fall", 8, 8, 4);</script><sound id="impact" volume="0.5" />
+        <wait seconds="1" />
+        <script>container.shake(5,0.06,30); container.getArea().addParticles("dust_fall", 8, 8, 4);</script><sound id="impact" volume="0.75" />
+        <wait seconds="1" />
+        <script>container.shake(5,0.18,30); container.getArea().addParticles("dust_fall", 8, 8, 4);</script><sound id="impact" />
+        <wait seconds="1" /><sound id="landslide" />
+        <script>
+        var a = container.getArea(); container.shake(12,0.02,70); a.addParticles("dust_fall", 8, 8, 4);
+        for(c in a.getAllById("title_pod")){c.remove(); a.spawn("structure", "title_pod_broken", c.getX(), c.getY(), 1);} a.getById("bunker").remove();
+        for(i in 0...6){
+            var o = a.spawn("structure", "bunker_broken"+(i+1), random()*4+7, random()*4+7, random()*3+1);
+            o.body.setGravityScale(0.3);
+            o.body.setLinearVelocity(vec3(random()*80-40,-80,20));
+        } a.getById("generator").inventory.clear();
+        </script>
+        <wait seconds="0.25" />
+        <script>
+        var a = container.getArea(); a.set(7,5,0,null); a.set(7,6,0,null); a.set(6,5,0,null); a.set(6,6,0,null);
+        a.spawn("object", "rock_block", 6.5, 5.5, 0.5);
+        a.spawn("object", "rock_block", 6.5, 6.5, 0.5).models[0].texCrop.set(0,0.5,0.5,0.5);
+        a.spawn("object", "rock_block", 7.5, 5.5, 0.5).models[0].texCrop.set(0.5,0,0.5,0.5);
+        a.spawn("object", "rock_block", 7.5, 6.5, 0.5).models[0].texCrop.set(0.5,0.5,0.5,0.5);
+        a.getById("title_pod_broken").body.setType(BODY_DYNAMIC); a.getById("frozen_player").body.setType(BODY_DYNAMIC);
+        </script>
+        <wait seconds="1" />
+        <script>container.setObject(player); container.colorTransform.setMultiplier(0);</script><sound id="landslide" />
+        <script with="fade">
+        container.colorTransform.setMultiplier(1); cryopod = player.area.getAtPos(32, 32, 6, isStructure); player.setPosition(32,32,14.07);
+        cryopod.setPosition(32,32,14); cryopod.body.setType(BODY_DYNAMIC); cryopod.body.wakeUp(); cryopod.body.setGravityScale(0.5); player.body.setGravityScale(0.5);
+        var l = cryopod.lights[0].color; l.r = 10; l.g = 5; l.b = 20; container.shake(12,0.02,70); player.addParticles("break_long", 0, 0, 0);
+        </script>
+        <wait seconds="1.1" /><sound id="hit" />
+        <script>cryopod.body.setGravityScale(1); player.body.setGravityScale(1); var l = cryopod.lights[0].color; var li = cryopod.info.lights[0]; l.r = li.r; l.g = li.g; l.b = li.b;
+        container.colorTransform.setMultiplier(0); container.setGUI(player); gui = container.gui; cryopod.setPosition(32,32,6); cryopod.body.setType(BODY_STATIC); player.setPosition(32,31.9,6.07);</script> 
+        <script with="fade">
+        container.colorTransform.setMultiplier(1);
+        for(c in game_screens) if(c != container){c.getChildAt(0).lerp(new DarkenKeyframe(1), 30, function(){c.gui.locked = false;});}
+        </script><script>player.addParticles("break_long", 0, 0, 0); cryopod.vars.get("openDoor")();</script><wait seconds="1" />
+    </procedure>
+</data>

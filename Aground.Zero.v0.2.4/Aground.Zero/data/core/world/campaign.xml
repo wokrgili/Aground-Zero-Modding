@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<include id="world.xml" />
+	<include id="lab.xml" />
+	<include id="intro.xml" />
+
+	<campaign id="default" player="player" area="default" x="32" y="31.9" z="6.07" start_time="0.53*365.242*24*3600">
+		<onBuild>
+			<section if="object.info.id == 'cryopod' && !state.getFlag('repair_cryopod')">
+				<script>state.setFlag("repair_cryopod", true);</script>
+				<blockingEvent>
+					<dialogue section="pai" id="cryopod1" pai="true" />
+					<dialogue section="pai" id="cryopod2" pai="true" />
+				</blockingEvent>
+			</section>
+		</onBuild>
+		<onCraft>
+			<section if="hasBlueprints(state, ['factory_blueprint']) && !state.getFlag('factory_tip')">
+				<script>state.setFlag("factory_tip", true);</script>
+				<blockingEvent>
+					<dialogue section="pai" id="factory_tip1" pai="true" />
+					<dialogue section="pai" id="factory_tip2" pai="true" />
+				</blockingEvent>
+			</section>
+		</onCraft>
+		<npcsDead>
+			<blockingEvent if="!hasRecipes('basic', state.storage, ['craft_chip'])">
+				<dialogue section="pai" id="npcs_dead1" pai="true" expression="sad" />
+				<dialogue section="pai" id="npcs_dead2" pai="true" expression="smile" />
+				<script>unlockRecipes(state.localPlayers[0], "basic", state.storage, ["craft_chip"], "craft");</script>
+			</blockingEvent>
+		</npcsDead>
+		<init><script>
+		function checkNPCCount(e){
+			if(e.object.info.xml.get("npc") == "true" &amp;&amp; getNPCCount(state.areas[0]) == 0) state.runEvent(getScreenForPlayer(state.localPlayers[0]), "npcsDead");
+		} state.areas[0].addEventListener("rem_object", checkNPCCount); saving = null;
+		</script></init>
+		<addPlayer><script>var p = player; p.addItem(makeItem('mine')); p.addItem(makeItem('craft')); p.addItem(makeItem('build'));</script></addPlayer>
+		<onScreen>
+			<script>
+			var d = state.storage.get("blueprints"); if(!d.hasData()) d.setArray(DATA_STRING, []);
+			ar = d.get(); if(ar.indexOf('generator_blueprint') == -1) ar.push('generator_blueprint');
+			var d = player.storage.get("blueprints"); if(d.hasData()){
+				var ar = state.storage.get("blueprints").getArray();
+				for(s in d.getArray()) if(ar.indexOf(s) == -1) ar.push(s); d.delete();
+			} if(getNPCCount(state.areas[0]) == 0) state.runEvent(container, "npcsDead");
+			ar = getDataArray("onScreen");
+			</script>
+			<repeat count="ar.length"><run xml="ar.pop().xml" /></repeat>
+			<script>state.dispatchEvent(new Event("update_indicators"));</script>
+			<stop if="player != state.host || player.hasQuest('mine') || player.questComplete('mine')" />
+			<run procedure="intro" />
+			<blockingEvent>
+				<music id="main" seconds="1" />
+				<dialogue section="pai" id="intro1" expression="happy" pai="true" />
+				<dialogue section="pai" id="intro2" pai="true" />
+				<menu section="pai">
+					<dialogue section="pai" id="intro3" pai="true" expression="smile" />
+					<choice id="good_news"><set id="good_first" value="true" /></choice>
+					<choice id="bad_news"><set id="good_first" value="false" /></choice>
+				</menu>
+				<dialogue section="pai" id="intro4" pai="true" expression="smile" if="good_first" />
+				<dialogue section="pai" id="intro5" pai="true" expression="sad" />
+				<dialogue section="pai" id="intro6" pai="true" />
+				<dialogue section="pai" id="intro4" pai="true" expression="smile" if="!good_first" />
+				<dialogue section="pai" id="intro7" pai="true" />
+				<choose if="gui.moveFrames < 20 || gui.lookFrames < 10">
+					<dialogue text="getText('pai>intro8.keyboard{intro:true}')" pai="true" if="isKeyboard()" />
+					<dialogue text="getText('pai>intro8.gamepad{intro:true}')" pai="true"  />
+				</choose>
+				<dialogue section="pai" id="intro9" pai="true" />
+				<choose>
+					<dialogue section="pai" id="intro11.2" pai="true" expression="smile" if="player.storage.get('dig').isObject()" />
+					<section>
+						<set id="stY" value="gui.tools.y" /><lerp object="gui.tools" seconds="0.5"><from colorAdd="000000" y="stY" /><to colorAdd="333333" y="stY-5" /></lerp>
+						<choose>
+							<dialogue section="pai" id="intro10.keyboard" pai="true" if="isKeyboard()" />
+							<dialogue section="pai" id="intro10.gamepad" pai="true"  />
+						</choose>
+						<script>gui.tools.clearLerp(); item_id = "mine";</script><run procedure="highlight_item" />
+						<applyLerp object="gui.tools" colorAdd="000000" y="stY" />
+						<dialogue section="pai" id="intro11" pai="true" />
+						<run procedure="unhighlight_item" />
+					</section>
+				</choose>
+				<dialogue section="pai" id="intro12" pai="true" expression="smile" />
+				<script>player.addQuest("mine")</script>
+				<dialogue text="getText('pai.intro13{intro:true}')" pai="true" expression="smile" />
+			</blockingEvent>
+			<save />
+		</onScreen>
+        <preview height="80">
+			<text text="concat(getText(slot == 0?'common.autosave':'common.slot{slot:'+Std.string(slot)+'}'), state.host.vars.get('getName')(), ' ')" size="20" x="8" width="400" color="dbc898" y="2" align="left" />
+			<text text="var p = state.host, a = p.area_id < 0?null:BaseInfo.get('area', state.area_ids[p.area_id]); return a == null || a.params.getName == null?getText('common.unknown'):a.params.getName(state, p.getX(),p.getY(),p.getZ())" color="ffffff" x="100" y="2" size="22" width="500" align="center" />
+			<text section="structure" id="inventory" color="cccccc" y="22" x="8" size="16" width="420" align="left" />
+			<text section="common" id="play_time" color="cccccc" y="22" x="50" size="16" width="500" align="right" />
+			<script>i=0</script><repeat count="10"><item item="state.host.inventory.getItem(i,0)" x="i*42+8" y="38" scale="0.66" /><script>i++</script></repeat>
+            <text text="time" y="48" size="22" x="50" width="500" color="ffffff" align="right" />
+        </preview>
+		<selectPlayer>
+			<script>select = this</script>
+			<border ui="default" x="0" y="0" width="512" height="256" />
+			<button ui="item" width="64" height="64" x="-96" y="128-32">
+				<tile id="target_arrow" scale="0.5" x="64" y="64" rotation="PI" />
+				<onSelect><script>select.onMove(-1,0)</script></onSelect>
+			</button>
+			<button ui="item" width="64" height="64" x="544" y="128-32">
+				<tile id="target_arrow" scale="0.5" />
+				<onSelect><script>select.onMove(1,0)</script></onSelect>
+			</button>
+			<tile id="window.title" x="17" y="-21" scale="1.5" />
+			<text section="multiplayer" id="select_player" color="dbc898" width="512" x="0" y="-18" />
+			<choose><section if="player == null">
+				<button section="multiplayer" id="create_player" x="56" y="112" width="400">
+					<onSelect><script>select.onEmptySelect();</script></onSelect>
+				</button>
+			</section><section>
+				<image image="this.icon" />
+				<formattedText text="concat(getText('customize.name'), player.vars.get('getName')(), ': [color=dbc898]')" size="30" width="320" x="192" y="16" align="left" />
+				<script>i = 0;</script><repeat count="10">
+					<item item="player.inventory.getItem(i,0)" x="(i%5)*64+192" y="54+Math.floor(i/5)*64" /><script>i++;</script>
+				</repeat>
+				<button section="multiplayer" id="start_game" x="192" y="198" width="300">
+					<onSelect><script>select.onEmptySelect();</script></onSelect>
+				</button>
+			</section></choose>
+		</selectPlayer>
+        <startSave>
+			<hide id="saving" seconds="0.2" if="saving != null" />
+            <sound id="save" /><show id="saving" seconds="0.2" tooltip="default" text="getText('common.saving')" x="0.9" y="0.9" color="ffffff" />
+			<invokeLater seconds="0.4"><hide id="saving" seconds="0.2" /></invokeLater><set id="saving" value="null" />
+        </startSave>
+		<showHistory><window id="history" /></showHistory>
+		<completeQuest><script>state.dispatchEvent(new Event("update_indicators"));</script><save /></completeQuest>
+		<timer seconds="300">for(p in state.localPlayers) if(p.health.get() &lt; 5 || p.hunger.get()+getTotalFood(p.inventory) &lt; 40 || p.getOxygenPercent() &lt; 0.5) return; save(getScreenForPlayer(state.localPlayers[0]));</timer>
+		<gainAchievement><section if="getData('achievement', achievement, false) != null">
+			<window id="gainAchievement" achievement="achievement" modal="false" /><script>unset('achievement')</script><sound id="achievement" />
+		</section></gainAchievement>
+		<blockingEventQueued>
+			<run procedure="pai_tip" expression="neutral" text="help.queued" />
+		</blockingEventQueued>
+	</campaign>
+	<entry id="default" campaign="default" name="entry.default" description="entry.default_desc" />
+</data>

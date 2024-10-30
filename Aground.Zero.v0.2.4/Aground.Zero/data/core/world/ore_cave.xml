@@ -1,0 +1,78 @@
+
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<material id="darkness" visible="false" opaque="all" blocking="false" />
+	<model id="darkness_portal" primitive="dbl_quad" />
+	<particles id="darkness_portal" type="emissive" extends="break" width="0.3" height="0.125" depth="0.5" speed="0.01" power="2" spawnCount="0" color="0" />
+    <structure id="darkness_portal" extends="base_teleport" model="darkness_portal" ground="" indicator="false" access="none">
+		<infoInit>this.params.canEnter = function(p, flags){return (flags&amp;PLAYER) != 0;}</infoInit>
+        <shape type="box" width="0.01" height="1" depth="2" detector="true" />
+		<particles id="darkness_portal" />
+        <transform>matrix.setScale(1,2,1); matrix.set(3,0,-0.5); matrix.set(3,1,-2); var b = new Basis(); b.tilt(-PI/2); b.roll(-PI/2); matrix.append(b.getMatrix());</transform>
+        <init><script>function canTeleportTo(t){return true;} function isTeleportTarget(s){return true;}</script></init>
+    </structure>
+    <structure id="ore_cave_portal" extends="darkness_portal">
+        <init><script>function prepareTeleport(){
+            if(teleport.get() == null){
+                var a = this.state.createArea("ore_cave"); var t = a.getById('ore_cave_exit'); if(t == null){a.generate(); t = a.getById('ore_cave_exit');}
+                if(t != null) setTeleport(t);
+            } return teleport.get();
+        }</script></init>
+	</structure>
+	<structure id="ore_cave_exit" extends="darkness_portal">
+		<init><script>
+		function prepareTeleport(){
+			if(teleport.get() == null){var t = this.state.areas[0].getById("ore_cave_portal"); if(t != null) setTeleport(t);} return teleport.get();
+		}
+		function getIndicator(){return Icon.fromTile(getTile("home"),TYPE_INDICATOR,0.6);}
+		handleIndicator(this, true);
+		</script></init>
+	</structure>
+    <area id="ore_cave" width="32" height="32" depth="32" place_depth="50" ground="default" break_emit="666666">
+		<infoInit>this.params.place_depth = eval(this.xml.get("place_depth")); this.params.temporary = true;</infoInit>
+		<generate>
+			Generate.setCube(this, "bedrock", 32, 32, 1); Generate.setCube(this, "bedrock", 32, 32, 1, 0, 0, 31);
+			Generate.setCube(this, "bedrock", 1, 32, 32); Generate.setCube(this, "bedrock", 1, 32, 32, 31, 0, 0);
+			Generate.setCube(this, "bedrock", 32, 1, 32); Generate.setCube(this, "bedrock", 32, 1, 32, 0, 31, 0);
+			Generate.setCube(this, "rock", 30, 30, 14, 1, 1, 1);
+			Generate.setCube(this, "cave", 30, 30, 15, 1, 1, 16);
+			var array = Generate.makeArray(30, 30, 30, 1, 1, 1, null, null, 0.1);
+			var ct = Math.floor(array.length*0.1); for(i in 0...ct){var p = array[i]; this.set(p.x, p.y, p.z, null);}
+			var x = randInt(1,8), y = randInt(1, 8); if(random() > 0.5) x += 23; if(random() > 0.5) y += 23;
+			var b = makeItem("blueprint", 1); b.storage.get("id").setString("paint"); b.storage.get("recipe").setString("coal");
+			b.storage.get("lvl").setInt(0); b.storage.get("item").setString("paint");
+			this.set(x, y, 1, null); var inv = this.spawn("structure", "chest", x+0.5, y+0.5, 1).inventory; inv.addItem(b); inv.addItem(makeItem('paint'));
+			Generate.setCube(this, "bedrock", 1, 3, 2, 16, 15, 29);
+            Generate.mine(this, 3, 1, 2, 15, 16, 29); Generate.setCube(this, "darkness", 1, 1, 2, 16, 16, 29); this.spawn("structure", "ore_cave_exit", 16.5, 16.5, 29);
+			Generate.setCube(this, "bedrock", 3, 1, 1, 15, 16, 28);
+			var seed = random()*12345.6789; for(y in 1...31) for(x in 1...31){
+				this.set(x, y, 15, (x%3 == 0 || y%3 == 0 || noise(x*0.3, y*0.3, seed) > 0)?"bedrock":"rock");
+			} function addWyrmY(sx, sy, r){
+				for(z in 16...19) for(y in 4...29) for(x in sx...(sx+3)) this.set(x,y,z,null);
+				this.spawn("object", "wyrm", sx+1.5, sy+3, 17, r);
+			} function addWyrmX(sx, sy, r){
+				for(z in 16...19) for(y in sy...(sy+3)) for(x in 4...29) this.set(x,y,z,null);
+				this.spawn("object", "wyrm", sx+3, sy+1.5, 17, r);
+			} addWyrmY(8,16,0); addWyrmY(21,16,PI); addWyrmX(16,8,PI/2); addWyrmX(16,21,3*PI/2);
+			addCaveOres(this,30,30,15,1,1,16);
+			addRockOres(this,30,30,15,1,1,1);
+		</generate>
+		<init><script>
+		mineGround = defaultMineGround;
+		</script></init>
+		<screenEnter>
+			<music id="ore_cave" seconds="1" if="object == state.localPlayers[0]" />
+			<blockingEvent if="object.storage.get('ore_cave').getBool() != true">
+				<script>object.storage.get('ore_cave').setBool(true);</script>
+				<dialogue section="pai" id="ore_cave" pai="true" expression="sad" />
+				<dialogue section="pai" id="ore_cave2" pai="true" expression="smile" />
+				<script>unlockRecipes(object, "basic", state.storage, ["craft_shovel"], "craft");</script>
+			</blockingEvent>
+		</screenEnter>
+		<screenExit><script>
+		for(p in state.localPlayers) if(p.area == this) return; for(p in state.remotePlayers) if(p.area == this) return; this.clear();
+		var id = state.areas.indexOf(this); for(p in state.players) if(p.area_id == id) p.area_id = -1;
+		</script></screenExit>
+		MULTIPLAYER: we need an onDisconnect event to check if area should be cleared when a remote player leaves
+	</area>
+</data>

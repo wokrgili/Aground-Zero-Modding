@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<include id="materials/materials.xml" />
+
+	<tilesheet id="break.png" width="128" height="128" />
+	<tile id="break" sheet="break.png" />
+	<animation id="break" count="12" />
+	<particles id="break" type="transparent" sheet="{core}/items/icons.png" x="4" width="0.125" height="0.125" depth="0.125" speed="0.03" size="0.00390625" power="4" color="0xffffff" alpha="2" spawnCount="30" colorScale="1">
+		<init>width = parseFloat(this.xml.get("width")); height = parseFloat(this.xml.get("height")); point = new Point(); alpha = parseFloat(this.xml.get("alpha"));
+		up = this.xml.get("up") == "true"; left = this.xml.get("left") == "true";
+		offsetX = parseFloat(this.xml.get("offsetX")); offsetY = parseFloat(this.xml.get("offsetY")); offsetZ = parseFloat(this.xml.get("offsetZ"));
+		color = Color.fromInt(parseInt(this.xml.get("color")), false, parseFloat(this.xml.get("colorScale")));
+		depth = parseFloat(this.xml.get("depth")); speed = parseFloat(this.xml.get("speed")); size = parseFloat(this.xml.get("size")); x = parseInt(this.xml.get('x'));
+		if(this.xml.exists("color_decay")){
+			color_decay = Color.fromInt(parseInt(this.xml.get("color_decay")), true, parseFloat(this.xml.get("color_decay_scale")));
+		} else color_decay = null;
+		</init>
+		<spawn x="x">
+			particle.x = (random()*2.0-1.0)*width; if(left) particle.y = (random()*0.75+0.25)*height; else particle.y = (random()*2.0-1.0)*height;
+			particle.color_decay = color_decay;
+			if(up) particle.z = (random()*0.75+0.25)*depth; else particle.z = (random()*2.0-1.0)*depth;
+			point.set(particle.x, particle.y, particle.z); point.normalize(); particle.scale_decay = -0.04*size;
+			particle.x += offsetX; particle.y += offsetY; particle.z += offsetZ; particle.color.copy(color);
+			particle.velX = point.x*speed; particle.velY = point.y*speed; particle.velZ = point.z*speed; particle.scale = size; particle.alpha = alpha; particle.decay = 0.1;
+		</spawn>
+	</particles>
+	<particles id="splash" extends="break" offsetY="-0.3" offsetZ="0.1" spawnCount="20" power="1" speed="0.01" size="0.0078125" alpha="0.5" />
+	<particles id="break_long" extends="break" spawnCount="160" />
+	<particles id="damage" type="transparent" sheet="{core}/items/icons.png" speed="0.008" size="0.002" width="0.1" height="0.1" depth="0.1" power="0.25" alpha="2" spawnCount="0">
+		<init>width = parseFloat(this.xml.get("width")); height = parseFloat(this.xml.get("height")); depth = parseFloat(this.xml.get("depth"));
+		alpha = parseFloat(this.xml.get("alpha")); speed = parseFloat(this.xml.get("speed")); size = parseFloat(this.xml.get("size"));
+		offsetX = parseFloat(this.xml.get("offsetX")); offsetY = parseFloat(this.xml.get("offsetY")); offsetZ = parseFloat(this.xml.get("offsetZ"));
+		_points = eval(this.xml.get("points")); point = new Point();
+		</init>
+		<spawn x="rnd = randInt(0,_points.length*10); return rnd < _points.length*9?4:0">
+			var p = _points[rnd%_points.length];
+			particle.x = (random()*2.0-1.0)*width+p.x; particle.y = (random()*2.0-1.0)*height+p.y; particle.z = (random()*2.0-1.0)*depth+p.z;
+			point.set(particle.x, particle.y, particle.z+1); point.normalize(); var s = speed; particle.x += offsetX; particle.y += offsetY; particle.z += offsetZ;
+			if(rnd &lt; _points.length*9){ //smoke particle
+				particle.scale = size; particle.scale_decay = -0.04*size;
+			} else {
+				particle.scale = size*0.5; s *= 3;
+				particle.color.r = -1; //NOTE: negative particle.color.r values is a special value to make this particle emissive, not transparent (the type).
+			} //spark particle
+			particle.velX = point.x*s; particle.velY = point.y*s; particle.velZ = point.z*s; particle.alpha = alpha; particle.decay = 0.1;
+		</spawn>
+	</particles>
+</data>

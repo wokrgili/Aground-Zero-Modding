@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<script>
+	function addCaveOres(area, w, h, d, x, y, z){
+		var array = Generate.makeArray(w, h, d, x, y, z, area, "cave");
+		var ct = Math.floor(array.length*0.05); for(i in 0...ct){var p = array[i]; area.set(p.x, p.y, p.z, "cave", "coal");}
+		var st = ct; ct += Math.floor(array.length*0.0075); for(i in st...ct){var p = array[i]; area.set(p.x, p.y, p.z, "cave", "gold");}
+		st = ct; ct += Math.floor(array.length*0.0025); for(i in st...ct){var p = array[i]; area.set(p.x, p.y, p.z, "cave", "diamond");}
+		st = ct; ct += Math.floor(array.length*0.05); for(i in st...ct){var p = array[i]; area.set(p.x, p.y, p.z, "cave", "iron");}
+	}
+	function addRockOres(area, w, h, d, x, y, z){
+		var array = Generate.makeArray(w, h, d, x, y, z, area, "rock");
+		var ct = Math.floor(array.length*0.075); for(i in 0...ct){var p = array[i]; area.set(p.x, p.y, p.z, "rock", "iron");}
+		var st = ct; ct += Math.floor(array.length*0.025); for(i in st...ct){var p = array[i]; area.set(p.x, p.y, p.z, "rock", "diamond");}
+		st = ct; ct += Math.floor(array.length*0.025); for(i in st...ct){var p = array[i]; area.set(p.x, p.y, p.z, "rock", "titanium");}
+		st = ct; ct += Math.floor(array.length*0.004); for(i in st...ct){var p = array[i]; area.set(p.x, p.y, p.z, "rock", "uranium");}
+		st = ct; ct += Math.floor(array.length*0.033); for(i in st...ct){var p = array[i]; area.set(p.x, p.y, p.z, "rock", "gold");}
+	}
+	function addCave(area, cave, ramp, width, height, sx, sy, sz){
+		var i = 0; for(cy in 0...height) for(cx in 0...width){
+			var x = sx+cx; var y = sy+cy; var v = cave[i++];
+			if(v > 0){
+				area.set(x, y, sz, null); area.set(x, y, sz+1, null);
+				if(v > 1){
+					area.set(x, y, sz-1, v == 2?ramp:null); area.set(x, y, sz+2, v == 2?ramp:null);
+					if(v > 3) area.set(x, y, sz+3, v == 4?ramp:null);
+				}
+			}
+		}
+	}
+	function placeRiverRamp(area, ramp, x, y, z, dx){
+		var b = area.isBlocking(x+dx*2,y,z);
+		if(b > 0){
+			area.set(x+dx,y,z,null); if(area.isBlocking(x+dx*3,y,z) == -1) area.set(x+dx*2,y,z,null);
+		} else area.set(x+dx,y,z,b == 0?ramp:null);
+	}
+	function fixRiverRamp(area, ramp, x, y, z, dx, dy){
+		if(area.isBlocking(x+dx,y,z) == -1 &amp;&amp; area.isBlocking(x+dx,y+dy,z) > 0 &amp;&amp; area.isBlocking(x+dx*2,y,z) > 0){
+			area.set(x+dx,y,z,ramp);
+		}
+	}
+	function addSmallRiver(area, ramp, x, z, level){
+		var h = area.getHeight()-1;
+		for(y in 1...h){
+			area.set(x, y, z, null); placeRiverRamp(area, ramp, x, y, z, -1); placeRiverRamp(area, ramp, x, y, z, 1);
+		} for(y in 1...h){fixRiverRamp(area, ramp, x, y, z, -1, 1); fixRiverRamp(area, ramp, x, y, z, 1, 1);}
+		for(dy in 1...h){
+			var y = h-dy; fixRiverRamp(area, ramp, x, y, z, -1, -1); fixRiverRamp(area, ramp, x, y, z, 1, -1);
+			for(tx in (x-1)...(x+2)){if(area.isBlocking(tx,y,z) != 0) area.setWaterLevel(tx,y,z,level);}
+		} for(tx in (x-1)...(x+2)){area.setWaterLevel(tx, 63, z, 2); area.setOverlay(tx, 63, z, "black");}
+	}
+	</script>
+	<image id="dust" path="dust.png" />
+	<image id="noise" path="noise.png" />
+	<image id="waves" path="noise_n.png" />
+
+	<area id="default" width="64" height="64" depth="128" place_depth="95" ground="default" break_emit="666666">
+		<infoInit>
+		this.shadow_z = 28; this.infinite_water_z = 28;
+		this.params.place_depth = eval(this.xml.get("place_depth"));
+		this.params.getFrozenNpcs = function(){
+			return ["frozen_miner1","frozen_miner2","frozen_farmer1","frozen_farmer2","frozen_chef1","frozen_chef2","frozen_scientist","frozen_soldier"];
+		}
+		this.params.openChest = function(chest){
+			if(!chest.state.getFlag('shovel') &amp;&amp; (chest.inventory.getCountById('shovel') > 0 || chest.inventory.addItem(makeItem('shovel')))) chest.state.setFlag('shovel', true);
+		}
+		this.params.getName = function(state, x, y, z){
+			if(z >= 57) return getText("map.surface");
+			else if(z >= 35) return getText("map.flooded_city");
+			else if(z >= 24) return getText("map.subway");
+			else if(z >= 16) return getText("map.old_base");
+			else return getText("map.deep_caves");
+		} </infoInit>
+		<atmosphere sun="star.png" moon="moon.png" stars="stars.png" axial_tilt="0" />
+		<generate if="data == null">
+			//Bottom Floor [0-16] - Base Building
+			Generate.setCube(this, "bedrock", 64, 64, 1);
+			Generate.setCube(this, "bedrock", 1, 64, 24); Generate.setCube(this, "bedrock", 1, 64, 24, 63, 0, 0);
+			Generate.setCube(this, "bedrock", 64, 1, 24); Generate.setCube(this, "bedrock", 64, 1, 24, 0, 63, 0);
+			Generate.setCube(this, "rock", 62, 62, 2, 1, 1, 1); Generate.setCube(this, "rock", 62, 62, 5, 1, 1, 11);
+			Generate.setCube(this, "cave", 62, 62, 8, 1, 1, 3); var ground = 6;
+			var cave = [0,0,1,1,1,1,1,1,1,1,1,0,0,
+						0,1,1,2,2,2,2,2,2,2,1,1,0,
+						1,1,2,2,4,4,4,4,4,2,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,3,4,5,5,5,4,3,2,1,1,
+						1,1,2,2,4,4,4,4,4,3,2,1,1,
+						0,1,1,2,2,2,2,2,2,2,2,1,0,
+						0,0,1,1,1,1,1,1,1,1,1,0,0];
+			addCave(this, cave, "cave_ramp", 13, 11, (64-13)>>1, (64-11)>>1, ground);
+			var ids = ["build", "craft", "shovel"]; var npcs = this.info.params.getFrozenNpcs(); shuffle(npcs); var river_x = -1;
+			for(i in 0...npcs.length) for(j in 0...100){
+				var x = randInt(2,64-11); var y = randInt(2,64-11);
+				if(Generate.isFilled(this, 13, 13, 2, x-2, y-2, ground)){
+					if(x &lt; 10 || x > 44){if(river_x == -1 || random() > 0.5) river_x = x;}
+					Generate.mine(this, 5, 5, 4, x+2, y+2, ground-1);
+					Generate.mine(this, 1, 5, 2, x+1, y+2, ground);
+					Generate.mine(this, 1, 5, 2, x+7, y+2, ground);
+					Generate.mine(this, 5, 1, 2, x+2, y+1, ground);
+					Generate.mine(this, 5, 1, 2, x+2, y+7, ground);
+					for(k in 0...5){
+						this.set(x+k+2, y+2, ground-1, "cave_ramp"); this.set(x+k+2, y+6, ground-1, "cave_ramp");
+						this.set(x+k+2, y+2, ground+2, "cave_ramp"); this.set(x+k+2, y+6, ground+2, "cave_ramp");
+					} for(k in 0...5){
+						this.set(x+2, y+k+2, ground-1, "cave_ramp"); this.set(x+6, y+k+2, ground-1, "cave_ramp");
+						this.set(x+2, y+k+2, ground+2, "cave_ramp"); this.set(x+6, y+k+2, ground+2, "cave_ramp");
+					} this.spawn("structure", "cryopod_broken", x+4, y+5, ground-1); this.spawn("structure", npcs[i], x+4, y+5, ground-1);
+					var b = this.spawn("structure", "battery", x+5.5, y+4.5, ground-1); b.power.set(randInt(200,400));
+					if(i >= ids.length*2){var b = this.spawn("structure", "light", x+5.5, y+3.5, ground-1); b.storage.get("enabled").setBool(false);}
+					var inv = this.spawn("structure", "chest", x+5.5, y+5.5, ground-1, PI).inventory;
+					inv.addItem(makeItem("nutrient_bar", 3)); if(i &lt; ids.length*2){
+						var item = makeItem("blueprint"); item.storage.get("id").setString(ids[i%ids.length]); item.storage.get("lvl").setInt(2); inv.addItem(item);
+					} break;
+				}
+			} var debris = []; for(i in 1...7) debris.push("bunker_broken"+i);
+			for(id in debris){
+				var info = getStructure(id); if(info != null) for(i in 0...3) for(j in 0...100){
+					var x = randInt(6,64-6); var y = randInt(6,64-6);
+					if(Generate.isFilled(this, 2, 2, 2, x-1, y-1, ground)){
+						Generate.mine(this, 4, 2, 2, x-2, y-1, ground);
+						Generate.mine(this, 2, 4, 2, x-1, y-2, ground);
+						var o = info.create(this.state); if(o != null){
+							o.setPosition(x, y, ground-o.info.aabb.min_z); this.add(o);
+						} break;
+					}
+				}
+			} if(river_x != -1) addSmallRiver(this, "cave_ramp", river_x+randInt(0,9), ground-1, 2);
+			Generate.autoRamps(this, 62, 62, 5, 1, 1, ground-1);
+			var x = randInt(1,13), y = randInt(1, 13); if(random() > 0.5) x += 47; if(random() > 0.5) y += 47;
+			Generate.mine(this, 3, 3, 3, x, y, 1); this.spawn("structure", "ore_cave_portal", x+1.5, y+1.5, 1);
+			Generate.spreadTiles(x, y, 4, 20, function(x, y, z){this.setOverlay(x,y,z,'black');}, function(x,y,z){return this.getId(x,y,z) == 'cave';});
+			for(z in 1...4){this.set(x+1,y,z,"bedrock"); this.set(x+1,y+1,z,"darkness"); this.set(x+1,y+2,z,"bedrock");} this.set(x+1,y+1,3,"bedrock");
+			var seed = random()*12345.6789, sx = this.state.campaign.x, sy = this.state.campaign.y;
+			for(y in 1...63) for(x in 1...63){
+				var dx = x+0.5-sx, dy = y+0.5-sy;
+				if(dx*dx+dy*dy > 100 &amp;&amp; Math.abs(noise(x*0.1, y*0.1, seed)) &lt; 0.05){
+					this.set(x, y, ground, null); this.set(x, y, ground+1, null);
+				}
+			} addCaveOres(this,62,62,8,1,1,3);
+			addRockOres(this,62,62,15,1,1,1);
+			var c = this.spawn("structure", "cryopod_broken", 32, 32, ground-1); c.storage.get("found").setBool(true); c.storage.get("indicator").setBool(true);
+			for(i in 0...8) spawnBat();
+			//Second Floor [16-24] - Wyrms
+			Generate.setCube(this, "cave", 62, 62, 3, 1, 1, 17);
+			Generate.setCube(this, "rock", 62, 62, 4, 1, 1, 20);
+			for(y in 1...63) for(x in 1...63){
+				this.set(x, y, 16, (x%3 == 0 || y%3 == 0 || noise(x*0.3, y*0.3, seed) > 0)?"bedrock":"rock");
+			} Generate.setCube(this, "rock", 9,9,1,27,27,16); Generate.mine(this, 2, 2, 8, 31, 31, 8);
+			this.set(31,31,16,"rock_ramp",null,Generate.RAMPS[20]); this.set(31,32,16,"rock_ramp",null,Generate.RAMPS[21]);
+			this.set(32,32,16,"rock_ramp",null,Generate.RAMPS[22]); this.set(32,31,16,"rock_ramp",null,Generate.RAMPS[23]);
+			Generate.setCube(this,"rock",15,13,5,((64-13)>>1)-1,((64-11)>>1)-1,17);
+			addCave(this, cave, "rock_ramp", 13, 11, (64-13)>>1, (64-11)>>1, 18);
+			Generate.autoRamps(this, 62, 62, 5, 1, 1, 17);
+			this.spawn("structure", "teleportal", 31, 29, 17, PI).storage.get("enabled").setBool(false);
+			this.spawn("structure", "battery", 28.5, 29.5, 17).power.set(randInt(200,400));
+			this.spawn("structure", "cryopod_broken", 29, 32, 17).vars.get("openDoor")();
+			var inv = this.spawn("structure", "chest", 28.5, 33.5, 17, PI).inventory; this.addGround(28,30,17,CABLE);
+			this.spawn("structure", "bunker_broken4", 30, 33, 17).setRotation(0,0,1);
+			this.spawn("structure", "bunker_broken5", 34, 31, 17).setRotation(0,0,2);
+			this.spawn("structure", "bunker_broken6", 33, 33, 17).setRotation(0,0,-1);
+			inv.addItem(makeItem("nutrient_bar", 3)); var item = makeItem("blueprint"); item.storage.get("lvl").setInt(2); inv.addItem(item);
+
+			function addWyrmY(sx, sy, r){
+				for(z in 17...20) for(y in 20...45) for(x in sx...(sx+3)) this.set(x,y,z,null);
+				this.spawn("object", "wyrm", sx+1.5, sy+3, 18, r);
+			} function addWyrmX(sx, sy, r){
+				for(z in 17...20) for(y in sy...(sy+3)) for(x in 20...45) this.set(x,y,z,null);
+				this.spawn("object", "wyrm", sx+3, sy+1.5, 18, r);
+			} addWyrmY(10,32,0); addWyrmY(48,32,PI); addWyrmX(32,10,PI/2); addWyrmX(32,48,3*PI/2);
+			addRockOres(this,62,62,8,1,1,16); addCaveOres(this,62,62,3,1,1,17);
+			for(x in 0...3){
+				this.set(7+x,44,17,"rock"); this.set(7+x,43,18,"rock"); this.set(7+x,45,18,"rock"); this.set(7+x,44,18,null);
+				this.set(51+x,20,17,"rock"); this.set(51+x,19,18,"rock"); this.set(51+x,21,18,"rock"); this.set(51+x,20,18,null);
+				this.set(20,7+x,17,"rock"); this.set(19,7+x,18,"rock"); this.set(21,7+x,18,"rock"); this.set(20,7+x,18,null);
+				this.set(44,51+x,17,"rock"); this.set(43,51+x,18,"rock"); this.set(45,51+x,18,"rock"); this.set(44,51+x,18,null);
+			} var inv = this.spawn("structure", "chest", 8.5, 44.5, 18, PI/2).inventory;
+			inv.addItem(makeItem("nutrient_bar", 3)); var item = makeItem("blueprint"); item.storage.get("id").setString("mine"); item.storage.get("lvl").setInt(2); inv.addItem(item);
+			var inv = this.spawn("structure", "chest", 20.5, 8.5, 18, PI).inventory;
+			inv.addItem(makeItem("nutrient_bar", 3)); inv.addItem(makeItem("chip", 1));
+			var inv = this.spawn("structure", "chest", 52.5, 20.5, 18, -PI/2).inventory;
+			inv.addItem(makeItem("nutrient_bar", 3)); var item = makeItem("blueprint"); item.storage.get("id").setString("laser_gun"); item.storage.get("lvl").setInt(2); inv.addItem(item);
+			var inv = this.spawn("structure", "chest", 44.5, 52.5, 18).inventory;
+			inv.addItem(makeItem("nutrient_bar", 3)); inv.addItem(makeItem("chip", 1));
+			var m = getMod("full_version"); if(m == null || !m.enabled) Generate.setCube(this, "bedrock", 64, 64, 1, 0, 0, 24);
+		</generate>
+		<init><script>
+		SPAWN2D = [];
+		function spawnBat(){
+			if(SPAWN2D.length == 0){
+				var sx = this.state.campaign.x, sy = this.state.campaign.y;
+				for(y in 1...63) for(x in 1...63){
+					var dx = x+0.5-sx, dy = y+0.5-sy;
+					if(dx*dx+dy*dy > 128){SPAWN2D.push(x); SPAWN2D.push(y);}
+				}
+			} var n = SPAWN2D.length>>1, info = getObject("bat"); while(n > 0){
+				var i = randInt(0, n); var x = SPAWN2D[2*i], y = SPAWN2D[2*i+1]; n--; if(i != n){
+					SPAWN2D[2*i] = SPAWN2D[2*n]; SPAWN2D[2*i+1] = SPAWN2D[2*n+1]; SPAWN2D[2*n] = x; SPAWN2D[2*n+1] = y;
+				} var z = 9; while(z > 4) if(this.getId(x, y, z) == "cave") z--; else break;
+				if(z != 9 &amp;&amp; this.isBlocking(x,y,z) == -1 &amp;&amp; !this.hasWater(x,y,z) &amp;&amp; this.getFirstInTile(x, y, z, info.blockedBy) == null){
+					var o = info.create(this.state); if(o != null){
+						o.setPosition(x+0.5, y+0.5, z-info.aabb.min_z); o.setRotation(0,0,random()*PI*2); this.add(o);
+					} return true;
+				}
+			} return false;
+		}
+		mineGround = defaultMineGround;
+		</script></init>
+		<screenEnter><music id="main" seconds="1" if="var p = state.localPlayers[0]; return object == p && (p.hasQuest('mine') || p.questComplete('mine'))" /></screenEnter>
+		<timer seconds="30" id="respawn_bat">if(this.countById('bat') &lt; 10) spawnBat();</timer>
+	</area>
+
+	<include id="ore_cave.xml" />
+</data>
