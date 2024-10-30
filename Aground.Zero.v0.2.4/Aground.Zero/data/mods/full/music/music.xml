@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <music id="main" extends="main">
+		<track id="floor3a" lead="2.5" />
+        <track id="floor3b" lead="2.5" />
+        <track id="floor3_combat" lead="3" />
+        <track id="floor3_combata" lead="2.5" />
+        <track id="floor3_combatb" lead="2.5" />
+        <track id="floor3_combatc" lead="2.5" />
+        <track id="floor3_combatd" lead="2.5" />
+
+        <track id="floor4a" lead="2.4" />
+        <track id="floor4b" lead="2.4" />
+        <track id="floor4c" lead="2.4" />
+        <track id="floor4d" lead="2.4" />
+        <track id="floor4e" lead="2.4" />
+        <track id="floor4f" lead="2.4" />
+        <track id="floor4g" lead="2.4" />
+        <track id="floor4_combat" lead="2.5" />
+        <track id="floor4_combat_end" lead="2.5" />
+		<init>
+        var floor3 = ["floor3a","floor3b"]; none[2] = floor3; in_combat = false;
+        var floor4 = ["floor4a","floor4b","floor4e"]; none[3] = floor4;
+        var superGetId = getId; map.set("combat2", ["floor3_combata","floor3_combatb","floor3_combatc","floor3_combatd"]);
+        map.set("building3", ["floor4c","floor4d","floor4e","floor4f","floor4g"]);
+        map.set("combat3", ["floor4_combat"]); map.set("end_combat3", ["floor4_combat_end"]);
+		function getId(c, p, floor){
+            var old = in_combat; in_combat = false; if(floor >= 2){
+                if(old) return "combat"+floor; for(o in p.area.objects) if(o.info.id != 'bat' &amp;&amp; o.vars.get("target") == p) return "combat"+floor;
+            } if(last_id == "combat3") return "end_combat3";
+            if(floor == 3 &amp;&amp; p.area.getLandHeight(p.getX()-0.5, p.getY()-0.5) > p.getZ()) return "building3";
+            return superGetId(c, p, floor);
+		}
+        function onTarget(o){if(o.info.id != 'bat' &amp;&amp; !StringTools.startsWith(last_id, "combat")){this.fadeOut(3); in_combat = true; this.getById("floor3_combat").playOnce();}}
+        </init>
+    </music>
+</data>
