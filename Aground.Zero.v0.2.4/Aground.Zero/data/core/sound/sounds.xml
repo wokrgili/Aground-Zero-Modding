@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<sound id="break" />
+	<sound id="cancel" />
+	<sound id="chest_open" />
+	<sound id="chest_close" />
+	<sound id="eat" />
+	<sound id="energy_shield" />
+	<sound id="fabricator" />
+	<sound id="item" />
+	<sound id="laser" />
+	<sound id="laserdrill" />
+	<sound id="low_hp" />
+	<sound id="move" />
+	<sound id="place" />
+	<sound id="place_metal" />
+	<sound id="save" />
+	<sound id="select" />
+	<sound id="ship_door" />
+	<sound id="throw" />
+	<sound id="warning" />
+    <sound id="flashlight_off" />
+    <sound id="flashlight_on" />
+	<sound id="shield" count="2" />
+    
+    <sound id="assembler" />
+    <sound id="bunker" />
+    <sound id="factory" />
+    <sound id="generator" />
+    <sound id="kitchen" />
+    <sound id="lab" />
+    <sound id="landslide" />
+    <sound id="particle_accelerator" />
+    <sound id="plant_seed" />
+    <sound id="rig" />
+    <sound id="teleport" />
+    <sound id="teleportal" />
+    <sound id="teleportal_close" />
+    <sound id="teleportal_open" />
+    <sound id="vibraslap" />
+	<sound id="whoosh" />
+	<sound id="wyrm_attack" />
+	<sound id="wyrm_dig" />
+	<sound id="wyrm_death" />
+	<sound id="player_death" />
+	<sound id="bolt_hit" />
+	<sound id="pierced" />
+	<sound id="hit" />
+	<sound id="achievement" />
+	<sound id="structure_hit" />
+	<sound id="bat_death" />
+	<sound id="bat_squeak" />
+	<sound id="impact" />
+	<sound id="scan" />
+
+	<sound id="enter_water" />
+	<sound id="exit_water" />
+
+	<sound id="talking1" />
+	<sound id="talking2" />
+	<sound id="talking3" />
+	<sound id="talking4" />
+	<sound id="talking5" />
+	<sound id="talking6" />
+	<sound id="talking7" />
+	
+
+	<volume name="wyrm_dig" value="50" />
+	<volume name="generator" value="50" />
+	<volume name="particle_accelerator" value="70" />
+	<volume name="kitchen" value="150" />
+	<volume name="rig" value="150" />
+	<volume name="plant_seed" value="150" />
+	<volume name="bunker" value="150" />
+	<volume name="teleportal" value="150" />
+
+	<include id="footsteps/footsteps.xml" />
+</data>
