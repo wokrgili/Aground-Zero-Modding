@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<action id="fire" accessStructures="none" desc="'item.descriptions>fire'">
+		<init>info.params.fire = info.xml.get("fire"); info.params.object = info.xml.exists("object")?info.xml.get("object"):info.id; info.params.rate = 60.0/eval(info.xml.get("rate"));</init>
+		<getSelection>selection.setTooltips(getText("actions.fire{item:"+item.info.id+"}")); return true;</getSelection>
+		<onPress><script>
+		fire_partial = 1000; fire_func = null;
+		var v = object.vars.get("vehicle"); if(v == null){object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_vehicle{item:"+item.info.id+"}"))); return;}
+		fire_func = v.vars.get(item.info.params.fire); if(fire_func == null) object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_fire_vehicle{item:"+item.info.id+"}{vehicle:"+v.info.params.name+"}")));
+		</script></onPress>
+		<onHold>if(fire_func == null) return;
+		var rate = item.info.params.rate/getItemMul(item, "rate"); fire_partial += frames; if(fire_partial >= rate){
+			var o = getObject(item.info.params.object); fire_partial = 0; if(o != null){item.count--; fire_func(o);}
+		}
+		</onHold>
+	</action>
+
+    <item id="torpedo" tile="torpedo" action="fire" fire="fireTorpedo" rate="2" type="utility" cost="30" />
+
+    <recipe id="craft_torpedo" cost="10" time="4"><requires id="steel" count="1" /><requires id="wire" count="1" /><creates id="torpedo" count="1" /></recipe>
+
+	<item id="chromium" tile="chromium" type="material" scale="0.75" cost="200" />
+
+	<recipe id="mine_chromium" cost="150" time="450"><creates id="chromium" count="1" /></recipe>
+	<recipe id="craft_drain" cost="10" time="4"><requires id="titanium" count="1" /><requires id="cable" count="3" /><creates id="drain" count="1" /></recipe>
+
+	<action id="quest_blueprint" desc="'item.descriptions>blueprint_unlock{item:'+item.params.item+'}{level:0}{recipe:}'">
+		<init>
+		info.params.icon = info.xml.get("icon"); info.params.quest = info.xml.get("quest"); var item = info.xml.get("item");
+		info.params.item = "[color=ff2222][text="+item+"][/color]"; info.name = 'items>blueprint_item{item:'+info.params.item+'}';
+		info.params.getName = function(i){
+			var map = new StringMap(); var m = getText('items>blueprint_item'); map.set("{item}", getText(item));
+			return new MutableTemplate(m, map);
+		}
+		</init>
+		<onCollect><section if="object.isPlayer()">
+			<script>
+			quest = item.info.params.quest; object.state.storage.get(quest).addInt(1); item.count = 0;
+			if(object.state.storage.get(quest).getInt() == 1){
+				var q = BaseInfo.get("quest", quest+".init");
+				if(q != null) q.create(object).onComplete(object, null, false);
+			}
+			</script>
+		</section></onCollect>
+	</action>
+	<item id="quest_blueprint" tile="blueprint" action="quest_blueprint" type="utility">
+		<renderer>
+			<tile id="item.info.tile" scale="0.5" />
+			<tile id="item.info.params.icon" scale="0.25" x="32" y="32" alpha="0.8" if="item.info.params.icon != null" />
+		</renderer>
+	</item>
+
+	<quest id="boring" extends="int_quest" title="quests.boring" state="true" global="true">
+		<requires id="boring" count="4" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="pai" id="boring4" pai="true" expression="happy" />
+				<script>unlockBlueprints(state, player, ["boring_blueprint"]);</script><wait seconds="1" modal="false" />
+				<dialogue section="pai" id="boring5" pai="true" />
+			</blockingEvent>
+		</completeQuest>
+	</quest>
+	<quest id="boring.init">
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="pai" id="boring1" pai="true" expression="smile" />
+				<dialogue section="pai" id="boring2" pai="true" expression="sad" />
+				<dialogue section="pai" id="boring3" pai="true" />
+			</blockingEvent>
+			<script>object.addQuest("boring")</script>
+		</completeQuest>
+	</quest>
+	<item id="boring_blueprint" extends="quest_blueprint" quest="boring" item="structure.boring" icon="boring" />
+	<item id="anti_gravity_upgrade" tile="bag.fly" type="utility" cost="15000">
+		<onCollect><achievement id="fly" /><script if="!object.storage.get('flight_power').isFloat()">
+		object.storage.get("flight_power").setFloat(20); item.count = 0;
+		object.dispatchEvent(new ObjectEvent("notification", getText("upgrades.anti_gravity")));
+		</script></onCollect>
+	</item>
+</data>

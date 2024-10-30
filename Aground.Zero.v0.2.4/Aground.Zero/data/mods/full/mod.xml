@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <name>Full Version</name>
+    <description>Expands the core game into the full version.</description>
+	<author>Fancy Fish Games</author>
+	<version>0.2.4</version>
+	<website>https://fancyfishgames.com/</website>
+	<disableWarning>This will disable all the content after the demo of the game.</disableWarning>
+	<init>
+        <include id="lang/languages.xml" />
+		<include id="ui.xml" />
+		<include id="achievements.xml" />
+		<include id="items.xml" />
+		<include id="models/models.xml" />
+		<include id="objects/objects.xml" />
+		<include id="world/world.xml" />
+		<include id="sound/sounds.xml" />
+		<include id="music/music.xml" />
+		<include id="help.xml" />
+	</init>
+</data>

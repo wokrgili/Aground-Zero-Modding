@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<tilesheet id="achievements.png" width="96" height="96" />
+    <tile sheet="achievements.png" id="ach.teleportal" x="10" />
+	<tile sheet="achievements.png" id="ach.subway" x="8" />
+    <tile sheet="achievements.png" id="ach.boring" x="0" />
+	<tile sheet="achievements.png" id="ach.upgrade_drill" x="11" />
+	<tile sheet="achievements.png" id="ach.surface" x="9" />
+	<tile sheet="achievements.png" id="ach.friend" x="4" />
+	<tile sheet="achievements.png" id="ach.logs" x="6" />
+	<tile sheet="achievements.png" id="ach.defeat_sub" x="2" />
+	<tile sheet="achievements.png" id="ach.worker_bot" x="12" />
+	<tile sheet="achievements.png" id="ach.infinite_power" x="5" />
+	<tile sheet="achievements.png" id="ach.fly" x="3" />
+    <tile sheet="achievements.png" id="ach.com" x="1" />
+    <tile sheet="achievements.png" id="ach.moneybags" x="7" />
+
+    <achievement id="teleportal" tile="ach.teleportal" stat="teleportals" max="6" />
+	<achievement id="subway" tile="ach.subway" />
+	<achievement id="boring" tile="ach.boring" />
+	<achievement id="upgrade_drill" tile="ach.upgrade_drill" stat="drill_levels" max="12" />
+    <achievement id="surface" tile="ach.surface" />
+    <achievement id="friend" tile="ach.friend" hidden="true" />
+    <achievement id="logs" tile="ach.logs" stat="log_ct" max="9" />
+    <achievement id="defeat_sub" tile="ach.defeat_sub" hidden="true" />
+    <achievement id="worker_bot" tile="ach.worker_bot" />
+    <achievement id="infinite_power" tile="ach.infinite_power" stat="exotic_gen" max="10" />
+    <achievement id="fly" tile="ach.fly" />
+    <achievement id="com" tile="ach.com" />
+    <achievement id="moneybags" tile="ach.moneybags" stat="coins" max="100000" />
+</data>

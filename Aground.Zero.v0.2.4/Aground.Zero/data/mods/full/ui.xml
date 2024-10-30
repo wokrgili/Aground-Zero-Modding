@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<window id="uncraft" width="672" height="bot+28+(window.params.enabled == null?0:38)" closeButton="true">
+		<script>y = 46;</script>
+		<script if="window.params.m == null">window.params.m = eval(window.params.recipe); window.params.title = eval(window.params.title);
+		window.params.req = eval(window.params.requirements);
+		window.params.progress = eval(window.params.progress); window.params.to = eval(window.params.to);
+		var win = window; function updateCraftingRequirements(e){
+			var req = win.params.uncraft; if(req == null) return;
+			var item = win.params.req.getItem(0, 0), r = win.params.m.get() == null?null:win.params.m.get().creates[0];
+			if(item.info != null &amp;&amp; item.info.xml.get('uncraft_last') == 'false' &amp;&amp; win.params.enabled != null){
+				if(win.params.to.getCountById(item.info.id) == 0 &amp;&amp; win.params.enabled.get() == true){
+					win.params.enabled.set(false); win.runEvent("lastItem", null, "window", win);
+				}
+			} if(r == null || item.count &lt; r.count || item.info == null || item.info.id != r.id){
+				if(item.info == null){req.alpha = 0.5; req.colorTransform.setMultiplier(1); req.colorTransform.redAdd = 0;}
+				else {req.alpha = 0.5; req.colorTransform.setMultiplier(0.3); req.colorTransform.redAdd = 0.7;}
+			} else req.alpha = 0;
+		} window.params.enabled = eval(window.params.enabled);
+		var wnd = window; function updateRecipe(e){
+			var p = getDisplayPoint(wnd.clickables.getSelected(),20,10); wnd.update(); wnd.clickables.setSelectedPoint(p.x, p.y); updateCraftingRequirements(null);
+		}
+		</script>
+		<text text="getText(window.params.title)" width="672" y="16" align="center" />
+		<text section="structure" id="uncraft" width="640" x="16" y="y" align="left" />
+		<inventory inventory="window.params.req" x="16" y="y+30" itemUI="small" />
+		<section if="window.params.m.get() != null">
+			<script>req = window.params.m.get().creates[0]</script>
+			<item item="makeItem(req.id)" x="16" y="y+30" alpha="0.5" name="_item"/>
+			<text text="getText('structure.count{count:'+req.count+'}')" x="16" y="y+30+68" alpha="0.5" width="64" size="18" />
+			<script>window.params.uncraft = _item; _item = null;</script>
+		</section><script>y += 20</script>
+		<progressBar value="window.params.progress" max="1000000" width="640" height="20" color="229922" showText="false" x="16" y="y+98" />
+		<text text=":" x="80" y="y+50" width="30" />
+		<script>i = 0</script><repeat count="window.params.m.get().requirements.length" if="window.params.m.get() != null">
+			<item item="window.params.m.get().getRequirement(i)" x="100+64*i" y="y+30" /><script>i++;</script>
+		</repeat>
+		<text text="eval(window.params.to_title)" width="672" y="y+120" align="center" />
+		<inventory inventory="window.params.to" x="16" y="y+146" itemUI="small" enabled="no_collect" /><set id="bot" value="y+146+window.params.to.getHeight()*64" />
+		<tile id="divider" scaleX="4.6" x="67" y="bot+18" if="window.params.enabled != null" />
+		<button text="boolText(window.params.enabled, getText('common.pause'), getText('common.resume'))" x="116" y="bot+24" width="440" height="30" if="window.params.enabled != null">
+			<onSelect><choose>
+			<run xml="window.xml" event="lastItem" if="var item = window.params.req.getItem(0, 0); return item.info != null && item.info.xml.get('uncraft_last') == 'false' && window.params.to.getCountById(item.info.id) == 0;" />
+			<script>window.params.enabled.set(!window.params.enabled.get());</script></choose></onSelect>
+		</button>
+		<lastItem><sound id="warning" /><show tooltip="popup" text="getText('warning.last_item{item:'+window.params.req.getItem(0, 0).info.id+'}')" hold="80" x="0.5" y="0.5" color="ff2222" formatted="true" /></lastItem>
+		<added><script>for(i in 0...this.params.req.getWidth()) this.params.req.getItem(i, 0).addEventListener("updated", updateCraftingRequirements); updateCraftingRequirements(null);</script></added>
+		<removed><script>for(i in 0...this.params.req.getWidth()) this.params.req.getItem(i, 0).removeEventListener("updated", updateCraftingRequirements);</script></removed>
+		<added><script>this.params.m.addEventListener("updated", updateRecipe);</script></added>
+		<removed><script>this.params.m.removeEventListener("updated", updateRecipe);</script></removed>
+	</window>
+
+	<window id="worker_bay" width="672" height="y+16" closeButton="true">
+		<script>struc = eval(window.params.structure); __obj = eval(window.params.object); recipes = eval(window.params.recipes); build = struc.vars.get('build');</script>
+		<text text="struc.vars.get('getName')()" width="640" x="16" y="16" />
+		<text section="structure" id="bots" width="640" x="16" y="46" size="18" align="left" color="ffff88" />
+		<script>y = 66+30*struc.info.params.maxNPCs+8;</script>
+		<list rows="struc.info.params.maxNPCs" cols="1" x="16" y="66">
+			<renderer width="640" height="30">
+				<check on="checkbox.on" off="checkbox.off" mutable="item.here" scale="0.5" x="0" y="0" />
+				<text text="item.name" color="dbc898" width="580" x="60" y="0" align="left" />
+				<onSelect><script>me = item.npc.get(); unset('item');</script><choose>
+					<choose if="me != null">
+						<window id="npc_info" npc="me" to="__obj.inventory" to_title="getText('structure.inventory')" indicator="me.storage.get('indicator')" if="isNPC(me)" />
+						<window type="prompt" message="npc.cancel_bot">
+							<script>struc.vars.set("dismantle", me);</script>
+						</window>
+					</choose>
+					<window id="select_character" accept="function(i){return isNPC(i) && i.info.params.robot == true && i.vars.get('home').get() != struc;}" title="getText('structure.add_bot')"><script>struc.vars.get("addNPC")(object)</script></window>
+				</choose></onSelect>
+			</renderer>
+			<init>for(i in struc.vars.get("npcs")) addItem(i);</init>
+		</list>
+		<tile id="divider" scaleX="4.6" x="67" y="y-2" />
+		<text section="structure" id="build" width="640" x="16" y="y" align="left" />
+		<button x="16" y="y+30" width="640" height="64">
+			<choose>
+				<text section="common" id="none" width="632" x="8" y="22" size="20" align="left" if="build.get() == null" />
+				<section><image image="makeObjectIcon(build.get().info, 64, 64)" /><text text="getText(build.get().info.params.name)" width="640-70" x="64" y="22" size="20" align="left" /></section>
+			</choose>
+			<tile id="target_arrow" color="33aaff" colorScale="1.5" scale="0.25" x="624" y="16" rotation="PI/2" />
+			<onSelect><choose>
+				<window type="prompt" message="npc.cancel_bot" if="build.get() != null">
+					<script>struc.vars.set("dismantle", build.get());</script>
+				</window>
+				<window id="select_recipe" title="structure.build_title" recipes="recipes" inventory="__obj.inventory">
+					<section if="struc.vars.get('npcCount') >= struc.info.params.maxNPCs"><sound id="warning" /><show tooltip="popup" text="getText('warning.build_full')" hold="40" x="0.5" y="0.5" color="ff2222" /><stop /></section>
+					<section if="getTotalObjectCount(state, isRobot) >= MAX_ROBOTS"><sound id="warning" /><show tooltip="popup" text="getText('warning.max_robots{count:'+MAX_ROBOTS+'}')" hold="40" x="0.5" y="0.5" color="ff2222" /><stop /></section>
+					<script>
+						for(r in recipe.requirements) __obj.inventory.removeById(r.id, r.count); struc.vars.get("startBuild")(recipe.object);
+					</script>
+				</window>
+			</choose></onSelect>
+			<onInit><script>window.params.updateButton = function(e){updateButton();}</script></onInit>
+		</button>
+		<progressBar value="struc.vars.get('progress')" max="1000000" width="640" height="20" color="229922" showText="false" x="16" y="y+102" />
+		<script>y += 122;</script>
+		<added><script>build.addEventListener("updated", this.params.updateButton);</script></added>
+		<removed><script>build.removeEventListener("updated", this.params.updateButton);</script></removed>
+	</window>
+
+	<script>function formatLog(log){if(log == null || log.length == 0) return getText('structure.no_log').get(); var t = getText(log); if(t != null) return t.get(); else return log;}</script>
+	<window id="log" ui="none" width="600" height="y+32" closeButton="true">
+		<script if="window.params.log.get == null">window.params.log = eval(window.params.log);</script>
+		<revealText text="new ToStringMutable(window.params.log, formatLog)" color="dbc898" x="12" y="16" width="576" align="left" />
+		<script>y = lastTextHeight</script><border ui="details" width="600" height="y+32" />
+		<rearrange from="numChildren-2" to="numChildren" />
+		<button section="structure" id="write_log" x="412" y="y+20" width="180">
+			<onSelect><script>n = window.params.log.get(); if(n == null || getText(n) != null) n = "";</script><window id="input" max_length="400" title="getText('structure.change_log')" initial="n"><script>window.params.log.setString(text); window.update();</script></window></onSelect>
+		</button>
+	</window>
+
+	<window id="vending" width="672" height="y+16" closeButton="true">
+		<script>window.params.from = eval(window.params.from); window.params.to = eval(window.params.to); var enabled = eval(window.params.enabled) != false;
+		var coins = object.storage.get("coins"); if(!coins.isInt()) coins.setInt(0);
+		window.params.enabled = enabled;
+		window.params.sellItem = function(item, inventory, cursor){
+			if(item.info == null) return;
+			if(!enabled){object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_power"))); return;}
+			if(item.info.cost == 0){object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_sell{item:"+item.getName().get()+"}"))); return;}
+			var info = item.info, ct = item.count; inventory.insertItem(item); coins.addInt(info.cost*(ct-item.count));
+		}
+		window.params.selectItem = function(cursor, item, o, other, alt, shift){
+			if(!enabled){object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_power"))); return;}
+			if(cursor.info != null){
+				if(cursor.info.cost == 0){object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_sell{item:"+cursor.getName().get()+"}"))); return;}
+				if(item.info == null){
+					item.copy(cursor); if(alt){item.count = 1; cursor.count--;} else cursor.clear(); coins.addInt(item.info.cost*item.count);
+				} else if(cursor.is(item) &amp;&amp; item.count &lt; cursor.getMax()){
+					var ct = item.count; if(alt){item.count++; cursor.count--;} else item.add(cursor); coins.addInt(item.info.cost*(item.count-ct));
+				}
+			} else if(item.info != null){
+				var ct = Utils.min(alt?Utils.max(item.count>>1, 1):item.count, Math.floor(coins.getInt()/item.info.cost)); if(ct == 0){
+					object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_coins"))); return;
+				} if(shift){
+					var info = item.info, i = item.clone(); i.count = ct; item.count -= ct; other.insertItem(i);
+					coins.addInt(info.cost*(i.count-ct)); if(i.count > 0){if(item.count == 0) item.copy(i); else item.add(i);}
+				} else {
+					cursor.copy(item); coins.addInt(-item.info.cost*ct); cursor.count = ct; item.count -= ct;
+				}
+			}
+		}</script>
+		<text text="eval(window.params.from_title)" width="672" y="16" align="center" />
+		<inventory inventory="window.params.from.inventory" x="16" y="46" itemUI="small" select="window.params.selectItem" enabled="window.params.enabled?null:'none'">
+			<renderer height="80">
+				<section if="item.info != null && item.info.cost > 0" >
+					<tile id="gui.coins" y="64" scale="0.5" /><text text="Utils.addCommas(item.info.cost)" width="64" y="64" size="17" align="right" />
+				</section>
+			</renderer>
+		</inventory>
+		<set id="y" value="54+window.params.from.inventory.getHeight()*80" />
+		<text text="eval(window.params.to_title)" width="672" y="y" align="center" />
+		<inventory inventory="window.params.to" x="16" y="y+30" transfer="window.params.sellItem" itemUI="small" enabled="no_collect">
+			<renderer height="80">
+				<section if="item.info != null && item.info.cost > 0" >
+					<tile id="gui.coins" y="64" scale="0.5" /><text text="Utils.addCommas(item.info.cost)" width="64" y="64" size="17" align="right" />
+				</section>
+			</renderer>
+		</inventory><script>y += window.params.to.getHeight()*80+38;</script>
+		<text section="structure" id="restock" width="672" y="y" align="center" />
+		<progressBar value="window.params.from.storage.get('progress')" max="window.params.from.info.params.restock_frames" width="640" height="20" color="229922" showText="false" x="16" y="y+30" />
+		<script>y += 50</script>
+	</window>
+</data>

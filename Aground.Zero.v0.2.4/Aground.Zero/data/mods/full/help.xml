@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <procedure id="what_to_do_full"><choose>
+        <section if="object.hasQuest('mine2')">
+            <dialogue section="help" id="mine_upgrade" pai="true" />
+            <dialogue section="professor" id="intro10" pai="true" />
+        </section>
+        <dialogue section="professor" id="upgrade" pai="true" expression="smile" if="object.hasQuest('subways')" />
+        <dialogue section="pai" id="particle_accelerator2" pai="true" expression="smile" if="object.hasQuest('particle_accelerator')" />
+        <dialogue section="help" id="com_station" pai="true" expression="smile" if="object.hasQuest('com_station') && object.questComplete('exotic_matter')" />
+        <dialogue section="professor" id="exotic_matter8" pai="true" expression="happy" if="object.hasQuest('worker_bot')" />
+        <dialogue section="help" id="distress_signal" pai="true" expression="happy" if="object.questComplete('com_station')" />
+        <dialogue section="help" id="subways" pai="true" expression="smile" if="object.hasQuest('blueprint_printer')" />
+        <dialogue section="help" id="prof_quest" pai="true" if="!hasRecipes('lab', state.storage, ['craft_ai_core']) || (!object.hasQuest('exotic_matter') && !object.questComplete('exotic_matter'))" />
+        <dialogue section="help" id="scavenger" pai="true" if="!object.hasQuest('survivor_locator') && !object.questComplete('survivor_locator') && !hasRecipes('rig', state.storage, ['mine_titanium'])" />
+        <dialogue section="help" id="ask_scavenger" pai="true" if="var f = state.areas[0].getById('friend'); return !object.hasQuest('com_station') && f != null && f.storage.get('intro').getBool() == true;" />
+        <dialogue section="help" id="friend_locate" pai="true" if="var f = state.areas[0].getById('friend'); return !object.hasQuest('com_station') && f != null && f.storage.get('locate').getBool() == true;" />
+        <dialogue section="help" id="scav_quest" expression="smile" pai="true" if="!object.hasQuest('com_station') && (object.questComplete('survivor_locator') || getFrozenNPCCount(state.areas[0]) == 0) && (state.areas[0].getById('friend') == null || hasRecipes('lab', state.storage, ['craft_ai_core']))" />
+        <dialogue section="help" id="survivor_locator" pai="true" expression="happy" if="object.hasQuest('survivor_locator')" />
+        <choose if="object.hasQuest('exotic_matter')">
+            <dialogue section="help" id="exotic_matter" pai="true" expression="smile" if="object.inventory.getCountById('exotic_matter') > 0" />
+            <dialogue section="help" id="make_exotic_matter" pai="true" expression="smile" if="object.questComplete('particle_accelerator')" />
+            <dialogue section="professor" id="exotic_matter2" pai="true" />
+        </choose>
+    </choose></procedure>
+
+    <help id="recycler" extends="structure">
+		<dialogue section="help" id="recycler1" pai="true" />
+	</help>
+    <help id="turret" extends="structure">
+		<dialogue section="help" id="turret1" pai="true" />
+        <dialogue section="help" id="turret2" pai="true" />
+	</help>
+    <help id="vending" extends="structure">
+		<dialogue section="help" id="vending1" pai="true" />
+        <dialogue section="help" id="vending2" pai="true" />
+	</help>
+    <help id="particle_accelerator" extends="structure">
+		<dialogue section="help" id="particle_accelerator1" pai="true" />
+	</help>
+    <help id="worker_bay" extends="structure">
+		<dialogue section="help" id="worker_bay1" pai="true" expression="happy" />
+        <dialogue section="help" id="worker_bay2" pai="true" expression="sad" />
+	</help>
+	<help id="drains" category="utilities">
+        <init>this.visible = function(state){var ar = state.storage.get('blueprints').getArray(); return ar != null &amp;&amp; ar.indexOf("sub_blueprint") != -1;}</init>
+		<script>item_id = "drain";</script><run procedure="highlight_item" />
+		<dialogue section="help" id="drain1" pai="true" />
+		<run procedure="unhighlight_item" />
+		<dialogue section="help" id="drain2" pai="true" />
+	</help>
+
+    <help id="surface" category="survival" name="map.surface">
+        <init>this.visible = function(state){var ar = state.storage.get('blueprints').getArray(); return ar != null &amp;&amp; ar.indexOf("sub_blueprint") != -1;}</init>
+        <dialogue section="pai" id="surface2" pai="true" expression="sad" />
+        <script>gui.vars.get('oxygen').setAdd(-10000);</script>
+        <dialogue section="pai" id="surface3" pai="true" />
+        <script>gui.vars.get('oxygen').setAdd(0);</script>
+        <dialogue section="pai" id="surface4" pai="true" expression="smile" />
+        <dialogue section="pai" id="surface5" pai="true" expression="smile" />
+    </help>
+
+	<help id="vehicles" priority="4">
+    	<init>
+		this.visible = function(state){
+            var ar = state.storage.get('blueprints').getArray(); if(ar == null) return false;
+            for(id in ar){var s = getStructure(id); if(s != null &amp;&amp; s.params.build.params.vehicle == true) return true;}
+            return false;
+        }
+		</init>
+    </help>
+	<help id="vehicle" extends="structure" category="vehicles" />
+    <help id="sub" extends="vehicle">
+        <dialogue section="help" id="sub1" pai="true" />
+        <dialogue section="help" id="sub2" pai="true" expression="smile" />
+    </help>
+    <help id="boring" extends="vehicle">
+        <dialogue section="help" id="boring1" pai="true" />
+        <dialogue section="help" id="boring2" pai="true" expression="smile" />
+    </help>
+
+    <window id="log_list" ui="details" width="700" height="646" closeButton="true">
+        <text section="help" id="logs" color="dbc898" width="700" x="0" y="8" />
+        <list scroll="true" rows="20" cols="1" x="8" y="38">
+            <renderer width="684" height="(item == null)?30:(lastTextHeight+4)">
+                <formattedText text="getText('logs>'+item)" color="cccccc" size="22" width="676" x="4" align="left" />
+            </renderer>
+            <init>var ar = state.storage.get("logs").getArray(); if(ar != null){ar = ar.copy(); ar.sort(function(a, b){return a == b?0:(a > b?1:-1);}); for(l in ar) addItem(l);}</init>
+        </list>
+        <onInit><script>this.clickables.setSelected(this.closeButton);</script></onInit>
+    </window>
+    <help id="logs" priority="5">
+        <init>
+        this.visible = function(state){
+            var ar = state.storage.get("logs").getArray(); return ar != null &amp;&amp; ar.length > 0;
+        }
+        </init>
+        <window id="log_list" />
+    </help>
+</data>
