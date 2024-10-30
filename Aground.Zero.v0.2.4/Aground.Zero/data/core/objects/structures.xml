@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<tilesheet id="shadow.png" width="512" height="512" />
+	<tile id="shadow" sheet="shadow.png" />
+	<tile id="shadowL" sheet="shadow.png" x="1" />
+	<script>
+	REQUEST_WAIT = 5*60;
+	function requestMissingItems(o, items){
+		var i = 0; for(v in items){
+			var item = o.inventory.getItem(i++, 0); if(item.info != null &amp;&amp; item.info.id == v.info.id) v.count -= item.count;
+		} o.requestItems(items);
+	}
+	function structureEdgeTiles(object){
+		var b = object.getAABB(); var sx = Math.round(b.min_x); var sy = Math.round(b.min_y);
+		var ex = Math.round(b.max_x); var ey = Math.round(b.max_y); var z = Math.round(b.min_z); var ar = [];
+		for(x in sx...ex){ar.push(new Node3D(x, sy, z)); if(sy != ey-1) ar.push(new Node3D(x, ey-1, z));}
+		sy++; ey--; for(y in sy...ey){ar.push(new Node3D(sx, y, z)); if(sx != ex-1) ar.push(new Node3D(ex-1, y, z));}
+		return ar;
+	}
+	function structureLEdgeTiles(object){
+		var b = object.getAABB(); var sx = Math.round(b.min_x); var sy = Math.round(b.min_y);
+		var ex = Math.round(b.max_x)-1; var ey = Math.round(b.max_y)-1; var z = Math.round(b.min_z); var ar = [];
+		var r = Math.round(Utils.mod(Math.round(object.getRotation().z*2/PI),4));
+		if(r != 1) ar.push(new Node3D(sx, sy, z)); if(r != 2) ar.push(new Node3D(ex, sy, z));
+		if(r != 0) ar.push(new Node3D(sx, ey, z)); if(r != 3) ar.push(new Node3D(ex, ey, z));
+		return ar;
+	} tmpPoint = new Point();
+	function isStructure(o){return (o.info.self&amp;STRUCTURE) != 0;}
+	</script>
+
+	<structure id="base_structure" health="1" defense="4" self="STRUCTURE" block="WORLD|STRUCTURE|BLUEPRINT|PLAYER|NPC|ENEMY|ITEM|PROJECTILE" ground="shadow" tooltip="actions.use" static="true" modelBottom="true">
+		<infoInit>
+		this.params.name = this.xml.exists("name")?parseString(this.xml.get("name")):'structure>'+this.id;
+		this.params.entrance = eval(this.xml.get("entrance")); this.params.defense = eval(this.xml.get("defense"));
+		this.params.canRequestItems = this.xml.get("canRequestItems") == "true";
+		this.params.getEdgeTiles = structureEdgeTiles; this.params.npcEnter = this.xml.get("npcEnter") == "true";
+		this.params.viewPos = this.xml.exists("viewPos")?eval(this.xml.get("viewPos")):new Point(0,0,0); this.params.workPos = eval(this.xml.get("workPos"));
+		</infoInit>
+		<init><script>
+		var warnings = [];
+		function showWarning(id, icon){
+			var ar = []; var b = this.info.aabb; var y = b.min_y*1.3; var z = warnings.length*0.6;
+			if(icon == null) icon = Icon.fromTile(getTile(id),TYPE_EMISSIVE,0.5); else if(icon.type != TYPE_EMISSIVE){icon = icon.clone(); icon.type = TYPE_EMISSIVE;}
+			ar.push(this.addBillboard(icon, 0, y, z));
+			ar.push(this.addBillboard(Icon.fromTile(getTile("no"),TYPE_EMISSIVE,0.6), 0, y, z));
+			for(b in ar){b.alpha = 0; fadeIn(b);} warnings.push({id:id, billboards:ar});
+		}
+		function hideWarning(id){
+			var len = warnings.length; for(i in 0...len){var w = warnings[i]; if(w.id == id){
+				for(b in w.billboards) b.lerp(b.objectX, b.objectY, b.objectZ, 0, 20, remove); warnings.remove(w);
+				len = warnings.length; for(j in i...len) for(b in warnings[j].billboards) b.lerp(b.objectX, b.objectY, b.objectZ-0.6, 0, 20, fadeIn);
+				return;
+			}}
+		}
+		function hasWarning(id){
+			for(w in warnings) if(w.id == id) return true; return false;
+		}
+		function workerWarning(no_worker){
+			var has = hasWarning("worker");
+			if(has != no_worker){if(no_worker) showWarning("worker", null); else hideWarning("worker");}
+		}
+		function powerWarning(e){
+			var has = hasWarning("power"); var p = this.power_use > 0 &amp;&amp; !this.hasPower();
+			if(has != p){if(p) showWarning("power", null); else hideWarning("power");}
+		} if(this.info.powered &amp;&amp; this.power_gen == 0 &amp;&amp; this.getMaxPower() == 0){
+			this.addEventListener("has_power", powerWarning); this.addEventListener("update_power", powerWarning); powerWarning(null);
+		}
+		</script></init>
+		<onAlternate><stop if="this.info.params.blueprint == null" />
+		<sound id="select" source="this" />
+		<window type="prompt" message="warning.dismantle"><script>this.onDeath();</script></window></onAlternate>
+		<getSelection>selection.bounds.copy(this.info.aabb); selection.setTooltips((this.info.access&amp;1) == 1?getText(this.info.xml.get('tooltip')+"{structure:"+this.info.params.name+"}"):null, (this.info.access&amp;2) != 2 || this.info.params.blueprint == null?null:getText("actions.dismantle{hold:false}{structure:"+this.info.params.name+"}")); return true;</getSelection>
+		<onDeath><script if="this.area != null">var o = this.info.params.blueprint.create(this.state); if(o != null){
+				if(this.getMaxHealth() == o.getMaxHealth()-1) o.setHealth(this.getHealth()+1); else o.restoreHealth(); o.copyTransform(this); this.area.add(o,false);
+			} else o = this; this.remove(); if(this.inventory != null) for(i in this.inventory) if(i.count > 0) o.dropItem(i, 0.25);</script></onDeath>
+		<addedToArea>
+			<script if="this.info.powered">for(n in this.info.params.getEdgeTiles(this)) area.replaceGround(n.x, n.y, n.z, POWSTRUC);</script>
+		</addedToArea>
+		<removedFromArea>
+			<script if="this.info.powered">for(n in this.info.params.getEdgeTiles(this)) area.remGround(n.x, n.y, n.z, POWSTRUC|SWITCH);</script>
+		</removedFromArea>
+		<onDamage><script>playSoundAt(this.area, this, "structure_hit"); this.flash(2,0,0,1,8);</script></onDamage>
+	</structure>
+	
+	<structure id="arrow_structure" extends="base_structure">
+		<infoInit>
+		if(this.xml.get("auto_arrow") != "false"){
+			var m = new ModelInfo("output"); m.type = 2; m.tint.set(2,2,2,0.25); this.params.arrow = m; this.models.push(m);
+		}
+		</infoInit>
+		<init><script>
+			if(this.info.params.arrow != null &amp;&amp; this.info.params.arrow.transform == null){
+				var t = makeMatrix(); t.setScale(0.5,0.5,0.5); t.translate(-0.25,-0.25, this.info.aabb.min_z+0.1);
+				var dx = this.info.params.dispatchTo.x-this.info.params.dispatchFrom.x, dy = this.info.params.dispatchTo.y-this.info.params.dispatchFrom.y;
+				var b = new Basis(); b.pan(Math.atan2(dy, dx)); t.append(b.getMatrix());
+				t.translate(this.info.params.dispatchFrom.x+Utils.sign(dx)*1.125, this.info.params.dispatchFrom.y+Utils.sign(dy)*1.125, 0);
+				this.info.params.arrow.transform = t;
+			} function updateArrow(e){
+				if(this.info.params.arrow == null) return; for(m in this.models){
+					if(m.info == this.info.params.arrow){
+						m.visible = settings.get("show_arrow").getBool() == false?0:1; return;
+					}
+				}
+			}
+		</script></init>
+		<addedToArea><script if="this.info.params.arrow != null">settings.get("show_arrow").addEventListener("updated", updateArrow); updateArrow(null);</script></addedToArea>
+		<removedFromArea><script>settings.get("show_arrow").removeEventListener("updated", updateArrow);</script></removedFromArea>
+	</structure>
+	<structure id="inv_craft" extends="arrow_structure" powered="true">
+		<infoInit>
+		this.params.types = []; for(e in this.xml.elementsNamed("recipe")) if(e.get("stop") == "true") break; else this.params.types.push(e.get("type"));
+		this.params.scaleAnim = this.xml.get("scale_anim") != "false"; this.params.dispatchFrom = new Point(0,0,0); this.params.dispatchTo = new Point(0,-1.5,0);
+		</infoInit>
+		<init><script>
+			enabled = this.storage.get("enabled"); if(!enabled.hasData()) enabled.setBool(true);
+			var d = this.storage.get('recipe'); recipe = getData('recipe', d.getString());
+			power_use = parseFloat(this.info.xml.get('power_use')); this.power_use = 0; speed = 1;
+			shouldProgress = false; partial = 0; progress = new Mutable(); progress.set(recipe == null?0:Math.floor(this.storage.get("cost").getInt()*1000000/recipe.cost));
+			operateParticles = this.info.xml.get("operate_particles"); sfx = new Mutable(); loop_sfx = this.info.xml.get("loop_sfx");
+			function updateShouldProgress(){}
+			function checkReqs(e){
+				var r = recipe != null, er = enabled.get() &amp;&amp; r; this.power_use = er?power_use:0;
+				var sp = er &amp;&amp; this.hasPower(); if(sp == shouldProgress) return; shouldProgress = sp;
+				var s = sfx.get(); if(s != null) s.stop(); sfx.set(null); updateShouldProgress();
+				if(!shouldProgress){
+					if(!r){partial = 0; this.storage.get("cost").setInt(0); progress.set(0);}
+					if(operateParticles != null) this.removeParticlesById(operateParticles);
+					this.clearTrack(ModelScaleKeyframe); this.resetModelTransform();
+				} else {
+					if(operateParticles != null) this.addParticles(operateParticles); if(this.info.params.scaleAnim) this.loopLerp(new ModelScaleKeyframe(1.02,0.98,1.02), 10);
+				}
+			} function updateRecipe(e){
+				partial = 0; this.storage.get("cost").setInt(0); progress.set(0); recipe = getData('recipe', d.getString()); checkReqs(e);
+			} d.addEventListener("updated", updateRecipe); this.addEventListener("has_power", checkReqs); enabled.addEventListener("updated", checkReqs); checkReqs(null);
+			function onFrame(frames){}
+			
+			function dispatchItem(i){
+				tmpPoint.copy(this.info.params.dispatchFrom); this.invTransformPoint(tmpPoint); var x = tmpPoint.x; var y = tmpPoint.y;
+				tmpPoint.copy(this.info.params.dispatchTo); this.invTransformPoint(tmpPoint); this.placeItem(i, x, y, tmpPoint.x, tmpPoint.y);
+			} function completeRecipe(r){d.delete();}
+			function getRecipes(state, object){return getRecipesByTypes(this.info.params.types, state.storage);}
+		</script></init>
+		<onSelect><sound id="select" source="this" />
+		<window id="invcraft" title="getText(this.info.params.name)" object="object" recipe="this.storage.get('recipe')" recipes="getRecipes(state, object)" progress="progress" enabled="this.storage.get('enabled')" />
+		</onSelect>
+		<onFrame>
+			onFrame(frames); if(shouldProgress){
+				if(loop_sfx != null &amp;&amp; sfx.get() == null) sfx.set(playSoundAt(this.area, this, loop_sfx, true, 0.5));
+				requestFrames = 0; var s = this.storage.get("cost");
+				partial += frames*speed; if(partial >= recipe.timePerCost){
+					partial -= recipe.timePerCost; if(s.addInt(1) >= recipe.cost){
+						s.setInt(0); for(r in recipe.creates) dispatchItem(craftItem(r)); completeRecipe(recipe); return;
+					}
+				} progress.set(Math.floor((s.getInt()+partial/recipe.timePerCost)*1000000/recipe.cost));
+			}
+		</onFrame>
+	</structure>
+	<structure id="craft" extends="arrow_structure" powered="true">
+		<infoInit>
+		this.params.types = []; for(e in this.xml.elementsNamed("recipe")) if(e.get("stop") == "true") break; else this.params.types.push(e.get("type"));
+		this.params.scaleAnim = this.xml.get("scale_anim") != "false"; this.params.dispatchFrom = new Point(0,0,0); this.params.dispatchTo = new Point(0,-1.5,0);
+		</infoInit>
+		<inventory width="10" height="1" />
+		<init><script>
+			enabled = this.storage.get("enabled"); if(!enabled.hasData()) enabled.setBool(true);
+			var d = this.storage.get('recipe'); recipe = getData('recipe', d.getString()); if(recipe == null){
+				recipe = getRecipesByTypes(this.info.params.types, null)[0]; d.setString(recipe.id);
+			} power_use = parseFloat(this.info.xml.get('power_use')); this.power_use = 0; speed = 1;
+			shouldProgress = false; shouldRequest = false; partial = 0; progress = new Mutable(); progress.set(Math.floor(this.storage.get("cost").getInt()*1000000/recipe.cost));
+			operateParticles = this.info.xml.get("operate_particles"); requestFrames = random()*60; sfx = new Mutable(); loop_sfx = this.info.xml.get("loop_sfx");
+			allowRequest = this.storage.get("can_req"); limit = this.storage.get("limit"); if(!limit.isInt()) limit.setInt(-1);
+			function updateShouldProgress(){}
+			function checkReqs(e){
+				var r = true; var i = 0; shouldRequest = false; for(req in recipe.requirements){
+					var item = this.inventory.getItem(i++, 0); if(item.count &lt; req.count || item.info == null || item.info.id != req.id){
+						if(r){r = false; if(!hasWarning(req.id)) showWarning(req.id, getItem(req.id).getIcon());} else hideWarning(req.id);
+					} else hideWarning(req.id);
+					if(item.count &lt; req.count*2 || item.info == null || item.info.id != req.id) shouldRequest = true;
+				} var er = enabled.get() &amp;&amp; r &amp;&amp; limit.getInt() != 0; this.power_use = er?power_use:0;
+				var sp = er &amp;&amp; this.hasPower(); if(sp == shouldProgress) return; shouldProgress = sp;
+				var s = sfx.get(); if(s != null) s.stop(); sfx.set(null); updateShouldProgress();
+				if(!shouldProgress){
+					if(!r){partial = 0; this.storage.get("cost").setInt(0); progress.set(0);}
+					if(operateParticles != null) this.removeParticlesById(operateParticles);
+					this.clearTrack(ModelScaleKeyframe); this.resetModelTransform();
+				} else {
+					if(operateParticles != null) this.addParticles(operateParticles); if(this.info.params.scaleAnim) this.loopLerp(new ModelScaleKeyframe(1.02,0.98,1.02), 10);
+				}
+			} for(i in 0...this.inventory.getWidth()) this.inventory.getItem(i, 0).addEventListener("updated", checkReqs);
+			function updateRecipe(e){
+				for(req in recipe.requirements) hideWarning(req.id);
+				partial = 0; this.storage.get("cost").setInt(0); progress.set(0); recipe = getData('recipe', d.getString()); checkReqs(e);
+			}
+			d.addEventListener("updated", updateRecipe); this.addEventListener("has_power", checkReqs);
+			function getCollectPriority(item){
+				if(!enabled.get() || limit.getInt() == 0) return 0;
+				return getCollectPriorityRecipe(this.inventory, recipe, item);
+			}
+			function collectItem(item){
+				return addInventoryRecipe(this.inventory, recipe, item, true);
+			} this.inventory.insertItem = collectItem; enabled.addEventListener("updated", checkReqs); limit.addEventListener("updated", checkReqs); checkReqs(null);
+			function onFrame(frames){}
+			
+			function dispatchItem(i){
+				tmpPoint.copy(this.info.params.dispatchFrom); this.invTransformPoint(tmpPoint); var x = tmpPoint.x; var y = tmpPoint.y;
+				tmpPoint.copy(this.info.params.dispatchTo); this.invTransformPoint(tmpPoint); this.placeItem(i, x, y, tmpPoint.x, tmpPoint.y);
+			} function completeRecipe(r){}
+			function requestItems(){
+				sortInventoryCraft(this.inventory, recipe); var ct = 2, lim = limit.getInt(); if(lim != null &amp;&amp; lim >= 0) ct = Utils.min(lim, ct);
+				var items = recipe.getRequirements(ct); requestMissingItems(this, items); return items;
+			}
+		</script></init>
+		<onSelect><sound id="select" source="this" /><window id="crafting" title="getText(this.info.params.name)" recipe="this.storage.get('recipe')" recipes="getRecipesByTypes(this.info.params.types, state.storage)" requirements="this.inventory" to="object.inventory" to_title="getText('structure.inventory')" progress="progress" enabled="this.storage.get('enabled')" allowRequest="allowRequest" limit="limit" /></onSelect>
+		<onFrame>
+			var req = shouldRequest &amp;&amp; allowRequest.getBool() != false;
+			if(req &amp;&amp; requestFrames > 0) requestFrames -= frames; onFrame(frames); if(shouldProgress){
+				if(loop_sfx != null &amp;&amp; sfx.get() == null) sfx.set(playSoundAt(this.area, this, loop_sfx, true, 0.5));
+				var s = this.storage.get("cost");
+				partial += frames*speed; if(partial >= recipe.timePerCost){
+					partial -= recipe.timePerCost; if(s.addInt(1) >= recipe.cost){
+						s.setInt(0); recipe.useRequirements(this.inventory); requestFrames = 0;
+						for(r in recipe.creates) dispatchItem(craftItem(r)); var l = limit.getInt(); if(l > 0) limit.setInt(l-1); completeRecipe(recipe);
+					}
+				} progress.set(Math.floor((s.getInt()+partial/recipe.timePerCost)*1000000/recipe.cost));
+			} if(req &amp;&amp; requestFrames &lt;= 0 &amp;&amp; enabled.get() &amp;&amp; limit.getInt() != 0 &amp;&amp; this.hasPower()){
+				requestFrames = REQUEST_WAIT+random()*60; requestItems();
+			}
+		</onFrame>
+	</structure>
+
+	<structure id="grow" extends="arrow_structure" powered="true">
+		<infoInit>
+		this.params.types = []; for(e in this.xml.elementsNamed("recipe")) if(e.get("stop") == "true") break; else this.params.types.push(e.get("type"));
+		this.params.scaleAnim = this.xml.get("scale_anim") != "false"; this.params.dispatchFrom = new Point(0,0,0); this.params.dispatchTo = new Point(0,-1.5,0);
+		</infoInit>
+		<init><script>
+			var enabled = this.storage.get("enabled"); if(!enabled.hasData()) enabled.setBool(true);
+			var d = this.storage.get('recipe'); recipe = getData('recipe', d.getString()); if(recipe == null){
+				recipe = getRecipesByTypes(this.info.params.types, null)[0]; d.setString(recipe.id);
+			} shouldProgress = false; partial = 0; progress = new Mutable(); progress.set(Math.floor(this.storage.get("cost").getInt()*1000000/recipe.cost));
+			power_use = parseFloat(this.info.xml.get('power_use')); this.power_use = 0; speed = 1;
+			operateParticles = this.info.xml.get("operate_particles"); sfx = new Mutable(); loop_sfx = this.info.xml.get("loop_sfx");
+			function updateShouldProgress(){}
+			function checkReqs(e){
+				this.power_use = enabled.get()?power_use:0;
+				var sp = enabled.get() &amp;&amp; this.hasPower(); if(sp == shouldProgress) return; shouldProgress = sp;
+				var s = sfx.get(); if(s != null) s.stop(); sfx.set(null); updateShouldProgress();
+				if(!shouldProgress){
+					if(operateParticles != null) this.removeParticlesById(operateParticles);
+					this.clearTrack(ModelScaleKeyframe); this.resetModelTransform();
+				} else {
+					if(operateParticles != null) this.addParticles(operateParticles); if(this.info.params.scaleAnim) this.loopLerp(new ModelScaleKeyframe(1.02,0.98,1.02), 60);
+				}
+			} function setRecipe(r){}
+			function updateRecipe(e){partial = 0; this.storage.get("cost").setInt(0); progress.set(0); recipe = getData('recipe', d.getString()); setRecipe(recipe);}
+			d.addEventListener("updated", updateRecipe); this.addEventListener("has_power", checkReqs);
+			enabled.addEventListener("updated", checkReqs); checkReqs(null);
+			function dispatchItem(i){
+				tmpPoint.copy(this.info.params.dispatchFrom); this.invTransformPoint(tmpPoint); var x = tmpPoint.x; var y = tmpPoint.y;
+				tmpPoint.copy(this.info.params.dispatchTo); this.invTransformPoint(tmpPoint); this.placeItem(i, x, y, tmpPoint.x, tmpPoint.y);
+			} function completeRecipe(r){}
+		</script></init>
+		<onSelect><sound id="select" source="this" /><window id="growing" title="getText(this.info.params.name)" recipe="this.storage.get('recipe')" recipes="getRecipesByTypes(this.info.params.types, state.storage)" progress="progress" enabled="this.storage.get('enabled')" grow="this.info.xml.get('grow_label')" /></onSelect>
+		<onFrame>
+			if(shouldProgress){
+				if(loop_sfx != null &amp;&amp; sfx.get() == null) sfx.set(playSoundAt(this.area, this, loop_sfx, true, 0.5));
+				var s = this.storage.get("cost");
+				partial += frames*speed; if(partial >= recipe.timePerCost){
+					partial -= recipe.timePerCost; if(s.addInt(1) >= recipe.cost){
+						s.setInt(0); for(r in recipe.creates) dispatchItem(craftItem(r)); completeRecipe(recipe);
+					}
+				} progress.set(Math.floor((s.getInt()+partial/recipe.timePerCost)*1000000/recipe.cost));
+			}
+		</onFrame>
+	</structure> 
+
+	<structure id="base_teleport" extends="base_structure" defense="999">
+		<infoInit>this.params.teleport = this.xml.exists('teleport')?this.xml.get('teleport'):this.id; this.params.indicator = this.xml.get("indicator") != "false";</infoInit>
+		<init><script>
+		enabled = this.storage.get("enabled"); if(!enabled.hasData()) enabled.setBool(true);
+		teleport = new Mutable(); teleport.set(null); ignoreTeleport = false; ignoreItemTeleport = false; point = new Point(); vec = vec3(0,0,0);
+		function setTeleport(s){
+			var w = teleport.get(); if(s == w) return; teleport.set(s);
+			if(w != null &amp;&amp; w.vars.get("teleport").get() == this) w.vars.get("setTeleport")(null);
+			w = s; if(w != null){
+				w.vars.get("setTeleport")(this);
+			} checkEnabled(null);
+		}
+		function teleportFrom(s, o){ignoreTeleport = true; setTeleport(s);}
+		function canTeleportTo(t){
+			return t != null &amp;&amp; this.hasPower() &amp;&amp; enabled.get() &amp;&amp; (t.power_use == 0 || t.hasPower()) &amp;&amp; t.storage.get('enabled').get() != false &amp;&amp; t.vars.get('pilot') == null;
+		} power_use = parseFloat(this.info.xml.get('power_use'));
+		function checkEnabled(e){this.power_use = enabled.get()?(teleport.get() == null?0.1:power_use):0;}
+		enabled.addEventListener("updated", checkEnabled); checkEnabled(null);
+		function isTeleportTarget(s){return s != this &amp;&amp; s.info.params.teleport == this.info.params.teleport;}
+		function getTeleports(){
+			var ar = []; for(a in this.state.areas) for(s in a.objects) if(isTeleportTarget(s)) ar.push(s); return ar;
+		} function getName(){
+			var n = this.storage.get("name"); if(n.isString()) return n;
+			var an = this.area.info.params.getName == null?null:this.area.info.params.getName(this.state, this.getX(), this.getY(),this.getZ());
+			return concat(an == null?getText('common.unknown'):an, ': '+Math.floor(this.getX())+', '+Math.floor(this.getY())+', '+Math.floor(this.getZ()));
+		} if(this.info.params.indicator){
+			function getIndicator(){return hasBlueprints(this.state, ['teleportal_blueprint'])?Icon.fromTile(getTile("power"),TYPE_INDICATOR,0.6):null;}
+			handleIndicator(this, false);
+		} function prepareTeleport(){return teleport.get();}
+
+		function teleportObject(from, object){
+			if(object.vars.get("pilot") != null || object.vars.get("vehicle") != null) return false;
+			teleportFrom(from, object); playSoundAt(from.area, from, "teleport");
+			var p = object.getPosition(); from.transformPoint(p); this.invTransformPoint(p); object.setPosition(p.x, p.y, p.z);
+			var dz = this.getRotation().z-from.getRotation().z; var v = object.getRotation(); object.setRotation(v.x, v.y, v.z+dz);
+			if(object.area != this.area) this.area.add(object); playSoundAt(this.area, this, "teleport"); return true;
+		}
+		function teleportItem(from, item){
+			ignoreItemTeleport = true; setTeleport(from); playSoundAt(from.area, from, "teleport");
+			var p = item.getPosition(); from.transformPoint(p); point.set(0, -1.5*Utils.sign(p.y), 0); this.invTransformPoint(p); item.setPosition(from.area, p.x, p.y, this.getAABB().min_z+0.75);
+			this.invTransformPoint(point); vec.init(point.x-p.x, point.y-p.y, 0); vec.scaleEq(15.6); item.body.setLinearVelocity(vec);
+			if(from.area != this.area) item.moveArea(from.area, this.area); playSoundAt(this.area, this, "teleport");
+		}
+		</script></init>
+		<onSelect>
+			<sound id="select" source="this" />
+			<window id="set_teleport" title="this.info.params.name" desc="'structure>teleportal_desc'" list="getTeleports()" enabled="enabled" indicator="this.info.params.indicator?this.storage.get('indicator'):null" selected="teleport" object="this">
+				<window type="prompt" message="warning.teleportal_disabled" if="!this.storage.get('enabled').getBool() || (object != null && object.storage.get('enabled').getBool() == false)">
+					<script>this.storage.get('enabled').setBool(true); object.storage.get('enabled').setBool(true);</script>
+				</window>
+				<script>setTeleport(object)</script>
+			</window>
+		</onSelect>
+		<removedFromArea><script>setTeleport(null);</script></removedFromArea>
+		<beginContact>
+		if(!ignoreTeleport &amp;&amp; object_shape == object.body._shapeList &amp;&amp; !my_shape._allowCollide &amp;&amp; (t = prepareTeleport()) != null &amp;&amp; canTeleportTo(t)){
+			if(t.vars.get("teleportObject")(this, object)){var func = object.vars.get('onTeleport'); if(func != null) func(this); object.runEvent(null, "onTeleport", null, "teleportal", this);}
+		}
+		</beginContact>
+		<beginItemContact>
+		if(!ignoreItemTeleport &amp;&amp; !my_shape._allowCollide &amp;&amp; (t = prepareTeleport()) != null &amp;&amp; canTeleportTo(t)){
+			t.vars.get("teleportItem")(this, item);
+		}
+		</beginItemContact>
+		<endContact>if(!my_shape._allowCollide &amp;&amp; object_shape == object.body._shapeList) ignoreTeleport = false;</endContact>
+		<endItemContact>if(!my_shape._allowCollide) ignoreItemTeleport = false;</endItemContact>
+		<prepareWrite><script>
+		var w = teleport.get(), data = storage.get("telePos");
+		if(w == null) data.delete(); else data.setArray(DATA_FLOAT, [w.getX(), w.getY(), w.getZ(), this.state.areas.indexOf(w.area)]);
+		</script></prepareWrite>
+		<stateLoaded><script>
+		var pos = storage.get("telePos").getArray(); if(pos != null) teleport.set(this.state.areas[Math.round(pos[3])].getAtPos(pos[0], pos[1], pos[2], isTeleportTarget)); checkEnabled(null);
+		</script></stateLoaded>
+	</structure>
+
+	<include id="base.xml" />
+	<include id="power.xml" />
+	<include id="produce.xml" />
+</data>

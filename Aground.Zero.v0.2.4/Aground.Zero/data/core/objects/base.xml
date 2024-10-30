@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<structure id="storehouse" extends="base_structure" powered="true" model="storehouse" tooltip="actions.open" canRequestItems="true">
+		<shape type="box" width="2" height="2" depth="2" />
+		<transform>matrix.setScale(0.4,0.4,0.4)</transform>
+		<model id="storehouse_screen" tint="ff222222" />
+		<inventory width="10" height="3" />
+		<init><script>
+		var d = storage.get("npcTake"); if(!d.hasData()) d.setBool(true);
+		priority = storage.get("priority").forceObject();
+		function getPriority(i){
+			if(i.info == null) return 0; var t = i.info.xml.get('type');
+			if(t == null) return 5; else {
+				var d = priority.get(t).getFloat(); return (d == null)?5:d;
+			}
+		}
+		function getCollectPriority(i){
+			var p = getPriority(i); if(p == 0) return 0; else return this.inventory.canAddItem(i)?p:0;
+		}
+		this.fadeEmissive = 0.125; var arm_ct = 0; function collectItem(i){
+			if(getPriority(i) == 0) return false;
+			if(!this.models[0].isAnimating()){arm_ct++; if(arm_ct == 4) arm_ct = 1; this.models[0].setAnimation("arm_0"+arm_ct, false, null, 2, 0, true);} return this.addItem(i);
+		} function onWithdrawItems(){
+			if(!this.models[0].isAnimating()){
+				if(arm_ct == 0) arm_ct = 3; this.models[0].setAnimation("arm_0"+arm_ct, false, null, -2, 0, true); arm_ct--;
+			}
+		} this.models[0].animation.setAnimationSpeed(0);
+		var r = this.models[1].renderable.clone(); this.setRenderable(1, r); updateTexture = true;
+		function updateItem(e){
+			if(e == null || e.oldInfo != e.item.info) updateTexture = true;
+		} for(i in 0...10) this.inventory.getItem(i, 0).addEventListener("updated", updateItem);
+		</script></init>
+		<onFrame>if(updateTexture){
+			updateTexture = false; var t = this.setTexture(0, this.info.xml.elementPathsNamed("texture").next());
+			this.models[1].renderable.set("emissionTexture", t);
+		}</onFrame>
+		<texture width="320" height="128" bg="ff000000">
+			<script>y = 0; i = 0;</script><repeat count="2">
+				<script>x = 0</script><repeat count="5">
+					<border ui="box" x="x" y="y" width="64" height="64" />
+					<item item="this.inventory.getItem(i,0)" x="x" y="y" incCount="false" />
+					<script>x += 64; i++;</script>
+				</repeat><script>y += 64;</script>
+			</repeat>
+		</texture>
+		<onSelect>
+			<sound id="chest_open" source="this" />
+			<window id="transfer_inventory" from="this.inventory" to="object.inventory" from_title="getText('structure.storehouse')" to_title="getText('structure.inventory')" npcTake="storage.get('npcTake')" priority="priority" defaultPriority="5" request="this" />
+		</onSelect>
+	</structure>
+
+	<structure id="chest" extends="base_structure" model="chest" tooltip="actions.open" static="false">
+		<shape type="box" width="0.95" height="0.7" depth="0.63" />
+		<transform>matrix.setScale(0.7,0.7,0.7); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<infoInit>this.shapes[0].density = 0.3; this.rotationFactor.init(1,1,1); this.params.icon_anim = "open";</infoInit>
+		<inventory width="10" height="1" />
+		<init><script>
+		priority = storage.get("priority").forceObject();
+		function getPriority(i){
+			if(i.info == null) return 0; var t = i.info.xml.get('type');
+			if(t == null) return 3; else {
+				var d = priority.get(t).getFloat(); return (d == null)?3:d;
+			}
+		}
+		function getCollectPriority(i){
+			var p = getPriority(i); if(p == 0) return 0; else return this.inventory.canAddItem(i)?p:0;
+		}
+        function collectItem(i){return this.addItem(i);}
+        this.models[0].setAnimation("open", false, null, 0);
+        </script></init>
+		<onSelect>
+			<sound id="chest_open" source="this" />
+            <script>this.models[0].setAnimation("open", false, null, 1); if(this.area != null &amp;&amp; this.area.info.params.openChest != null) this.area.info.params.openChest(this);</script>
+			<window id="transfer_inventory" from="this.inventory" to="object.inventory" from_title="getText('structure.chest')" to_title="getText('structure.inventory')" priority="priority" defaultPriority="3" />
+            <sound id="chest_close" source="this" />
+			<script>unlockBlueprints(state, object, ["chest_blueprint"]);
+            this.models[0].setAnimation("close", false, null, 1);</script>
+		</onSelect>
+		<onAlternate><script>unlockBlueprints(state, object, ["chest_blueprint"]);</script></onAlternate>
+	</structure>
+
+	<structure id="cryopod_base" extends="base_structure">
+		<shape type="box" y="-0.725" width="1.85" height="0.1" depth="2" />
+		<shape type="box" y="0.375" width="1.85" height="0.8" depth="2" />
+		<shape type="box" x="-0.625" y="-0.375" width="0.6" height="0.7" depth="2" />
+		<shape type="box" x="0.625" y="-0.375" width="0.6" height="0.7" depth="2" />
+		<shape type="box" z="0.95" width="1.85" height="1.55" depth="0.1" />
+		<!--infoInit>this.shapes[3].collisionMask &amp;= ~PLAYER;</infoInit-->
+		<init><script>
+		this.models[1].animation.setAnimationSpeed(0);
+		function doorsOpened(){this.body._shapeList.setCollisionMask(this.info.shapes[0].collisionMask&amp;(~PLAYER));}
+		function doorsClosed(){this.body._shapeList.setCollisionMask(this.info.shapes[0].collisionMask);}
+		function isDoorClosed(){return this.models[1].animation.animations[0].currentFrame == 0;}
+		function isDoorOpen(){var a = this.models[1].animation.animations[0]; return a.currentFrame >= a.animation.duration;}
+		function openDoor(){
+			var a = this.models[1].animation.animations[0]; if(a.animationSpeed == 1) return;
+			if(a.currentFrame == 0) playSoundAt(this.area, this, "ship_door"); a.animationSpeed = 1; a.onComplete = doorsOpened;
+		}
+		function closeDoor(){
+			var a = this.models[1].animation.animations[0]; if(a.animationSpeed == -1) return;
+			if(a.currentFrame >= a.animation.duration) playSoundAt(this.area, this, "ship_door"); a.animationSpeed = -1; a.onComplete = doorsClosed;
+		}
+		</script></init>
+	</structure>
+	<light id="cryopod" type="point" r="3" g="6" b="9" />
+	<structure id="cryopod" extends="cryopod_base" model="cryopod" powered="true" power_use="2" healthPerSecond="3">
+		<infoInit>this.params.healthRegen = 60/eval(this.xml.get("healthPerSecond"));</infoInit>
+		<model id="cryopod_doors" tint="88ffffff" type="transparent" />
+		<light id="cryopod" />
+		<init><script>
+		power_use = parseFloat(this.info.xml.get('power_use')); this.power_use = 0.1;
+		var superOpenDoor = openDoor, superDoorsClosed = doorsClosed; npc = new Mutable();
+		function openDoor(){var n = npc.get(); if(n != null) n.hungerRegen = 60/n.info.hungerPerSecond; npc.set(null); this.power_use = 0.1; superOpenDoor();}
+		function doorsClosed(){
+			superDoorsClosed(); var ar = this.area.getObjects(isPlayerOrNPC, makeBounds(this.getX()-0.5, this.getY()-0.5, this.getZ()-0.5, 1, 1, 1));
+			var n = (ar.length == 1)?ar[0]:null; npc.set(n); this.power_use = n == null?0.1:power_use; if(n != null) n.hungerRegen = 0;
+		} var a = this.models[1].animation.animations[0]; a.animationSpeed = 1; a.onComplete = doorsOpened; partial = 0;
+		</script></init>
+		<onSelect><choose>
+			<script if="gui.selection.flags == 1">openDoor()</script>
+			<script if="gui.selection.flags == 2">closeDoor()</script>
+		</choose></onSelect>
+		<getSelection>
+		selection.bounds.copy(this.info.aabb); selection.flags = this.vars.get("isDoorOpen")()?2:1;
+		selection.setTooltips(getText("actions."+(selection.flags == 1?"open":"close")+"{structure:"+this.info.params.name+"}"),
+			this.vars.get('npc').get() == object?getText("actions.set_time"):getText("actions.dismantle{hold:false}{structure:"+this.info.params.name+"}")); return true;
+		</getSelection>
+		<onFrame>
+		var n = npc.get(); if(n != null &amp;&amp; this.hasPower()){
+			n.charge(this.power_use*frames/60); partial += frames; if(partial >= this.info.params.healthRegen){partial -= this.info.params.healthRegen; n.addHealth(1);}
+		}
+		</onFrame>
+		<onAlternate><section if="npc.get() == object"><choose>
+				<window id="set_time" if="this.hasPower()" />
+				<script>object.dispatchEvent(new ObjectEvent("warning", getText("warning.not_powered{structure:"+this.info.params.name+"}")));</script>
+			</choose><stop />
+		</section></onAlternate>
+	</structure>
+	<light id="cryopod_broken" type="point" r="2" g="4" b="6" fade="0.25" />
+	<particles id="cryopod_broken" extends="damage" points="[new Point(-0.8,-0.2,0), new Point(-0.5,0.4,0.2), new Point(0.65,-0.1,0.65)]" />
+	<structure id="cryopod_broken" name="structure>cryopod" extends="cryopod_base" model="cryopod_broken" powered="true" lightPowered="false" defense="999" entrance="new Point(0,-1.5,0)" tool="build" build_particles="construct">
+		<model id="cryopod_broken_doors" type="transparent" />
+		<model id="cryopod" />
+		<light id="cryopod_broken" />
+		<particles id="cryopod_broken" />
+		<init><script>
+		this.fadeEmissive = 0.25; npc = null; recipe = getData("recipe", "repair_cryopod"); build = getStructure("cryopod"); this.max_health.set(recipe.cost+1);
+		partial = this.storage.get('partial'); if(partial.get() == null){partial.setFloat(0); this.health.set(1);} this.models[2].visible = 0; this.models[2].emissionTint.set(0,0,0);
+		function updateModelClip(e){
+			var p = (this.getHealth()-1+partial.get()/recipe.timePerCost)/recipe.cost; this.models[2].visible = p > 0?1:0;
+			var b = this.models[2].getBounds(); this.models[2].max_z = Utils.interp(b.min_z, b.max_z, p); this.models[0].max_z = p > 0?-this.models[2].max_z:9999;
+		} costs = []; for(c in recipe.requirements) costs.push(0);
+		this.health.addEventListener("updated", updateModelClip);
+		function getName(){return getText(npc == null?this.info.params.name:(this.info.params.name+"_npc{npc:"+npc.vars.get("getName")().get()+"}"));}
+		function getIndicator(){return this.storage.get("found").getBool() == true?Icon.fromTile(getTile(npc == null?"home":"worker"),TYPE_INDICATOR,0.6):null;}
+		updateIndicator = handleIndicator(this, false); opening = false;
+		</script><run procedure="build.object" /></init>
+		<stateLoaded><script>updateIndicator()</script></stateLoaded>
+		<addedToArea><script>updateModelClip(null);</script></addedToArea>
+		<removedFromArea><script>if(buildObjects.length > 0 || dismantleObjects.length > 0) clearBuild();</script></removedFromArea>
+		<onSelect><choose>
+			<section if="npc != null">
+				<script>ct = 0; var d = this.storage.get("found"); if(d.getBool() != true){d.setBool(true); this.storage.get("indicator").setBool(true);}</script>
+				<script if="opening">object.dispatchEvent(new ObjectEvent("warning", getText('structure.cryopod_opening')));</script>
+				<blockingEvent wait="false" if="!opening"><script>opening = true</script><sound id="select" source="this" />
+				<dialogue text="getTextTemplate('structure.cryopod_occupied', {npc:npc.vars.get('getName')()})" />
+				<choose>
+					<dialogue section="structure" id="cryopod_no_home" if="findHome(this.area) == null" />
+					<menu section="common">
+						<dialogue text="getTextTemplate('structure.cryopod_open', {npc:npc.vars.get('getName')()})" />
+						<choice id="yes">
+							<script>this.models[1].animation.setAnimationSpeed(1); __container = container; __object = object; area.addParticles("break_long", this.getX(), this.getY(), this.getZ());</script><sound id="ship_door" source="this" />
+							<wait modal="false" seconds="1" />
+							<section if="npc != null">
+								<script>ct = incStat(container, state, "survivors", 1); if(this.area.getAllById('hydroponics').length > 1) ct = 0;</script>
+								<script modal="true">
+								this.storage.get("indicator").setBool(false); this.storage.get("found").setBool(false); var n = npc; npc.remove(); var o = n.info.params.npc.create(this.state); o.copyTransform(n); o.storage.copy(n.storage, false);
+								this.area.add(o); o.vars.get("exit")(this, function(){
+									o.body.setType(BODY_DYNAMIC);
+									var pos = __object.getPosition().clone(); pos.subeq(this.getPosition());
+									if(pos.lengthSquared() > 9 || Point.dot(this.getViewDir(), pos) &lt; 0){
+										var p = this.getFacing(1.75), x = p.x, y = p.y; p = this.getViewDir(); x += Utils.sign(p.y, 0.3); y += Utils.sign(p.x, 0.3);
+										__object.setPosition(x, y, this.getZ()-__object.info.aabb.min_z+this.info.aabb.min_z+0.01);
+									} var ev = o.storage.get('event').getString(); if(ev != null &amp;&amp; o.vars.get('talking') != true){
+										if(o.vars.get('quest_indicator') != null){var b = o.vars.get('quest_indicator'); b.lerp(b.objectX,b.objectY,b.objectZ,0,20,remove); o.vars.set('quest_indicator', null);}
+										o.vars.set("talking", true); o.runEvent(__container, ev, function(){o.vars.set("talking", false); onComplete();}, "object", __object);
+									} else onComplete();
+								});
+								</script>
+							</section>
+							<script>__container = null; __object = null;</script>
+						</choice>
+						<choice id="no" />
+						<close />
+					</menu>
+				</choose>
+				<script>opening = false</script>
+				<onSkip><script>object.dispatchEvent(new ObjectEvent("warning", getText('structure.cryopod_open_skip')));</script></onSkip>
+				</blockingEvent>
+				<blockingEvent if="ct == 2">
+					<dialogue section="pai" id="npc_food_tip" pai="true"  />
+				</blockingEvent>
+			</section>
+			<script if="gui.selection.flags == 1">openDoor()</script>
+			<script if="gui.selection.flags == 2">closeDoor()</script>
+		</choose></onSelect>
+		<onAlternate>
+			<script if="npc != null">object.dispatchEvent(new ObjectEvent("warning", getText('structure.cryopod_repair')));</script><stop />
+		</onAlternate>
+		<getSelection>
+		selection.bounds.copy(this.info.aabb);selection.flags = this.vars.get("isDoorOpen")()?2:1;
+		selection.setTooltips(getText("actions."+(selection.flags == 1?"open":"close")+"{structure:"+this.info.params.name+"}"), getText("actions.repair{structure:"+this.info.params.name+"}")); return true;
+		</getSelection>
+		<onAltRelease><script>stopBuildObject(object, buildObjects)</script></onAltRelease>
+		<onAltHold>if(npc != null) return; cancelBuild = false; var r = buildHold(this, object, build, "repair", frames, recipe, partial, costs); if(r == 0){
+			if(!cancelBuild){
+				if(buildObjects.indexOf(object) == -1){point.set(this.getX(), this.getY(), this.getZ()); startBuildObject(object, buildObjects, point);}
+				if(sfx.get() == null) startBuild(); updateModelClip(null);
+			}
+		} else if(r == 1) unlockBlueprints(object.state, object, ["cryopod_blueprint"]);</onAltHold>
+	</structure>
+	<script>BaseInfo.getInfo("structure", true).set("npc_cryopod", getStructure("cryopod_broken"))</script>NOTE: for old save compatability
+
+	<script>mutableFalse = new Mutable(); mutableFalse.set(false);</script>
+	<light id="bunker1" type="point" r="3" g="2.5" b="1.5" offsetY="-0.5" offsetZ="0.5" />
+	<light id="bunker2" type="point" r="3" g="2.5" b="1.5" offsetY="0.5" offsetZ="0.5" />
+	<structure id="npc_home" extends="base_structure" powered="true">
+		<infoInit>this.params.maxNPCs = parseInt(this.xml.get("npcs"));</infoInit>
+		<init><script>
+		if(!this.storage.get("id").hasData()) this.storage.get("id").setString(createStructureId());
+		function getName(){return concat(getText(this.info.params.name), this.storage.get("id").getString(), " ");}
+		npcs = []; for(i in 0...this.info.params.maxNPCs){
+			var npc = new Mutable(); npc.set(null); var name = new MutableMutable(getText('common.none')); var here = new MutableMutable(mutableFalse);
+			npcs.push({npc:npc, name:name, here:here});
+		} npcCount = 0;
+		function isFull(){return npcCount >= npcs.length;}
+		function indexOf(n){
+			var i = 0; for(m in npcs){if(m.npc.get() == n) return i; i++;} return -1;
+		} function __removeNPC(n){
+			var i = indexOf(n); if(i != -1){var m = npcs[i]; m.npc.set(null); m.name.setMutable(getText("common.none")); m.here.setMutable(mutableFalse); npcCount--;}
+		} function __addNPC(n){
+			var i = indexOf(null); if(i != -1){var m = npcs[i]; m.npc.set(n); m.name.setMutable(n.vars.get('getName')()); m.here.setMutable(n.vars.get("atHome")); npcCount++;}
+		} function addNPC(n){
+			if(npcCount &lt; npcs.length &amp;&amp; indexOf(n) == -1){var func = n.vars.get("setHome"); func(this);}
+		}
+		</script></init>
+		<removedFromArea><script>for(m in npcs){var n = m.npc.get(); if(n != null){var func = n.vars.get("setHome"); func(null);}}</script></removedFromArea>
+		<info height="y">
+			<text text="getText('structure.'+(this.info.params.acceptBot == true?'bots':'npcs'))" size="22" color="ffff88" width="width" align="left" />
+			<script>y = 24; i = 0;</script><repeat count="this.info.params.maxNPCs">
+				<text text="this.vars.get('npcs')[i].name" size="16" width="width" y="y" align="left" />
+				<script>y += 20; i++;</script>
+			</repeat>
+		</info>
+	</structure>
+	<model id="cube_block" primitive="cube" />
+	<structure id="bunker" extends="npc_home" model="bunker" entrance="new Point(0,-2.5,0)" npcs="4" power_use="2" npcEnter="true" tooltip="actions.manage" loop_sfx="bunker">
+		<infoInit>this.params.has_oxygen = true; this.shapes[5].collisionMask &amp;= ~PLAYER; for(i in 5...8) this.shapes[i].collisionMask &amp;= ~SELECTABLE;</infoInit>
+		<transform>var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+        <model id="bunker_interior" />
+		<model id="flat_shield" type="selection" tint="22ffffff"><transform>matrix.setScale(1.5,2,1); var b = new Basis(); b.tilt(-PI/2); matrix.append(b.getMatrix()); matrix.translate(-0.75,-1.44,0.5);</transform></model>
+		<shape type="box" y="-1.5" width="1.5" height="0.5" z="-0.5" depth="2" />
+		<shape type="box" x="-1.75" width="0.5" height="4" depth="3" />
+		<shape type="box" x="1.75" width="0.5" height="4" depth="3" />
+		<shape type="box" y="1.5" width="3" height="1" depth="3" />
+		<shape type="box" z="1" width="3" height="4" depth="1" />
+		<shape type="box" width="2" height="2" depth="2" />
+		<shape type="box" x="-1.125" width="0.75" y="0.25" height="1.75" depth="3" />
+		<shape type="box" x="1.125" width="0.75" y="0.25" height="1.75" depth="3" />
+		<shape type="box" x="-1.125" width="0.75" y="-1.25" height="1.25" depth="3" />
+		<shape type="box" x="1.125" width="0.75" y="-1.25" height="1.25" depth="3" />
+		<shape type="box" width="2.8" height="2.8" depth="2.5" self="WATER_BLOCK" block="0" />
+		<model id="cube_block" type="water_block">
+			<transform>matrix.setScale(3.6,2.9,2.8); matrix.set(3,2,-0.2);</transform>
+		</model>
+		<light id="bunker1" /><light id="bunker2" />
+		<inventory width="10" height="2" />
+		<init><script>function collectItem(i){return this.addItem(i);}
+		var d = this.storage.get("npcTake"); if(!d.isBool()) d.setBool(true);
+		function getCollectPriority(i){
+			if(isFoodItem(i) &amp;&amp; this.inventory.canAddItem(i)){
+				var t = getTotalFood(this.inventory); return (t &lt; 200?6:1)-t*0.000001;
+			} else return 0;
+		}
+		requestFrames = random()*60; shouldRequest = false;
+		function checkFood(e){
+			var has = hasWarning("nutrient_bar"); var no_food = getFood(this.inventory) == null; shouldRequest = no_food;
+			if(has != no_food){if(no_food){showWarning("nutrient_bar", getItem("nutrient_bar").getIcon()); requestFrames = 0;} else hideWarning("nutrient_bar");}
+		} sfx = new Mutable(); loop_sfx = this.info.xml.get("loop_sfx");
+		for(i in this.inventory) i.addEventListener("updated", checkFood); checkFood(null);
+		this.models[1].visible = 2; this.models[2].visible = 0; shield_visible = false;
+		function updateShield(e){
+			if(this.area == null || !this.area.info.has_oxygen){shield_visible = true; return;}
+			_point.copy(this.info.params.entrance); this.invTransformPoint(_point);
+			shield_visible = this.area.getWaterLevel(Math.floor(_point.x), Math.floor(_point.y), Math.round(this.getZ()+0.11+this.info.aabb.min_z)) > 1;
+		}
+		var a = this.models[0].animation; a.setAnimationCount(2); var list = this.models[0].renderable.renderable.animations;
+		var mask = 0; for(i in 7...12) mask = Bitmask.set(mask, i, true); a.animations[0].set(list[1], true, null, 0); a.animations[0].tracks = mask;
+		var mask = 0; for(i in 0...7) mask = Bitmask.set(mask, i, true); for(i in 12...15) mask = Bitmask.set(mask, i, true); a.animations[1].set(list[0], false, null, 0); a.animations[1].tracks = mask; a.setFrame(0);
+		function doorsOpened(){this.body._shapeList.setCollisionMask(this.info.shapes[0].collisionMask&amp;(~PLAYER)); updateShield(null);}
+		function doorsClosed(){this.body._shapeList.setCollisionMask(this.info.shapes[0].collisionMask); this.models[1].visible = 2; shield_visible = false;}
+		function checkFans(e){
+			a.animations[0].animationSpeed = this.hasPower()?1:0;
+			if(!this.hasPower()){var s = sfx.get(); if(s != null) s.stop(); sfx.set(null);}
+		} this.addEventListener("has_power", checkFans); checkFans(null);
+		function onNPCEnter(npc){
+			var i = indexOf(npc), x = (i&amp;1) == 0?1.25:-1.25, y = 0.7, z = (i>>1) == 0?-0.25:0.7, r = this.getRotation().z, c = Math.cos(r), s = Math.sin(r);
+			npc.lerp(new MoveKeyframe(this.getX()+c*x-s*y, this.getY()+c*y+s*x, this.getZ()+z-npc.info.aabb.min_z+this.info.aabb.min_z+0.05), 10);
+			npc.lerp(new RotateKeyframe(-PI/2,-r,0), 10); npc.vars.get("playSleep")();
+		}
+		function isDoorClosed(){return this.models[0].animation.animations[1].currentFrame == 0;}
+		function isDoorOpen(){var a = this.models[0].animation.animations[1]; return a.currentFrame >= a.animation.duration;}
+		function openDoor(){
+			var a = this.models[0].animation.animations[1]; if(a.animationSpeed == 0.66) return;
+			if(a.currentFrame == 0) playSoundAt(this.area, this, "ship_door"); this.models[1].visible = 1; a.animationSpeed = 0.66; a.onComplete = doorsOpened;
+		}
+		function closeDoor(){
+			var a = this.models[0].animation.animations[1]; if(a.animationSpeed == -0.66) return;
+			if(a.currentFrame >= a.animation.duration) playSoundAt(this.area, this, "ship_door"); a.animationSpeed = -0.66; a.onComplete = doorsClosed;
+		} bounds = makeBounds(0,0,0,0,0,0); _point = new Point();
+		function getIndicator(){return Icon.fromTile(getTile("home"),TYPE_INDICATOR,1);}
+		handleIndicator(this, true);
+		</script></init>
+		<addedToArea><script>area.addEventListener("flood", updateShield); updateShield(null);</script></addedToArea>
+		<removedFromArea><script>area.removeEventListener("flood", updateShield);</script></removedFromArea>
+		<onSelect><choose>
+			<script if="gui.selection.flags == 1">openDoor()</script>
+			<script if="gui.selection.flags == 2">closeDoor()</script>
+			<section if="gui.selection.flags == 3">
+				<sound id="chest_open" source="this" />
+				<window id="transfer_inventory" from="this.inventory" to="object.inventory" from_title="getName()" to_title="getText('structure.inventory')" request="this" />
+			</section>
+			<section if="gui.selection.flags == 4">
+				<window id="player_customize" storage="object.storage" info="object.info" index="var id = game_screens.indexOf(container); return id == 0?'':Std.string(id+1)">
+					<script>object.vars.get("updateAppearance")(); container.gui.bag.updateInfo(); container.gui.updateHelp();</script>
+				</window>
+			</section>
+			<section>
+				<sound id="select" source="this" />
+				<window id="bunker" structure="this" to="object.inventory" from_title="getName()" to_title="getText('structure.inventory')" indicator="this.storage.get('indicator')" />
+			</section>
+		</choose></onSelect>
+		<getSelection>
+		if(this.area.raytraceCallback.shape == this.body._shapeList){
+			getShapeAABB(this.info.shapes[0], selection.bounds); selection.flags = this.vars.get("isDoorOpen")()?2:1;
+			selection.setTooltips(getText("actions."+(selection.flags == 1?"open":"close")+"{structure:structure>door}"), getText("actions.dismantle{hold:false}{structure:"+this.info.params.name+"}"));
+		} else {
+			var bounds = this.vars.get("bounds"); bounds.set(-1.6, -1.6, -1.2, 3.2, 3.2, 2.4); var p = this.vars.get("_point"); p.copy(this.area.raytraceCallback.point); this.transformPoint(p);
+			if(bounds.contains(p.x, p.y, p.z)){
+				bounds.set(-1.6, -1.25, -1.3, 3.2, 0.6, 1.5);
+				if(bounds.contains(p.x, p.y, p.z)){
+					selection.bounds.set((p.x>0)?1.1:-1.5,-1.25,-1.3,0.4,0.6,1.5); selection.flags = 3;
+					selection.setTooltips(getText("actions.open{structure:structure>locker}"), getText("actions.dismantle{hold:false}{structure:"+this.info.params.name+"}"));
+					return true;
+				} else {
+					bounds.set(-0.2, 0.99, -0.8, 0.8, 0.02, 1.5);
+					if(bounds.contains(p.x, p.y, p.z)){
+						selection.bounds.set(-0.2,1,-1.3,0.8,0.6,1.5); selection.flags = 4;
+						selection.setTooltips(getText("actions.appearance"), getText("actions.dismantle{hold:false}{structure:"+this.info.params.name+"}"));
+						return true;
+					} else selection.bounds.set(-1.5,-1.25,-1.3,3,2.5,1.8);
+				}
+			} else selection.bounds.copy(this.info.aabb);
+			selection.setTooltips(getText(this.info.xml.get('tooltip')+"{structure:"+this.info.params.name+"}"), getText("actions.dismantle{hold:false}{structure:"+this.info.params.name+"}"));
+		} return true;
+		</getSelection>
+		<onFrame>
+		if(loop_sfx != null &amp;&amp; sfx.get() == null &amp;&amp; this.hasPower()) sfx.set(playSoundAt(this.area, this, loop_sfx, true));
+		if(shouldRequest){
+			if(requestFrames > 0) requestFrames -= frames; if(requestFrames &lt;= 0){
+				requestFrames = REQUEST_WAIT+random()*60; var food = 200; this.requestItemFunc(function(i){
+					if(food > 0 &amp;&amp; i.info != null &amp;&amp; i.info.params.hunger > 0){
+						var h = i.info.params.hunger; var ct = Utils.min(i.count, Math.ceil(food/h)); food -= ct*h; return ct;
+					} else return 0;
+				});
+			}
+		} var m = this.models[2]; m.texCrop.x = Utils.mod(m.texCrop.x+frames*0.006, 1);
+		if(shield_visible){
+			m.parent = this.models[1]; m.texCrop.y = Math.min(m.texCrop.y+frames*0.005, 0.375);
+		} else {
+			m.texCrop.y -= frames*0.005; if(m.texCrop.y &lt;= -0.125){
+				m.parent = null; m.texCrop.y = -0.125;
+			}
+		}
+		</onFrame>
+	</structure>
+
+	<tile id="spotlight" sheet="flashlight.png" x="1" />
+	<light id="spotlight" type="spot" tile="spotlight" spread="0.8" r="20" g="19" b="9" offsetZ="0.8" dust_power="0.2" tilt="20" />
+	<structure id="light" extends="base_structure" model="light" powered="true" power_use="1" tooltip="actions.toggle">
+		<light id="spotlight" />
+		<shape type="box" width="0.75" height="0.75" depth="1.8" />
+		<transform>matrix.setScale(0.75,0.75,0.75); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+			var enabled = this.storage.get("enabled"); if(!enabled.hasData()) enabled.setBool(true);
+			power_use = parseFloat(this.info.xml.get('power_use')); this.power_use = power_use;
+			function updateEnabled(e){var e = enabled.get()?1:0; this.power_use = power_use*e; this.models[0].emissionTint.set(e,e,e);}
+			enabled.addEventListener("updated", updateEnabled); updateEnabled(null);
+		</script></init>
+		<onSelect>
+			<sound id="'flashlight_'+(this.storage.get('enabled').getBool()?'off':'on')" source="this" />
+			<script>unlockBlueprints(state, object, ["light_blueprint"]);</script>
+			<script>var d = this.storage.get("enabled"); d.setBool(!d.getBool());</script>
+		</onSelect>
+		<onAlternate><script>unlockBlueprints(state, object, ["light_blueprint"]);</script></onAlternate>
+	</structure>
+
+	<structure id="teleportal" extends="base_teleport" model="teleportal" powered="true" power_use="3" tooltip="actions.manage">
+		<infoInit>this.params.teleportNPC = true; this.params.canEnter = function(p, flags){
+			return (flags&amp;NPC) != 0 &amp;&amp; p.z &lt; 0.5 &amp;&amp; Math.abs(p.x) &lt; 1;
+		} var point = new Point(); this.params.pathTeleport = function(self, x, y, z, parent, flags){
+			if((flags&amp;NPC) == 0 || !self.getAABB().contains(parent.x+0.5, parent.y+0.5, parent.z+0.5)) return null;
+			var t = self.vars.get("teleport").get(); if(t == null) return null; if(t.info.params.teleportNPC != true || t.area != self.area) return false;
+			point.set(parent.x+0.5, parent.y+0.5, parent.z+0.5); self.transformPoint(point); var old_y = Utils.sign(point.y);
+			point.set(x+0.5,y+0.5,z+0.5); self.transformPoint(point); if(!this.params.canEnter(point, flags)) return false; if(old_y == Utils.sign(point.y)) return null;
+			t.invTransformPoint(point); return new Node3D(Math.floor(point.x), Math.floor(point.y), Math.floor(point.z), parent);
+		} this.params.dispatchFrom = new Point(1.5,0,0); this.params.dispatchTo = new Point(1.5,1.5,0);
+		</infoInit>
+		<model id="teleportalFX" type="transparent" />
+		<light id="cryopod_broken" />
+		<shape type="box" width="1" x="-1.5" height="1.5" depth="3" />
+		<shape type="box" width="1" x="1.5" height="1.5" depth="3" />
+		<shape type="box" width="4" height="1.5" depth="0.5" z="1.4" />
+		<shape type="convex_hull">
+			<vertex x="-0.75" y="-0.9" z="-1.5" />
+			<vertex x="0.75" y="-0.9" z="-1.5" />
+			<vertex x="-0.75" y="0.9" z="-1.5" />
+			<vertex x="0.75" y="0.9" z="-1.5" />
+			<vertex x="-0.75" y="-0.6" z="-1.14" />
+			<vertex x="0.75" y="-0.6" z="-1.14" />
+			<vertex x="-0.75" y="0.6" z="-1.14" />
+			<vertex x="0.75" y="0.6" z="-1.14" />
+		</shape>
+		<shape type="box" width="2" height="0.01" depth="2" detector="true" />
+		<transform>matrix.setScale(0.8889,0.8889,0.8889); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+			function collectItem(i){
+				var t = prepareTeleport(); if(t != null &amp;&amp; canTeleportTo(t) &amp;&amp; t.info.params.dispatchFrom != null){
+					playSoundAt(t.area, t, "teleport"); playSoundAt(this.area, this, "teleport");
+					tmpPoint.copy(t.info.params.dispatchFrom); t.invTransformPoint(tmpPoint); var x = tmpPoint.x; var y = tmpPoint.y;
+					tmpPoint.copy(t.info.params.dispatchTo); t.invTransformPoint(tmpPoint); t.placeItem(i.clone(), x, y, tmpPoint.x, tmpPoint.y);
+					return true;
+				}
+			} this.models[1].tint.set(); this.models[1].emissionTint.set(1.3,1.3,1.3); this.models[1].emissionAlpha = false; sfx = new Mutable();
+			this.models[1].setAnimation("loop", true, null, 0); this.models[1].visible = 0; this.models[1].texCrop.y = -1; anim = this.models[1].animation.animations[0];
+		</script></init>
+		<onFrame>
+			this.models[1].texCrop.x = Utils.mod(this.models[1].texCrop.x+frames*0.006, 1);
+			var t = teleport.get(); if(canTeleportTo(t)){
+				if(this.models[1].texCrop.y == -1) playSoundAt(this.area, this, "teleportal_open");
+				this.models[1].visible = 1; anim.animationSpeed = 0.25; this.models[1].texCrop.y = Math.min(this.models[1].texCrop.y+frames*0.008, -0.5);
+				if(this.models[1].texCrop.y == -0.5 &amp;&amp; sfx.get() == null) sfx.set(playSoundAt(this.area, this, "teleportal", true));
+			} else if(anim.animationSpeed == 0.25){
+				var s = sfx.get(); if(s != null) s.stop(); sfx.set(null);
+				if(this.models[1].texCrop.y == -0.5) playSoundAt(this.area, this, "teleportal_close");
+				this.models[1].texCrop.y += frames*0.01; if(this.models[1].texCrop.y >= 0){
+					this.models[1].visible = 0; this.models[1].texCrop.y = -1; anim.animationSpeed = 0;
+				}
+			}
+		</onFrame>
+	</structure>
+</data>

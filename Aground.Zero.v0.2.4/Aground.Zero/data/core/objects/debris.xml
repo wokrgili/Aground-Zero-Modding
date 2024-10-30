@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<structure id="debris" self="STRUCTURE" block="WORLD|STRUCTURE|BLUEPRINT|PLAYER|NPC|ENEMY|ITEM" ground="shadow" static="false" defense="999" build_particles="construct" tool="build">
+		<infoInit>
+		if(this.body.type != BODY_STATIC){for(s in this.shapes) s.density = 0.5; this.rotationFactor.init(1,1,1);} this.params.name = this.xml.exists("name")?parseString(this.xml.get("name")):'structure>debris';
+		this.params.defense = eval(this.xml.get("defense"));
+		</infoInit>
+		<init><script>
+		recipe = getData("recipe", this.info.xml.get("recipe")); if(recipe == null) return; this.max_health.set(recipe.cost+1);
+		partial = this.storage.get('partial'); if(partial.get() == null){partial.setFloat(0); this.restoreHealth();}
+		function updateModelClip(e){
+			var p = 0.25+0.8*(this.getHealth()-1+partial.get()/recipe.timePerCost)/recipe.cost;
+			var b = this.getAABB(), z = Utils.interp(b.min_z, b.max_z+0.03, p);
+			for(m in this.models) if(m.info.type &lt; 2) m.max_z = z;
+		} this.health.addEventListener("updated", updateModelClip);
+		this.addEventListener("body_moved", updateModelClip);
+		</script><run procedure="build.object" /></init>
+		<addedToArea><script>updateModelClip(null);</script></addedToArea>
+		<removedFromArea><script>if(buildObjects.length > 0 || dismantleObjects.length > 0) clearBuild();</script></removedFromArea>
+		<getSelection>selection.bounds.copy(this.info.aabb); selection.setTooltips(null, getText("actions.dismantle{hold:true}{structure:"+this.info.params.name+"}")); return true;</getSelection>
+		<onAltRelease><script>stopBuildObject(object, dismantleObjects)</script></onAltRelease>
+		<onAltHold>cancelBuild = false; var v = dismantleHold(this, object, "build", frames, recipe, partial); if(v == 0){
+			if(!cancelBuild){
+				if(dismantleObjects.indexOf(object) == -1){point.set(this.getX(), this.getY(), this.getZ()); startBuildObject(object, dismantleObjects, point);}
+				if(sfx.get() == null) startBuild(); updateModelClip(null);
+			}
+		} else if(v == 1){this.runEvent(container, "onDismantle", null, "object", object);}</onAltHold>
+		<onDeath><script>playSoundAt(this.area, vec3(this.getX(), this.getY(), this.getZ()), "break", false, 1, 2); area.addParticles("break", this.getX(), this.getY(), this.getZ()); this.remove();</script></onDeath>
+		<onDamage><script>playSoundAt(this.area, this, "structure_hit"); this.flash(2,0,0,1,8);</script></onDamage>
+	</structure>
+	<recipe id="debris1" cost="20" time="4"><requires id="steel" count="1" /><requires id="wire" count="1" /></recipe>
+	<recipe id="debris2" cost="10" time="2"><requires id="steel" count="1" /></recipe>
+	<particles id="bunker_broken1" extends="damage" points="[new Point(-0.06084,-0.7,-0.15), new Point(-0.6,-0.15451,-0.1)]" />
+	<structure id="bunker_debris" extends="debris">
+		<onDismantle>
+			<script>state.storage.get("bunker").addInt(1);</script>
+			<blockingEvent if="state.storage.get('bunker').getInt() == 1">
+				<dialogue section="pai" id="bunker1" pai="true" />
+				<dialogue section="pai" id="bunker2" pai="true" expression="sad" />
+				<dialogue section="pai" id="bunker3" pai="true" expression="smile" />
+				<script>object.addQuest("bunker")</script>
+			</blockingEvent>
+		</onDismantle>
+	</structure>
+	<onScreen id="bunker_debris">
+		<blockingEvent if="player == state.host && state.storage.get('bunker').getInt() > 0 && !player.hasQuest('bunker') && !player.questComplete('bunker')">
+			<dialogue section="pai" id="bunker1" pai="true" />
+			<dialogue section="pai" id="bunker2" pai="true" expression="sad" />
+			<dialogue section="pai" id="bunker3" pai="true" expression="smile" />
+			<script>player.addQuest("bunker")</script>
+		</blockingEvent>
+	</onScreen>
+	<structure id="bunker_broken1" extends="bunker_debris" model="bunker_broken1" recipe="debris1">
+		<shape type="cylinder" radius="0.8" height="0.9" />
+		<transform>matrix.setTranslate(0,0,-0.35);</transform>
+		<particles id="bunker_broken1" />
+	</structure>
+	<particles id="bunker_broken2" extends="damage" points="[new Point(-0.7,0,-0.1), new Point(0.7,0,-0.1)]" />
+	<structure id="bunker_broken2" extends="bunker_debris" model="bunker_broken2" recipe="debris1">
+		<shape type="box" width="1.6" height="1" depth="0.7" />
+		<transform>matrix.setTranslate(0,0,-0.25);</transform>
+		<particles id="bunker_broken2" />
+	</structure>
+	<structure id="bunker_broken3" extends="bunker_debris" model="bunker_broken3" recipe="debris2">
+		<shape type="box" width="1" height="1.6" depth="0.24" />
+		<transform>matrix.setTranslate(0,0,-0.2);</transform>
+	</structure>
+	<particles id="bunker_broken4" extends="damage" points="[new Point(-0.7,0.75,0.2)]" />
+	<structure id="bunker_broken4" extends="bunker_debris" model="bunker_broken4" recipe="debris2">
+		<shape type="box" width="1.4" height="1.5" depth="0.45" />
+		<transform>matrix.setTranslate(0,0,-0.25);</transform>
+		<particles id="bunker_broken4" />
+	</structure>
+	<particles id="bunker_broken5" extends="damage" points="[new Point(0.4,0.35,0.1)]" />
+	<structure id="bunker_broken5" extends="bunker_debris" model="bunker_broken5" recipe="debris1">
+		<shape type="box" width="0.8" height="1.2" depth="1.5" />
+		<transform>matrix.setTranslate(0,0,-0.35);</transform>
+		<particles id="bunker_broken5" />
+	</structure>
+	<particles id="bunker_broken6" extends="damage" points="[new Point(0.2,0,-0.1)]" />
+	<structure id="bunker_broken6" extends="bunker_debris" model="bunker_broken6" recipe="debris1">
+		<shape type="box" width="1.2" height="1.5" depth="1.3" />
+		<transform>matrix.setTranslate(0,0,-0.5);</transform>
+		<particles id="bunker_broken6" />
+	</structure>
+</data>

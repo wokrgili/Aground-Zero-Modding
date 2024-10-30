@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<structure id="base_generator" extends="base_structure" powered="true">
+		<init><script>this.fadeEmissive = 0.125;
+		power_gen = new Mutable(); power_gen.set(0.0); power_use = new Mutable(); power_use.set(0.0); my_gen = new Mutable(); my_gen.set("");
+		function updatePower(e){
+			power_gen.set(this.power_group.power_gen); power_use.set(this.power_group.power_use); my_gen.set(getText("structure.add_power{power:"+this.power_gen+"}").get());
+		} this.addEventListener("has_power", updatePower); this.addEventListener("power_change", updatePower);
+		</script></init>
+		<onSelect><sound id="select" source="this" /><window id="power_usage" title="this.info.params.name" power_gen="concat(my_gen, floatToString(power_gen), ' ')" power_use="floatToString(power_use)" /></onSelect>
+	</structure>
+
+	<structure id="base_fuel_generator" extends="base_generator">
+		<infoInit>
+		this.params.types = []; for(e in this.xml.elementsNamed("recipe")) this.params.types.push(e.get("type"));
+		this.params.scaleAnim = this.xml.get("scale_anim") != "false";
+		</infoInit>
+		<inventory width="1" height="1" />
+		<init><script>
+			recipes = getRecipesByTypes(this.info.params.types, null);
+			enabled = this.storage.get("enabled"); if(!enabled.hasData()) enabled.setBool(true);
+			var d = this.storage.get('recipe'); recipe = getData('recipe', d.getString()); if(recipe == null){
+				recipe = recipes[0]; d.setString(recipe.id);
+			} on_power_gen = parseFloat(this.info.xml.get('power_gen')); this.power_gen = 0;
+			function getCost(){var i = this.storage.get(recipe.id).getInt(); return (i == null)?0:i;}
+			shouldProgress = false; shouldRequest = false; partial = 0; progress = new Mutable(); progress.set(Math.floor(getCost()*1000000/recipe.cost));
+			operateParticles = this.info.xml.get("operate_particles"); requestFrames = random()*60; sfx = new Mutable(); loop_sfx = this.info.xml.get("loop_sfx");
+			function checkReqs(e){
+				var r = true; var i = 0; shouldRequest = false; var req_ct = recipe.timePerCost > 0?2:1; for(req in recipe.requirements){
+					var item = this.inventory.getItem(i++, 0); if(item.count &lt; req.count || item.info == null || item.info.id != req.id){
+						if(r){r = false; if(!hasWarning(req.id)) showWarning(req.id, getItem(req.id).getIcon());} else hideWarning(req.id);
+					} else hideWarning(req.id);
+					if(item.count &lt; req.count*req_ct || item.info == null || item.info.id != req.id) shouldRequest = true;
+				} var sp = enabled.get() &amp;&amp; r; this.power_gen = sp?on_power_gen:0;
+				if(sp == shouldProgress) return; shouldProgress = sp;
+				var s = sfx.get(); if(s != null) s.stop(); sfx.set(null);
+				if(!shouldProgress){
+					if(operateParticles != null) this.removeParticlesById(operateParticles);
+					this.clearTrack(ModelScaleKeyframe); this.resetModelTransform();
+				} else {
+					if(operateParticles != null) this.addParticles(operateParticles); if(this.info.params.scaleAnim) this.loopLerp(new ModelScaleKeyframe(1.02,0.98,1.02), 20);
+					if(e != null &amp;&amp; this.state != null) this.state.runEvent(null, "generatorFueled", null, "generator", this);
+				}
+			} for(i in 0...this.inventory.getWidth()) this.inventory.getItem(i, 0).addEventListener("updated", checkReqs);
+			function updateRecipe(e){
+				for(req in recipe.requirements) hideWarning(req.id);
+				recipe = getData('recipe', d.getString()); progress.set(Math.floor(getCost()*1000000/recipe.cost)); checkReqs(e);
+			}
+			d.addEventListener("updated", updateRecipe);
+			function getCollectPriority(item){
+				if(!enabled.get()) return 0;
+				return getCollectPriorityRecipe(this.inventory, recipe, item);
+			}
+			function collectItem(item){
+				return addInventoryRecipe(this.inventory, recipe, item, true);
+			} this.inventory.insertItem = collectItem; enabled.addEventListener("updated", checkReqs); checkReqs(null);
+		</script></init>
+		<onSelect><sound id="select" source="this" /><window id="fuel_generator" title="this.info.params.name" recipe="this.storage.get('recipe')" recipes="recipes" power_gen="concat(my_gen, floatToString(power_gen), ' ')" power_use="floatToString(power_use)" requirements="this.inventory" to="object.inventory" to_title="getText('structure.inventory')" progress="progress" enabled="this.storage.get('enabled')" /><stop /></onSelect>
+		<onFrame>
+			if(!this.power_group.usingPower()) return;
+			if(shouldRequest &amp;&amp; requestFrames > 0) requestFrames -= frames; if(shouldProgress){
+				if(loop_sfx != null &amp;&amp; sfx.get() == null) sfx.set(playSoundAt(this.area, this, loop_sfx, true, 0.5));
+				if(recipe.timePerCost > 0){
+					var s = this.storage.get(recipe.id);
+					partial += frames; if(partial >= recipe.timePerCost){
+						partial -= recipe.timePerCost; if(s.addInt(1) >= recipe.cost){
+							s.setInt(0); recipe.useRequirements(this.inventory); requestFrames = 0;
+						}
+					} progress.set(Math.floor((s.getInt()+partial/recipe.timePerCost)*1000000/recipe.cost));
+				}
+			} if(shouldRequest &amp;&amp; requestFrames &lt;= 0 &amp;&amp; enabled.get()){
+				requestFrames = REQUEST_WAIT+random()*60; var item = this.inventory.getItem(0), i = item.info; if(i != null &amp;&amp; i.id != recipe.requirements[0].id){this.dropItem(item, 0.25); item.clear();}
+				requestMissingItems(this, recipe.getRequirements(recipe.timePerCost > 0?2:1), 1);
+			}
+		</onFrame>
+	</structure>
+
+	<light id="coal_generator" type="point" r="7" g="5" b="1" fade="0.125" offsetZ="0.4" />
+	<light id="uranium_generator" type="point" r="3" g="6" b="3" fade="0.125" offsetZ="0.4" />
+	<light id="exotic_matter_generator" type="point" r="1" g="6" b="7" fade="0.125" offsetZ="0.4" />
+	<particles id="coal_generator" extends="break" up="true" size="0.002" offsetZ="0.6" width="0.1" height="0.1" depth="0.5" speed="0.02" power="1" spawnCount="0" />
+	<particles id="uranium_generator" extends="coal_generator" size="0.004" speed="0.01" power="0.5" />
+	<particles id="exotic_matter_generator" x="0" type="emissive" extends="break" up="true" size="0.00390625" offsetZ="0.6" width="0.006" height="0.006" depth="0.1" alpha="1" speed="0.015" gravityZ="0.004" power="1" spawnCount="0" />
+	<structure id="generator" extends="base_fuel_generator" model="generator" power_gen="15" loop_sfx="generator">
+		<shape type="cylinder" radius="0.9" height="1.5" />
+		<recipe type="fuel" />
+		<transform>matrix.setScale(1.25,1.25,1.25); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+		var d = this.storage.get('recipe'); function updateType(e){
+			switch(d.get()){
+				case "fuel_coal": this.models[0].emissionTint.set(1.5,0.5,0); this.removeLight("uranium_generator"); this.removeLight("exotic_matter_generator");
+					if(!this.hasLight("coal_generator")) this.addLight("coal_generator");
+					this.removeParticlesById("uranium_generator"); this.removeParticlesById("exotic_matter_generator");
+					if(!this.hasParticles("coal_generator")) this.addParticles("coal_generator");
+				case "fuel_uranium": this.models[0].emissionTint.set(0.5,1.25,0.5); this.removeLight("coal_generator"); this.removeLight("exotic_matter_generator");
+					if(!this.hasLight("uranium_generator")) this.addLight("uranium_generator");
+					this.removeParticlesById("coal_generator"); this.removeParticlesById("exotic_matter_generator");
+					if(!this.hasParticles("uranium_generator")) this.addParticles("uranium_generator");
+				default: this.models[0].emissionTint.set(0.25,1.2,1.5); this.removeLight("coal_generator"); this.removeLight("uranium_generator");
+					if(!this.hasLight("exotic_matter_generator")) this.addLight("exotic_matter_generator");
+					this.removeParticlesById("coal_generator"); this.removeParticlesById("uranium_generator");
+					if(!this.hasParticles("exotic_matter_generator")) this.addParticles("exotic_matter_generator");
+
+			}
+		} d.addEventListener("updated", updateType); updateType(null);
+		</script></init>
+	</structure>
+
+	<script>BATTERY_COLORS = [0x000000, 0xff0000, 0xff0000, 0xffff00, 0xffff00, 0x00ff00, 0x00ff00];</script>
+	<structure id="battery" extends="base_structure" model="battery" powered="true" power="500" tooltip="actions.manage" lightPowered="false">
+		<model id="battery_levels" tint="ff333333" />
+		<shape type="box" width="1" height="0.63" depth="1.1" />
+		<groundBounds x="-0.6" y="-0.4" z="-0.55" width="1.2" height="0.8" depth="1.1" />
+		<transform>matrix.setScale(0.5,0.5,0.5)</transform>
+		<init><script>
+		var last = -1;
+		function updatePower(e){
+			var p = Math.round(this.power.get()*6/this.getMaxPower()); if(p == last) return; last = p;
+			this.models[1].texCrop.y = 0.08*p; this.models[1].emissionTint.setInt(BATTERY_COLORS[p], false);
+		} this.power.addEventListener("updated", updatePower); updatePower(null);
+		</script></init>
+		<onSelect>
+			<sound id="select" source="this" /><window id="battery" title="structure.battery" battery="this" object="object" />
+		</onSelect>
+	</structure>
+</data>

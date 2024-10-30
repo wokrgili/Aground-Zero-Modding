@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<!-- 
+	NOTES on model.visible:
+	0 = always invisible
+	1 = always visible
+	2 = visible when the camera is inside the model bounds (for interiors)
+	3 = visible when the camera is outside the model bounds (to skip models that will clip)
+	4 = visible when the model's parent object is not the current player (for the player's body)
+	5 = visible when the model's parent object is the current player (for fake player hands)
+	6+ (even) = visible when the current player's storage.get('visible'+Math.floor((visible-4)/2)).getBool() != false
+	6+ (odd) = visible when the current player's storage.get('visible'+Math.floor((visible-4)/2)).getBool() == true
+	-->
+	<tilesheet id="flashlight.png" width="512" height="512" />
+	<tile id="flashlight" sheet="flashlight.png" />
+	<light id="flashlight" type="spot" tile="flashlight" spread="0.4" r="6" g="7.5" b="9" offsetZ="-0.4" />
+	<script>
+	ANIM_TRANSITION = 5;
+	function priorityFood(a, b){
+		var h = a.info.params.health-b.info.params.health; if(h != 0) return h &lt; 0;
+		h = a.info.params.hunger-b.info.params.hunger; if(h != 0) return h > 0; else return b.count > a.count;
+	}
+	function getFood(inv){
+		var best = null; for(v in inv) if(v.info != null &amp;&amp; v.info.params.hunger > 0 &amp;&amp; (best == null || priorityFood(v, best))) best = v; return best;
+	}
+	function getTotalFood(inv){
+		if(inv == null) return 0; var ct = 0; for(v in inv) if(v.info != null &amp;&amp; v.info.params.hunger > 0) ct += v.count*v.info.params.hunger; return ct;
+	}
+	function hasItemToDropOff(inv, maxFood, exclude){
+		var ct = 0; for(v in inv) if(exclude.indexOf(v) == -1 &amp;&amp; v.info != null){
+			if(v.info.params.hunger > 0) ct += v.count*v.info.params.hunger; else return true;
+		} return ct > maxFood;
+	}
+	function isStorehouse(o){
+		return o.storage.get("npcTake").getBool() == true &amp;&amp; !o.inventory.isFull();
+	}
+	function isFoodItem(i){return i.info != null &amp;&amp; i.info.params.hunger > 0;}
+	function alwaysTrue(i){return true;}
+	function withdrawFood(from, to, max){
+		while(max > 0){
+			var v = getFood(from); if(v == null) break; var ct = Utils.min(v.count, Math.ceil(max/v.info.params.hunger));
+			var i = v.clone(); i.count = ct; if(to.addItem(i)){max -= ct*v.info.params.hunger; v.count -= ct;} else {
+				v.count -= ct-i.count; break;
+			}
+		}
+	}
+	function withdrawItem(from, to, item){
+		for(i in from) if(item.is(i)){
+			var ct = Utils.min(item.count, i.count), v = item.clone(); v.count = ct;
+			item.count -= ct; i.count -= ct; to.addItem(v);
+			if(item.count == 0) break;
+		}
+	}
+	function findHome(area){
+		for(o in area.objects) if(o.info.params.acceptNPC != false){
+			var max = o.info.params.maxNPCs; if(max != null &amp;&amp; o.vars.get("npcCount") &lt; max) return o;
+		} return null;
+	}
+	function isHome(o){return o.info.params.acceptNPC != false &amp;&amp; o.info.params.maxNPCs != null;}
+	function isHomeBot(o){return o.info.params.acceptBot == true &amp;&amp; o.info.params.maxNPCs != null;}
+	function isHomeFull(o){var max = o.info.params.maxNPCs; return max != null &amp;&amp; o.vars.get("npcCount") >= max;}
+	function isWork(o){return o.info.params.skill != null;}
+	function isPlayer(o){return o.isPlayer();}
+	function isPlayerOrNPC(o){return (o.info.self&amp;(PLAYER|NPC)) != 0;}
+
+	function handleIndicator(this, def, ?dz){
+		var d = this.storage.get("indicator"); if(!d.hasData()) d.setBool(def); this.vars.set('indicator', null); if(dz == null) dz = 0;
+		function updateIndicator(e){
+			if(d.getBool() == true){
+				if(this.vars.get('indicator') == null){
+					var f = this.vars.get("getIndicator"), i = (f == null)?null:f();
+					if(i != null){
+						var b = this.addBillboard(i, 0, 0, dz);
+						b.alpha = 0; b.lerp(0,0,dz,0.75,10); this.vars.set('indicator', b);
+					}
+				}
+			} else if(this.vars.get('indicator') != null){
+				this.vars.get('indicator').lerp(0,0,dz,0,10,remove); this.vars.set('indicator', null);
+			}
+		} d.addEventListener("updated", updateIndicator); updateIndicator(null);
+		return function(){
+			if(this.vars.get('indicator') != null){
+				this.vars.get('indicator').lerp(0,0,dz,0,10,remove); this.vars.set('indicator', null);
+			} updateIndicator(null);
+		}
+	}
+	function fadeIn(b){b.lerp(b.objectX, b.objectY, b.objectZ, 1, 60, fadeOut);}
+	function fadeOut(b){b.lerp(b.objectX, b.objectY, b.objectZ, 0, 60, fadeIn);}
+	function handleQuestIndicator(this, event, listeners, listenEvent, ?dz, ?fire){
+		this.vars.set('quest_indicator', null); if(dz == null) dz = 0;
+		function updateQuestIndicator(e){
+			var xml; if(fire == true) xml = this.peekEvent(null, event, ["quest"]);
+			else xml = (game_screens.length == 0)?null:this.peekEvent(game_screens[0], event, ["quest"], "object", getPlayerForScreen(game_screens[0]));
+			if(xml != null){
+				if(this.vars.get('quest_indicator') == null){
+					var b = this.addBillboard(Icon.fromTile(getTile("quest_indicator"),TYPE_EMISSIVE,0.6), 0, 0, dz);
+					b.alpha = 0; fadeIn(b); this.vars.set('quest_indicator', b);
+				}
+			} else if(this.vars.get('quest_indicator') != null){
+				this.vars.get('quest_indicator').lerp(0,0,dz,0,20,remove); this.vars.set('quest_indicator', null);
+			}
+		} for(l in listeners) l.addEventListener(listenEvent, updateQuestIndicator); if(fire == true) updateQuestIndicator(null);
+		this.addEventListener("removed", function(e){for(l in listeners) l.removeEventListener(listenEvent, updateQuestIndicator);});
+	}
+	</script>
+	<character id="player" player="true" talk_sfx="talking2" health="100" power="1000" hunger="400" oxygen="40" speed="0.125" jump="1.2" fall_damage="5" power_gen="1" hungerPerSecond="-0.25" model="scavenger" ground="shadow" rotate_ground="false" self="PLAYER" block="WORLD|PROJECTILE|STRUCTURE|BLUEPRINT|ENEMY|PLAYER|NPC" lightPowered="false" saveEye="true" eye="[0,0,0.4]" bob_ht="0.04" access="action">
+		<infoInit>
+		this.params.upgrades = ["storage", "power_gen", "defense", "cspeed", "light", "itemcollect", "oxygen"]; this.params.defense = eval(this.xml.get("defense")); this.params.name = this.xml.exists("name")?parseString(this.xml.get("name")):'customize>default_name';
+		this.params.updateModel = updatePlayerModel; this.params.genTexture = player_diffuse; this.params.customizations = [
+			{id:"name", type:"string", value:'customize.default_name', update:false},
+			{id:"skin", type:"option", options:getCustomOptions('player.skin')},
+			{id:"eye", type:"option", options:getCustomOptions('player.eye')},
+			{id:"eyec", type:"option", options:getCustomOptions('player.eyec')},
+			{id:"hair", type:"option", options:getCustomOptions('player.hair')},
+			{id:"hairc", type:"option", options:getCustomOptions('player.hairc')},
+			{id:"suit", type:"option", options:getCustomOptions('player.suit')}
+		];
+		</infoInit>
+		<inventory width="10" height="1" />
+		<transform>matrix.setScale(0.053,0.053,0.053); matrix.set(3,1,-0.05); matrix.set(3,2,-0.87); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<shape type="capsule" radius="0.22" height="1.3" />
+		<model tool="true" linkView="true"><transform>matrix.setScale(0.5,0.5,0.5); matrix.set(3,1,0.7); matrix.set(3,2,-0.4); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform></model>
+		<model id="shield" type="selection" tint="22ffffff"><transform>matrix.setScale(1.3,1.3,1.7); var b = new Basis(); b.pan(PI/2); matrix.append(b.getMatrix());</transform></model>
+		<init><script>
+		this.setEyePosition(this.info.eye.x, this.info.eye.y, this.info.eye.z); invulnerable = false; suit_color = new Color();
+		this.models[0].visible = 4; this.models[1].visible = 5; var m = this.models[2]; m.visible = 0; m.texCrop.y = -0.125; speaking = false;
+		function getName(){var n = this.storage.get("name"); return n.isString()?n:getText(this.info.params.name);}
+		var pg = this.power_gen; function updatePowerGen(e){var f = storage.get("power_gen").getFloat(); if(f == null) f = 1; this.power_gen = pg*f;}
+		storage.get("power_gen").addEventListener("updated", updatePowerGen); updatePowerGen(null);
+		this.ground.color.alpha = 0.6; function changeHunger(e){
+			if(this.getHungerPercent() &lt; 0.2 &amp;&amp; e.object/this.getMaxHunger() >= 0.2) this.runEvent(null, "onHungry");
+			if(this.getHunger() == 0 &amp;&amp; settings.get("auto_eat").getBool() != false) this.runEvent(null, "autoEat");
+		} this.hunger.addEventListener("updated", changeHunger);
+		function changePower(e){
+			if(this.power.get()/this.getMaxPower() &lt; 0.2 &amp;&amp; e.object/this.getMaxPower() >= 0.2) this.runEvent(null, "onLowPower");
+		} this.power.addEventListener("updated", changePower);
+		var d = this.storage.get('light'); var f = this.storage.get("flashlight"); if(!f.hasData()) f.setBool(false); var flashlightOn = false;
+		function updateLight(e){
+			if(f.getBool() == true){this.removeLight("flashlight"); this.addLight("flashlight", d.isFloat()?d.getFloat():1); if(!flashlightOn){flashlightOn = true; this.power_use++;}}
+			else {this.removeLight("flashlight"); if(flashlightOn){flashlightOn = false; this.power_use--;}}
+		} d.addEventListener("updated", updateLight); f.addEventListener("updated", updateLight); updateLight(null);
+		function updateToolVisible(e){
+			this.models[1].visible = settings.get("show_tools").getBool() == false?0:5;
+		}
+		
+		function changeOxygen(e){
+			this.max_oxygen.set(this.info.oxygen+getItemDelta(this, "oxygen"));
+		} this.storage.get("oxygen").addEventListener("updated", changeOxygen); changeOxygen(null);
+
+		function hideTool(m, onComplete){
+			this.clearTrack(ToolScaleKeyframe); this.clearTrack(ToolMoveKeyframe);
+			this.lerp(new LookToKeyframe(m, new Point(0,-0.7,-0.7), new Point(0,8,8)), 20, onComplete);
+		}
+		function showTool(m, onComplete){
+			this.clearTrack(ToolScaleKeyframe); this.clearTrack(ToolMoveKeyframe);
+			this.lerp(new LookToKeyframe(m, new Point(0,-0.7,-0.4), new Point(0,-0.5,-0.4)), 20, onComplete);
+		}
+		function updateAppearance(){
+			this.info.params.updateModel(storage, this.models[0], this.setTexture(0, this.info.params.genTexture));
+			var d = getData('customOption', storage.get('suit').getString());
+			suit_color.setInt(0xff2929, false); if(d != null &amp;&amp; d.hsv != null){
+				var m = new ColorMatrix(); m.adjustColor(d.hsv[2], d.hsv.length > 3?d.hsv[3]:0, d.hsv[1], d.hsv[0]); m.transform(suit_color, suit_color);
+			} var d = storage.get("indicator"); if(d.getBool() == true){d.set(false); d.set(true);}
+		}
+		var idles = ["idle1", "idle2", "idle3"]; isIdle = false;
+		function nextIdle(){isIdle = false; playIdle();}
+		function playIdle(){if(isIdle) return; isIdle = true; this.models[0].setAnimation(random()>0.5?selectRandom(idles):"idle1", false, nextIdle, 1, ANIM_TRANSITION, true); this.models[0].animation.isAnimating = false; isIdle = true;}
+		function playTalk(){this.models[0].setAnimation("talk", true, null, 1, ANIM_TRANSITION); isIdle = false;}
+		function playWalk(){this.models[0].setAnimation("walk", true, null, 1, ANIM_TRANSITION); isIdle = false;}
+		function playJump(){playIdle();}
+		playIdle(); water_fx_ct = 30;
+		function getIndicator(){var i = Icon.fromTile(getTile("worker"),TYPE_INDICATOR,0.6); i.color = suit_color; return i;}
+		handleIndicator(this, false, -0.4);
+
+		this.addEventListener("notification", function(e){
+			addHistory(this, e.object, null, 0xff5454);
+		});
+		this.addEventListener("build_blueprint", function(e){
+			this.storage.get("build").forceObject().get(e.object.info.id).addInt(1);
+		});
+		</script></init>
+		<create><window id="player_customize" storage="this.storage" info="this.info" index="id == 0?'':Std.string(id+1)" newChara="true"><stop /></window><stop fireComplete="false" /></create>
+		<addedToArea><script>if(this.textures.length == 0) updateAppearance();</script></addedToArea>
+		<openInventory>
+			<window id="inventory" inventory="this.inventory" />
+		</openInventory>
+		<getSelection>selection.bounds.copy(this.info.aabb); selection.actionTooltip = getText('actions.give'); return true;</getSelection>
+		<onSelect>
+			<sound id="select" source="this" /><window id="give" object="this" to="object.inventory" to_title="getText('structure.inventory')" indicator="this.storage.get('indicator')"  />
+		</onSelect>
+		<onHungry><section if="this.storage.get('hungry').getBool() != true">
+			<script>this.storage.get('hungry').setBool(true);</script>
+			<blockingEvent>
+				<script>gui.vars.get('hunger').setAdd(-10000);</script>
+				<dialogue section="pai" id="hunger1" pai="true" expression="smile" />
+				<script>gui.vars.get('hunger').setAdd(0); item_id = "craft"; player = this;</script><run procedure="highlight_item" />
+				<dialogue section="pai" id="hunger2" pai="true" expression="sad" />
+				<run procedure="unhighlight_item" />
+				<dialogue section="pai" id="hunger3" pai="true" />
+			</blockingEvent>
+		</section></onHungry>
+		<autoEat>
+			<script>food = getFood(this.inventory); if(food != null) autoEat(this, food);</script>
+		</autoEat>
+		<onLowPower><section if="this.storage.get('low_power').getBool() != true">
+			<script>this.storage.get('low_power').setBool(true);</script>
+			<blockingEvent>
+				<script>gui.vars.get('power').setAdd(-10000);</script>
+				<dialogue text="getText('pai.power1{intro:true}')" pai="true" expression="sad" />
+				<dialogue section="pai" id="power2" pai="true" />
+				<script>gui.vars.get('power').setAdd(0); item_id = "mine"; player = this;</script><run procedure="highlight_item" />
+				<dialogue section="pai" id="power3" pai="true" />
+				<run procedure="unhighlight_item" />
+			</blockingEvent>
+		</section></onLowPower>
+		<areaInit><script>settings.get("show_tools").addEventListener("updated", updateToolVisible); updateToolVisible(null);</script></areaInit>
+		<areaDestroy><script>settings.get("show_tools").removeEventListener("updated", updateToolVisible);</script></areaDestroy>
+		<onDeath>
+			<sound id="player_death" />
+			<choose>
+				<gameOver if="state.localPlayers.length+state.remotePlayers.length == 1" />
+				<section>
+					TODO: show game over art?
+					<script if="exists('vehicle') && vehicle != null">vehicle.vars.get('unmountInstant')(container, this)</script>
+					<closeWindows />
+					<show id="dead" seconds="0.5" tooltip="default" text="getText('common.dead')" x="0.5" y="0.5" color="ff2222" />
+					<script modal="true">container.gui.locked = true; this.lerp(new ModelScaleKeyframe(0.125,0.125,0.125), 30, this.remove); container.getChildAt(0).lerp(new DarkenKeyframe(0), 30, onComplete);</script>
+					<wait seconds="10" />
+					<hide id="dead" seconds="0.5" />
+					<script modal="true">
+					this.remove(); this.setPosition(state.campaign.x, state.campaign.y, state.campaign.z); var a = state.getArea(state.campaign.area);
+					if(a != null){
+						this.restoreHealth(0.5); this.setOxygen(9999); adjustPos(this, a); a.add(this); this.lerp(new ModelScaleKeyframe(1,1,1), 30);
+						container.getChildAt(0).lerp(new DarkenKeyframe(1), 30, onComplete);
+					}</script><script>container.gui.locked = false;</script>
+				</section>
+			</choose>
+		</onDeath>
+		<onFall><script>playSoundAt(this.area, this, "hit");</script></onFall>
+		<onDamage><script>this.flash(2,0,0,1,8); if(this.getHunger() == 0 &amp;&amp; settings.get("auto_eat").getBool() != false) this.runEvent(null, "autoEat");</script></onDamage>
+		<onBlocked><script>this.flash(0,1,2,1,8); var m = this.models[2]; m.texCrop.y = 0; m.tint.a = 0.25; playSoundAt(this.area, this, "shield");</script></onBlocked>
+		<onFrame>
+		water_fx_ct -= frames;
+		if(!speaking &amp;&amp; this.onGround()){
+			if(this.body._shapeList._friction == 10) playIdle(); else playWalk();
+		} var m = this.models[2]; m.texCrop.x = Utils.mod(m.texCrop.x+frames*0.006, 1); m.tint.a = Math.max(m.tint.a-frames*0.001, 0.1333333);
+		if(invulnerable){
+			m.visible = 1; m.texCrop.y = Math.min(m.texCrop.y+frames*0.02, 0.375);
+		} else {
+			m.texCrop.y -= frames*0.02; if(m.texCrop.y &lt;= -0.125){
+				m.visible = 0; m.texCrop.y = -0.125;
+			}
+		}
+		</onFrame>
+		<footstep><script>defaultFootstep(this, type);</script></footstep>
+		<onJump><script>if(fly) container.gui.bag.updateInfo(); else playJump();</script></onJump>
+		<endJump><script if="fly">container.gui.bag.updateInfo();</script></endJump>
+		<beginSpeak><script>speaking = true; playTalk();</script></beginSpeak>
+		<endSpeak><script>if(closed){speaking = false; playIdle();}</script></endSpeak>
+		<onDig>
+			<script>this.storage.get("dig").forceObject().get(dig.material.id).addInt(1);</script>
+			<blockingEvent wait="false" if="dig.z < 5 && this.storage.get('dig_hole').getBool() != true">
+				<script>this.storage.get('dig_hole').setBool(true)</script>
+				<dialogue section="pai" id="dig_hole" pai="true" expression="smile" if="this.inventory.getCountById('shovel') == 0" />
+			</blockingEvent>
+		</onDig>
+		<onKill><script>this.storage.get("kill").forceObject().get(object.info.id).addInt(1);</script></onKill>
+		<exitWater><script if="water_fx_ct <= 0">playSoundAt(this.area, this, "exit_water"); this.addParticles("splash").colorMatrix.setColor(this.area.waterColor, 0.75); water_fx_ct = 30;</script></exitWater>
+		<enterWater><script if="water_fx_ct <= 0">playSoundAt(this.area, this, "enter_water"); this.addParticles("splash").colorMatrix.setColor(this.area.waterColor, 0.75); water_fx_ct = 30;</script></enterWater>
+		<onTeleport>
+			<script>var c = container.getChildAt(0).colorTransform; init_hsv = [0, c.saturation, c.brightness, c.contrast];</script>
+			<lerp object="container.getChildAt(0)" hsv="var ar = init_hsv.copy(); ar[0] += 360; return ar;" seconds="0.4" modal="false"><from hsv="init_hsv" /><applyLerp object="container.getChildAt(0)" hsv="init_hsv" /></lerp>
+			<show solid="ffffff" width="4000" height="4000" behind="true" id="black" blend="invert" seconds="0.2" />
+			<invokeLater seconds="0.22"><hide id="black" seconds="0.2" /></invokeLater>
+		</onTeleport>
+		<initGUI><window id="gui.default" into="gui" modal="false" /></initGUI>
+		NOTE: this.body._gravityScale == 0 means that the player is climbing, if we want separate climb animations.
+	</character>
+	
+	<include id="npcs.xml" />
+	<include id="enemies.xml" />
+	<include id="structures.xml" />
+	<include id="blueprints.xml" />
+	<include id="debris.xml" />
+</data>

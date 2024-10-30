@@ -1,0 +1,843 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<script>
+	SKILLS = ["electronics", "mining", "cooking"];
+	CHARACTER_ICONS = new StringMap();
+	function updateCharacterIcon(info, id){
+		var dist = 1.1, camera = new Camera(); camera.fov = 60; camera.rotation.pan(PI); camera.rotation.tilt(0.1); camera.rotation.pan(-0.2); camera.moveRelative(0, dist, 0.2);
+		var models = [], r = getModel(id); if(r != null){
+			var model = new Model(r); model.mipmapTextures = r.mipmapTextures;
+			model.transform.copy(info.modelTransform); models.push(model);
+		} var ret = CHARACTER_ICONS.get(id); if(ret == null){ret = makeIcon(128,128); CHARACTER_ICONS.set(id, ret);}
+		var l = Math.sqrt(dist)*12; renderIcon(ret, camera, models, null, new Color(l,l,l), new Color(0.25,0.25,0.25)); return ret;
+	}
+	function makeCharacterIcon(o){
+		var id = o.storage.get("model").getString(); if(id == null) id = o.models[0].info.id;
+		var i = CHARACTER_ICONS.get(id); if(i == null) return updateCharacterIcon(o.info, id); else return i;
+	}
+	function getNPCCount(area){
+		var ret = 0; for(o in area.objects) if(o.info.xml.get("npc") == "true") ret++; return ret;
+	}
+	function getFrozenNPCCount(area){
+		var ret = 0; for(o in area.objects) if(o.info.xml.get("npc") == "true" &amp;&amp; o.info.body.type == BODY_STATIC) ret++; return ret;
+	}
+	function npcCloseDoor(o){
+		if(o.area != null &amp;&amp; o.area.getObjects(isPlayer, o.getAABB()).length > 0) return;
+		var f = o.vars.get("closeDoor"); if(f != null) f();
+	}
+	function npcWarning(state, msg){
+		for(p in state.localPlayers) p.dispatchEvent(new ObjectEvent("notification", msg));
+	}
+	function getDeadNPCs(state){
+		var ids = ['chef1','chef2','miner1','miner2','farmer1','farmer2','scientist','soldier'];
+		for(o in state.areas[0].objects) if(o.info.xml.get("npc") == "true"){
+			ids.remove((o.info.params.npc == null)?o.info.id:o.info.params.npc.id);
+		} return ids;
+	}
+	function getNPCEvent(npc, object){
+		if(!npc.state.getFlag('npc_dead') &amp;&amp; getDeadNPCs(npc.state).length > 0) return "npcDead";
+		if(npc.info.id != 'scientist' &amp;&amp; !npc.state.getFlag('grow_milk')) for(o in npc.area.objects) if(o.storage.get('recipe').get() == 'grow_milk') return "growMilk";
+		if(npc.vars.get('atWork').get() &amp;&amp; !npc.state.getFlag('connect_work')){
+			var w = npc.vars.get('work').get(); if(w != null &amp;&amp; w.inventory != null){
+				var ar = w.followIncomingBelts(null, null, Area.allowsRequestItem);
+				for(o in ar) if(o.object != null) return "connectWork";
+			}
+		} if(!npc.state.getFlag('fuel_uranium')) for(o in npc.area.objects) if(o.storage.get('recipe').get() == 'fuel_uranium') return "fuelUranium";
+		if(!npc.state.getFlag('npc_portal') &amp;&amp; hasBlueprints(npc.state, ['teleportal_blueprint'])) return "npcPortal";
+		return null;
+	}
+	</script>
+	<light id="flashlight_npc" type="spot" tile="flashlight" spread="0.4" r="6" g="7.5" b="9" offsetY="-0.5" />
+	<procedure id="npc.init"><script>
+		function getName(){var n = this.storage.get("name"); return n.isString()?n:getText(this.info.params.name);}
+		this.ground.color.alpha = 0.6; to = null;
+		path = null; failPath = null; function playIdle(){this.models[0].setAnimation("idle", true, null, 0.5, ANIM_TRANSITION);}
+		function playTalk(){this.models[0].setAnimation("talk", true, null, 0.5, ANIM_TRANSITION);}
+		function playWork(w){this.models[0].setAnimation("work", true, null, 0.5, ANIM_TRANSITION);}
+		function playWalk(){this.models[0].setAnimation("walk", true, null, 1, ANIM_TRANSITION);}
+		function playPickup(){this.models[0].setAnimation("pick_up", false, null, 0.5, ANIM_TRANSITION);}
+		function playSleep(){playTalk();}
+		function waitForPathfind(){
+			this.stop(); this.models[0].setAnimation("idle", false, playIdle, 0.5, ANIM_TRANSITION, true);
+		}
+		function getDestination(frames){}
+		function handleDestination(){}
+		climb_ladder = false;
+		function onTeleport(t){if(path != null){target_x = path.x; target_y = path.y;}}
+		function nextPath(){
+			var o = path; climb_ladder = false; setPath(path.parent); if(path == null){this.stop(); playIdle(); handleDestination();}
+			else {
+				if(Utils.abs(path.x-o.x)+Utils.abs(path.y-o.y)+Utils.abs(path.z-o.z) > 2){
+					var t = area.getFirstInTile(o.x, o.y, o.z, function(t){
+						if(t.info.params.pathTeleport == null) return false;
+						var p = this.getPosition(); t.transformPoint(p); p.x = 0; p.y = -Utils.sign(p.y); t.invTransformPoint(p);
+						if(Math.abs(p.x-t.getX()) > 0.1){target_x = Math.round(p.x); target_y = o.y;} else {target_x = o.x; target_y = Math.round(p.y);}
+						var to = t.info.params.pathTeleport(t,target_x,target_y,o.z,o,this.info.self);
+						return to != null &amp;&amp; to != false &amp;&amp; Math.abs(to.x-path.x) &lt; 1.1 &amp;&amp; Math.abs(to.y-path.y) &lt; 1.1 &amp;&amp; Math.abs(to.z-path.z) &lt; 1.1;
+					}); if(t == null){failPath = path; path = null; waitForPathfind(); return;} else this.facePos(target_x+0.5, target_y+0.5, 15);
+				} else if(o.x != target_x || o.y != target_y){
+					var t = area.getFirstInTile(o.x, o.y, o.z, function(t){
+						if(t.info.params.pathTeleport == null) return false;
+						return t.info.params.pathTeleport(t,target_x,target_y,o.z,o,this.info.self) != null;
+					}); if(t != null){failPath = path; path = null; waitForPathfind(); return;}
+					this.facePos(target_x+0.5, target_y+0.5, 15);
+				} else if(o.z != path.z){
+					var d = this.area.getLadderDir(path.x,path.y,path.z);
+					if(d == -1) d = this.area.getLadderDir(path.x,path.y,path.z-1);
+					if(d >= 0){this.faceAngle(d*PI/2, 15); climb_ladder = true; return;}
+				}
+			} if(this.body.getGravityScale() == 0 &amp;&amp; this.area.getLadderDir(o.x,o.y,o.z-1) &lt; 0) this.body.setGravityScale(1);
+		} target_x = 0; target_y = 0;
+		stalled = 0.0; var oldX = 0.0; var oldY = 0.0; function setPath(n){
+			if(n == null) this.stop(); else {target_x = n.x; target_y = n.y;} path = n; stalled = 0.0; oldX = this.getX(); oldY = this.getY();
+		}
+		function followPath(frames){
+			var x = this.getX(), y = this.getY(), gs = this.body.getGravityScale(), ix = Math.floor(x), iy = Math.floor(y), z = Math.floor(this.getZ()+this.info.aabb.min_z);
+			if(gs == 0){
+				var d = this.area.getLadderDir(ix,iy,z); if(d == -1) d = this.area.getLadderDir(ix,iy,z-1);
+				if(d == -1) this.body.setGravityScale(1);
+			} if(ix == path.x &amp;&amp; iy == path.y){
+				if(gs != 0 &amp;&amp; climb_ladder){
+					var d = this.area.getLadderDir(path.x,path.y,path.z);
+					if(d == -1) d = this.area.getLadderDir(path.x,path.y,path.z-1);
+					if(d >= 0){this.body.setGravityScale(0); gs = 0;}
+				} if(Math.abs(path.z-z) &lt; (gs == 0?1:2)) nextPath(); else {
+					if(gs != 0){failPath = path; path = null; waitForPathfind(); return;}
+					var v = vec3(0,0,0); this.body.getLinearVelocityTo(v); if(v.z &lt;= 0.1){
+						stalled += frames; if(stalled > 30){failPath = path; path = null; waitForPathfind(); return;}
+					} var offsetX = 0.5; var offsetY = 0.5;
+					this.move(path.x+offsetX-x, path.y+offsetY-y, (gs == 0?path.z-z:0), frames);
+				}
+			} else {
+				var v = vec3(0,0,0); this.body.getLinearVelocityTo(v); v.z = 0; var len = v.length(); var offsetX = 0.5; var offsetY = 0.5;
+				if(len &lt;= 0.1){
+					if(stalled+frames > 10 &amp;&amp; stalled &lt;= 10) this.jump(true); stalled += frames; if(stalled > 30){failPath = path; path = null; waitForPathfind(); return;}
+				} if(stalled > 3){
+					var dx = target_x+0.5-oldX; var dy = target_y+0.5-oldY;
+					if(Math.abs(dx) > Math.abs(dy)){offsetX -= Utils.sign(dx)*0.4; offsetY += Utils.sign(dy)*0.4;} else {offsetX += Utils.sign(dx)*0.4; offsetY -= Utils.sign(dy)*0.4;}
+				} this.move(target_x+offsetX-x, target_y+offsetY-y, 0, frames, 1+Utils.clamp(3-len, 0, 2));
+			}
+		}
+		function isFoodStorehouse(o){return o != home.get() &amp;&amp; o.storage.get("npcTake").getBool() == true &amp;&amp; getFood(o.inventory) != null;}
+		function find(acceptStructure, acceptItem){
+			var map = this.area.makeMap(acceptStructure, acceptItem); if(map == null) return false;
+			var result = this.area.findClosest(this.getX(), this.getY(), this.getZ(), map, this.info.self, failPath); failPath = null;
+			if(result == null) return false; to = result.object; path = reversePath(result.path); nextPath(); return true;
+		}
+		function pathfindFail(o, quiet){}
+		function pathfind(o, quiet){
+			if(o.area != this.area){pathfindFail(o, quiet); return null;}
+			tmpPoint.copy(o.info.params.entrance); o.invTransformPoint(tmpPoint); tmpPoint.z += o.info.aabb.min_z-this.info.aabb.min_z; var fp = failPath;
+			var p = this.area.pathfind(this.getX(), this.getY(), this.getZ(), tmpPoint.x, tmpPoint.y, tmpPoint.z, this.info.self, failPath); failPath = null;
+			if(p == null) pathfindFail(o, fp != null || quiet); return p;
+		}
+		function go(o){
+			var p = pathfind(o, false); if(p != null){path = reversePath(p); to = o; nextPath();} else waitForPathfind();
+		}
+	</script></procedure>
+	<character id="npc" model="scavenger" npc="true" health="50" hunger="200" oxygen="20" speed="0.033" jump="1.2" power="200" power_gen="-0.25" hungerPerSecond="-0.25" ground="shadow" rotate_ground="false" self="NPC" block="WORLD|PROJECTILE|STRUCTURE|BLUEPRINT|PLAYER|NPC|ENEMY" modelBottom="true" access="action" job="civilian" talk_section="npc" eye="[0,0,0.2]">
+		<infoInit>this.params.name = this.xml.exists("name")?parseString(this.xml.get("name")):'names>'+this.id; this.params.talk_section=this.xml.get("talk_section");
+		this.params.targets = ENEMY; this.params.defense = eval(this.xml.get("defense"));
+		for(s in this.shapes) s.density = 0.5; this.stopFriction = 5;
+		this.params.max_skill = {}; for(s in SKILLS) this.params.max_skill[s] = 4; </infoInit>
+		<inventory width="10" height="1" />
+		<shape type="capsule" radius="0.22" height="1.2" />
+		<transform>matrix.setScale(0.005,0.005,0.005);</transform>
+		<light id="flashlight_npc" />
+		<init><run procedure="npc.init" /><script>
+		function changeHunger(e){
+			if(this.getHungerPercent() &lt; 0.2 &amp;&amp; e.object/this.getMaxHunger() >= 0.2) this.runEvent(null, "onHungry");
+		} this.hunger.addEventListener("updated", changeHunger);
+		var warnings = []; tools = [];
+		function showWarning(id, icon){
+			var ar = []; var b = this.info.aabb; var y = 0.0; var z = warnings.length*0.6+0.3+b.max_z;
+			if(icon == null) icon = Icon.fromTile(getTile(id),TYPE_EMISSIVE,0.5); else if(icon.type != TYPE_EMISSIVE){icon = icon.clone(); icon.type = TYPE_EMISSIVE;}
+			ar.push(this.addBillboard(icon, 0, y, z));
+			ar.push(this.addBillboard(Icon.fromTile(getTile("no"),TYPE_EMISSIVE,0.6), 0, y, z));
+			for(b in ar){b.alpha = 0; fadeIn(b);} warnings.push({id:id, billboards:ar});
+		}
+		function hideWarning(id){
+			var len = warnings.length; for(i in 0...len){var w = warnings[i]; if(w.id == id){
+				for(b in w.billboards) b.lerp(b.objectX, b.objectY, b.objectZ, 0, 20, remove); warnings.remove(w);
+				len = warnings.length; for(j in i...len) for(b in warnings[j].billboards) b.lerp(b.objectX, b.objectY, b.objectZ-0.6, 0, 20, fadeIn);
+				return;
+			}}
+		}
+		function hasWarning(id){
+			for(w in warnings) if(w.id == id) return true; return false;
+		}
+		function homeWarning(no_home){
+			var has = hasWarning("home");
+			if(has != no_home){if(no_home) showWarning("home", null); else hideWarning("home");}
+		}
+		work = new Mutable(); work.set(null); home = new Mutable(); home.set(null); homeWarning(true); atHome = new Mutable(); atHome.set(false);
+		atWork = new Mutable(); atWork.set(false); partialHunger = 0.0; eatSpeed = 0.0625; willEnter = null; pathfind_fail = null; __exitWork = false; findItems = null; dropoffItems = true;
+		function pathfindFail(o, quiet){
+			pathfind_fail = o; if(!quiet &amp;&amp; o == home.get()){
+				if(!hasWarning("home")) npcWarning(this.state, getTextTemplate('warning.npc_trapped', {name:getName()}));
+				homeWarning(true);
+			}
+		}
+		function startWork(){
+			var w = work.get(); for(i in this.inventory) if(i.count > 0) w.collectItem(i); dropoffItems = true;
+			atWork.set(true); tmpPoint.copy(w.info.params.viewPos); w.invTransformPoint(tmpPoint); this.facePos(tmpPoint.x, tmpPoint.y, 15);
+			playWork(w); w.storage.get("enabled").setBool(true);
+		}
+		function stopWork(){
+			atWork.set(false); playIdle(); var w = work.get(); if(w != null) w.storage.get("enabled").setBool(false);
+		}
+		function eatFood(inventory, power, frames){
+			var f = storage.get("food"); if(f.hasData()){
+				var es = frames*eatSpeed; if(!power) es *= 0.5; partialHunger += es; var eat = Math.floor(partialHunger);
+				if(eat > 0){
+					partialHunger -= eat; f.addInt(-eat); if(power){this.addPower(2*eat); this.addHealth(eat);}
+					if(f.getInt() &lt;= 0){eat += f.getInt(); f.delete();} this.addHunger(eat);
+					if(this.getHungerPercent() > 0.99) return false;
+				}
+			} else {
+				var food = getFood(inventory); if(food == null) return false; else {f.setInt(food.info.params.hunger); food.count--;}
+			} return true;
+		}
+		function isFindItem(i){for(f in findItems) if(i.count > 0 &amp;&amp; i.is(f)) return true; return false;}
+		function isFindStorehouse(o){
+			if(o.storage.get("npcTake").getBool() != true) return false;
+			for(i in o.inventory) if(isFindItem(i)) return true; return false;
+		}
+		exitFrames = 0;
+		function getDestination(frames){
+			pathfind_fail = null; var exitWork = __exitWork; __exitWork = false;
+			var hp = this.getHungerPercent(); if(hp &lt; 0.25 &amp;&amp; eatFood(this.inventory, false, frames)) return;
+			var h = home.get(); if(atHome.get()){
+				exitFrames -= frames;
+				if(exitFrames &lt; 0 &amp;&amp; !eatFood(h.inventory, h.hasPower(), frames) &amp;&amp; this.getOxygenPercent() == 1){
+					if(canBreatheExit(h)) exit(h); else exitFrames = 60;
+				}
+			} else if(h == null){
+				if(hp > 0.5 || !eatFood(this.inventory, false, frames)){
+					if(atWork.get()) exit(work.get()); else if(this.body.getType() == BODY_DYNAMIC){
+						var o = findHome(this.area); if(o != null){setHome(o); if(!atWork.get()) go(home.get());}
+						else if(getTotalFood(this.inventory) &lt; 200){if(!find(isFoodStorehouse, isFoodItem)) waitForPathfind();}
+					}
+				}
+			} else if(atWork.get()){
+				if(findItems != null || hp &lt; 0.5 || this.getOxygenPercent() &lt; 1) exit(work.get());
+			} else if(this.body.getType() == BODY_DYNAMIC){
+				var s; if(hp > 0.5 &amp;&amp; this.getOxygenPercent() == 1){
+					if(findItems != null &amp;&amp; find(isFindStorehouse, null)) return; else findItems = null;
+					s = work.get(); if(dropoffItems &amp;&amp; hasItemToDropOff(this.inventory, h == null?400:Utils.max(0,400-getTotalFood(h.inventory)), tools) &amp;&amp; find(isStorehouse, null/*this.inventory.isFull()?null:alwaysTrue*/)) return;
+				} else {s = h; dropoffItems = true;}
+				if(s == null){
+					if(/*!find(TODO: isBlueprint - but need to get the proper items to build it, what items should I collect automatically?) &amp;&amp;*/ h != null &amp;&amp; getTotalFood(this.inventory) > 0 &amp;&amp; getTotalFood(h.inventory) &lt; 300) s = h; else {
+						if(h != null &amp;&amp; (exitWork || h.distanceSq(this) > 50)) s = h;
+						else {waitForPathfind(); return;}
+					}
+				} var food = 0;
+				if(this.getOxygenPercent() == 1 &amp;&amp; s == h &amp;&amp; (food = getTotalFood(this.inventory)+getTotalFood(s.inventory)) &lt; 100){
+					if(find(isFoodStorehouse, isFoodItem)) return; if(food == 0 &amp;&amp; !exitWork){waitForPathfind(); return;}
+				} go(s);
+			}
+		}
+		function onFinishEnter(o){
+			if(o == home.get()){
+				var i = home.get().inventory; atHome.set(true); withdrawFood(this.inventory, i, 400-getTotalFood(i));
+			} else if(o == work.get()) startWork();
+			if(o.info.params.npcEnter){this.models[0].parent = o.models[o.models.length-1]; this.allowChildren = false; var f = o.vars.get("onNPCEnter"); if(f != null) f(this);}
+			if(o.storage.get("npcTake").getBool() == true){
+				if(findItems != null){for(f in findItems) withdrawItem(o.inventory, this.inventory, f); findItems = null;}
+				for(v in this.inventory) if(tools.indexOf(v) == -1 &amp;&amp; o.inventory.addItem(v)) v.clear();
+			} dropoffItems = false;
+		}
+		function finishEnter(){
+			var o = willEnter; npcCloseDoor(o); willEnter = null; onFinishEnter(o);
+		}
+		function adjustEnterPos(o, p){}
+		function enter(o, instant){
+			this.body.setType(BODY_STATIC); var oz = o.getZ()-this.info.aabb.min_z+o.info.aabb.min_z; if(instant){
+				if(o.info.params.npcEnter) this.setPosition(o.getX(), o.getY(), oz);
+				else {var p = o.info.params.workPos; tmpPoint.copy(p == null?o.info.params.entrance:p); adjustEnterPos(o, tmpPoint); o.invTransformPoint(tmpPoint); this.setPosition(tmpPoint.x, tmpPoint.y, oz);}
+				onFinishEnter(o);
+			} else {
+				var f = o.vars.get("openDoor"); if(f != null) f(); willEnter = o; playWalk();
+				if(o.info.params.npcEnter) this.moveTo(o.getX(), o.getY(), oz, finishEnter);
+				else {
+					var p = o.info.params.workPos; tmpPoint.copy(p == null?o.info.params.entrance:p); adjustEnterPos(o, tmpPoint);
+					o.invTransformPoint(tmpPoint); this.moveTo(tmpPoint.x, tmpPoint.y, oz, finishEnter);
+				}
+			}
+		}
+		function canBreatheExit(o){
+			if(this.area == null || this.getMaxOxygen() == 0) return true; var p = this.getPosition().clone();
+			if(o.info.params.npcEnter) this.setPosition(o.getX(), o.getY(), o.getZ()-this.info.aabb.min_z+o.info.aabb.min_z);
+			tmpPoint.copy(o.info.params.entrance); o.invTransformPoint(tmpPoint); var tx = Math.floor(tmpPoint.x), ty = Math.floor(tmpPoint.y);
+			if(!this.area.canEnter(tx, ty, Math.round(this.getZ()+0.11+this.info.aabb.min_z), this.info.self)){
+				if(Math.floor(tmpPoint.x-0.1) != tx) tmpPoint.x -= 0.1;
+				else if(Math.floor(tmpPoint.x+0.1) != tx) tmpPoint.x += 0.1;
+				if(Math.floor(tmpPoint.y-0.1) != ty) tmpPoint.y -= 0.1;
+				else if(Math.floor(tmpPoint.y+0.1) != ty) tmpPoint.y += 0.1;
+			} this.setPosition(tmpPoint.x, tmpPoint.y, this.getZ()); var r = this.canBreathe(false);
+			this.setPosition(p.x, p.y, p.z); return r;
+		}
+		function handleExit(o, onComplete, instant){
+			if(o.info.params.npcEnter){
+				this.models[0].parent = null; this.setPosition(o.getX(), o.getY(), o.getZ()-this.info.aabb.min_z+o.info.aabb.min_z); this.setRotation(0, 0, o.getRotation().z); this.allowChildren = true;
+			} tmpPoint.copy(o.info.params.entrance); o.invTransformPoint(tmpPoint); var tx = Math.floor(tmpPoint.x), ty = Math.floor(tmpPoint.y);
+			if(this.area == null) instant = true;
+			else if(!this.area.canEnter(tx, ty, Math.round(this.getZ()+0.11+this.info.aabb.min_z), this.info.self)){
+				if(Math.floor(tmpPoint.x-0.1) != tx) tmpPoint.x -= 0.1;
+				else if(Math.floor(tmpPoint.x+0.1) != tx) tmpPoint.x += 0.1;
+				if(Math.floor(tmpPoint.y-0.1) != ty) tmpPoint.y -= 0.1;
+				else if(Math.floor(tmpPoint.y+0.1) != ty) tmpPoint.y += 0.1;
+			}
+			if(instant == true){
+				this.body.setType(BODY_DYNAMIC); this.setPosition(tmpPoint.x, tmpPoint.y, this.getZ()+0.11); playIdle(); if(onComplete != null) onComplete();
+			} else {
+				this.body.setType(BODY_STATIC); this.moveTo(tmpPoint.x, tmpPoint.y, this.getZ()+0.11, function(){
+					if(!this.area.canEnter(Math.floor(this.getX()), Math.floor(this.getY()), Math.round(this.getZ()+this.info.aabb.min_z), this.info.self)) enter(o, false); else {
+						npcCloseDoor(o); this.body.setType(BODY_DYNAMIC); this.setPosition(this.getX(), this.getY(), this.getZ()); playIdle();
+					} if(onComplete != null) onComplete();
+				});
+			}
+		}
+		function exit(o, ?onComplete, ?instant){
+			__exitWork = o == work.get();
+			if(o == home.get()) atHome.set(false); else if(__exitWork) stopWork();
+			if(instant != true){var f = o.vars.get("openDoor"); if(f != null) f(); playWalk();}
+			handleExit(o, onComplete, instant);
+		}
+		function canCollect(item){
+			if(!item.isStopped()) return false; var dx = this.getX()-item.x; var dy = this.getY()-item.y; return dx*dx+dy*dy &lt; 8;
+		}
+		function handleDestination(){
+			var h = home.get(); if(to == null) return;
+			else if(to == work.get()) enter(work.get(), false);
+			else if(to == h) enter(h, false);
+			else if(to.item != null){
+				if(canCollect(to) &amp;&amp; this.addItem(to.item)){to.onCollect(this.area); if(findItems != null){dropoffItems = false; findItems = null;} playPickup();}
+			} else if(to.area == this.area){
+				if(to.storage.get("npcTake").getBool() == true){
+					if(findItems != null){
+						for(f in findItems) withdrawItem(to.inventory, this.inventory, f); dropoffItems = false; findItems = null;
+					} else {
+						for(v in this.inventory) if(tools.indexOf(v) == -1 &amp;&amp; to.inventory.addItem(v)) v.clear();
+						var v = 400-getTotalFood(this.inventory);
+						if(h != null) v -= getTotalFood(h.inventory); withdrawFood(to.inventory, this.inventory, v);
+					} this.facePos(to.getX(), to.getY(), 15); playPickup();
+				} //TODO: build blueprint?
+			}
+		}
+		function setWork(s){
+			var w = work.get(); if(s == w) return; if(atWork.get() || (willEnter != null &amp;&amp; willEnter == w)) exit(w);
+			if(w != null) w.vars.get("npc").set(null); work.set(s); dropoffItems = true; w = s; var data = storage.get("workPos");
+			if(w == null) data.delete(); else {
+				data.setArray(DATA_FLOAT, [w.getX(), w.getY(), w.getZ()]); var n = w.vars.get("npc");
+				if(n.get() != null) n.get().vars.get("setWork")(null); n.set(this);
+			}
+		}
+		function setHome(s){
+			var h = home.get(); if(s == h) return; if(atHome.get() || (willEnter != null &amp;&amp; willEnter == h)) exit(h); homeWarning(s == null);
+			if(h != null) h.vars.get("__removeNPC")(this); home.set(s); h = s; var data = storage.get("homePos");
+			if(h == null) data.delete(); else {data.setArray(DATA_FLOAT, [h.getX(), h.getY(), h.getZ()]); h.vars.get("__addNPC")(this);}
+		} talking = false;
+		function getIndicator(){return Icon.fromTile(getTile("worker"),TYPE_INDICATOR,0.6);}
+		handleIndicator(this, false);
+		handleQuestIndicator(this, "hasQuest", [this.storage.get('event'), atHome], "updated", 1, true);
+		function requestItems(items){findItems = items;}
+		function onFrame(frames){}
+
+		_shoot_attack = 0; __shoot_range = 0; __shoot_rate = 0; __shoot_power = 0; __shoot_partial = 0.0; bounds = makeBounds(0,0,0,0,0,0); from = new Point();
+		function canTarget(o){return (o.info.self&amp;this.info.params.targets) != 0 &amp;&amp; o.health.get() > 0 &amp;&amp; getItemValue(o,"defense") &lt; _shoot_attack;}
+		function getTargetDir(){
+			if(__shoot_range == 0) return null; var seek_radius = __shoot_range-0.5;
+			bounds.set(this.getX()-seek_radius, this.getY()-seek_radius, this.getZ()-seek_radius, seek_radius*2, seek_radius*2, seek_radius*2);
+			for(o in this.area.getObjects(canTarget, bounds)){
+				from.copy(this.getPosition()); if(this.area.raytrace(true, function(b){return b != this &amp;&amp; b != o;}, from, o.getPosition(), PROJECTILE) >= 1){
+					from.set(o.getX()-this.getX(), o.getY()-this.getY(), o.getZ()-this.getZ()); from.normalize(); return from;
+				}
+			} return null;
+		}
+		function onFireProjectile(){playSoundAt(this.area, this, "laser"); this.addPower(-__shoot_power);}
+		function fireProjectile(){
+			var dir = getTargetDir(); if(dir != null){
+				onFireProjectile(); var l = new PointLight(4,1,1,0.25); l.renderDust = false;
+				this.area.fireProjectile(this, this, Icon.fromTile(getTile('bolt'),TYPE_EMISSIVE,0.3), this.getX(), this.getY(), this.getZ(), dir, 0.75, __shoot_range, this.notSelf, l);
+			}
+		}
+
+		function checkTools(e){
+			Utils.clear(tools); __shoot_rate = 0; for(i in 0...this.inventory.getWidth()){
+				var item = this.inventory.getItem(i, 0); if(item.info != null &amp;&amp; item.info.action != null &amp;&amp; item.info.action.id == "shoot"){
+					tools.push(item); _shoot_attack = item.info.params.attack*getItemMul(item, "attack"); __shoot_range = getItemRange(item); __shoot_partial = 0.0;
+					__shoot_rate = item.info.params.rate*5/getItemMul(item, "rate"); __shoot_power = getItemValue(item, "power"); break;
+				}
+			}
+		}
+		
+		for(i in 0...this.inventory.getWidth()) this.inventory.getItem(i, 0).addEventListener("updated", checkTools);
+		if(this.getRotation().x != 0){this.setRotation(0,0,0); this.setPosition(this.getX(), this.getY(), this.getZ()+0.5);}
+		</script></init>
+		<onFrame>
+		onFrame(frames); if(this.getZ() &lt; -5){var h = home.get(); if(h != null) exit(h, null, true);}
+		if(talking || this.hasMoveTo() || this.models[0].isAnimating()){this.stop(); return;}
+		if(this.getHealth() > 0 &amp;&amp; __shoot_rate > 0 &amp;&amp; this.getPower() >= __shoot_power){
+			__shoot_partial += frames; if(__shoot_partial >= __shoot_rate){
+				__shoot_partial -= __shoot_rate; fireProjectile();
+			}
+		} if(path == null || !this.area.canEnter(path.x, path.y, path.z, this.info.self) || (!climb_ladder &amp;&amp; this.area.isBlocking(path.x, path.y, path.z-1) == -1 &amp;&amp; this.area.getLadderDir(path.x,path.y,path.z-1) == -1) || (to != home.get() &amp;&amp; this.getOxygenPercent() &lt; 1)){
+			if(this.body.getType() == BODY_DYNAMIC &amp;&amp; this.area.getFirstInTile(Math.floor(this.getX()),Math.floor(this.getY()),Math.floor(this.getZ())-1, function(o){return o != this &amp;&amp; Area.filterFlags(this.info.self, o);}) != null){
+				playWalk(); atHome.set(false); if(atWork.get()) stopWork(); var dir = this.getViewDir(); this.move(dir.x, dir.y, 0, frames, 3); return;
+			} if(path != null){setPath(null); playIdle();} var old = pathfind_fail; getDestination(frames);
+			if(old != pathfind_fail &amp;&amp; old == home.get()) homeWarning(home.get() == null);
+			if(path != null) this.facePos(path.x+0.5, path.y+0.5, 15);
+		} else if(this.body.getType() == BODY_DYNAMIC){playWalk(); atHome.set(false); if(atWork.get()) stopWork(); followPath(frames);}
+		</onFrame>
+		<onProjectileHit><script>
+		this.scale_decay = -0.2*this.scale; if(data.object != null){
+			playSoundAt(area, data.object, "bolt_hit");
+			attack(data.object, this.spawner, this.spawner.vars.get('_shoot_attack'), data.point, this, data);
+		} if(data.tile != null &amp;&amp; Action.getStructureOnTile(area, data.tile[0], data.tile[1], data.tile[2]) == null){
+			if(Action.mineTile(area, null, data.tile[0], data.tile[1], data.tile[2], 2, 16) > 0) playSoundAt(area, vec3(data.tile[0]+0.5, data.tile[1]+0.5, data.tile[2]+0.5), "break", false, 1, 2);
+		}
+		</script></onProjectileHit>
+		<stateLoaded><script>
+		var pos = storage.get("workPos").getArray(); if(pos != null) setWork(this.area.getAtPos(pos[0], pos[1], pos[2], isStructure));
+		pos = storage.get("homePos").getArray(); if(pos != null) setHome(this.area.getAtPos(pos[0], pos[1], pos[2], isStructure));
+		var h = home.get(); if(h != null &amp;&amp; Area.blocksTile(h.getAABB(), Math.floor(this.getX()), Math.floor(this.getY()), Math.floor(this.getZ()))) enter(h, true);
+		var w = work.get(); if(w != null &amp;&amp; Area.blocksTile(w.getAABB(), Math.floor(this.getX()), Math.floor(this.getY()), Math.floor(this.getZ()))) enter(w, true);
+		</script></stateLoaded>
+		<getSelection>selection.bounds.copy(this.info.aabb); selection.actionTooltip = getTextTemplate('actions.talk', {name:this.vars.get('getName')()}); return true;</getSelection>
+		<onSelect><stop if="this.hasMoveTo()" /><script>event = null</script><run xml="this.info.xml" event="getEvent" if="!talking && !atHome.get() && this.canBreathe()" /><choose>
+			<blockingEvent wait="false" if="event != null">
+				<script>talking = true; if(quest_indicator != null){quest_indicator.lerp(quest_indicator.objectX,quest_indicator.objectY,quest_indicator.objectZ,0,20,remove); quest_indicator = null;}</script>
+				<sound id="select" source="this" /><choose><run eval="event" if="StringTools.startsWith(event, 'npc.')" /><run xml="this.info.xml" event="event" /></choose>
+				<script>talking = false</script>
+				<onSkip><script>object.dispatchEvent(new ObjectEvent("warning", getText('npc.talk_skip{name:'+this.vars.get('getName')().get()+'}')));</script></onSkip>
+			</blockingEvent>
+			<section>
+				<sound id="select" source="this" /><window id="npc_info" npc="this" to="object.inventory" to_title="getText('structure.inventory')" indicator="this.storage.get('indicator')"  />
+			</section>
+		</choose></onSelect>
+		<footstep><script>defaultFootstep(this, type);</script></footstep>
+		<hasQuest><quest if="this.storage.get('event').getString() != null && !atHome.get()" /></hasQuest>
+		<addedToArea><script>playIdle(); checkTools(null);</script><script if="!this.storage.get('homePos').hasData()">var o = findHome(this.area); if(o != null) setHome(o);</script></addedToArea>
+		<removedFromArea><script>setWork(null); setHome(null);</script></removedFromArea>
+		<onHungry><script>npcWarning(this.state, getTextTemplate('warning.npc_hungry', {name:getName()}));</script></onHungry>
+		<onDeath><script>npcWarning(this.state, getTextTemplate('warning.npc_dead', {name:getName()})); if(this.inventory != null) for(i in this.inventory) if(i.count > 0) this.dropItem(i, 0.25); this.lerp(new ModelScaleKeyframe(0.25,0.25,0.25), 30, this.remove);</script></onDeath>
+		<onHit><script if="var h = this.getHealth(); return h > 0 && h < this.getMaxHealth()*0.5">npcWarning(this.state, getTextTemplate('warning.npc_hit', {name:getName()}));</script></onHit>
+		<onDamage><script>this.flash(2,0,0,1,8);</script></onDamage>
+		<onBlocked><script>this.flash(0,1,2,1,8);</script></onBlocked>
+		<info height="y">
+			<text text="getText('npc>'+this.info.xml.get('job'))" size="22" color="ffff88" width="width" />
+			<formattedText text="var h = this.vars.get('home').get(); return concat(getText('structure.home'), h==null?getText('common.none'):h.vars.get('getName')(), ' [color=dbc898]')" align="left" x="0" y="24" size="16" width="width" />
+			<formattedText text="var h = this.vars.get('work').get(); return concat(getText('structure.work'), h==null?getText('common.none'):h.vars.get('getName')(), ' [color=dbc898]')" align="left" x="0" y="44" size="16" width="width" />
+			<script>i = 0; y = 64;</script>
+			<repeat count="SKILLS.length">
+				<text text="getText('npc>'+SKILLS[i])" size="16" width="width" y="y" align="left" />
+				<points value="floatToInt(this.storage.get(SKILLS[i]), function(v){return (v == null)?0:Math.floor(v/100);})" max="this.info.params.max_skill[SKILLS[i]]" spacing="13" off="point.off" on="point.on" x="width-13*this.info.params.max_skill[SKILLS[i]]" y="y" />
+				<script>y += 20; i++;</script>
+			</repeat>
+		</info>
+		<getEvent><script>
+			event = this.storage.get('event').getString(); if(event == null) event = getNPCEvent(this, object);
+		</script></getEvent>
+		<onAwaken><script>this.storage.get('event').delete();</script><save /></onAwaken>
+		<connectWork>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="snippets" id="connect_work1" speaker="this" />
+			<dialogue section="snippets" id="connect_work2" speaker="this" />
+			<run procedure="npcCutsceneEnd" />
+			<script>this.state.setFlag('connect_work', true);</script>
+		</connectWork>
+		<npcPortal>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="snippets" id="npc_portal1" speaker="this" />
+			<dialogue section="snippets" id="npc_portal2" pai="true" expression="sad" />
+			<dialogue section="snippets" id="npc_portal3" pai="true" expression="happy" />
+			<run procedure="npcCutsceneEnd" />
+			<script>this.state.setFlag('npc_portal', true);</script>
+		</npcPortal>
+		<fuelUranium>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="snippets" id="fuel_uranium1" speaker="this" />
+			<dialogue section="snippets" id="fuel_uranium2" pai="true" expression="smile" />
+			<dialogue section="snippets" id="fuel_uranium3" pai="true" />
+			<dialogue section="snippets" id="fuel_uranium4" speaker="this" />
+			<run procedure="npcCutsceneEnd" />
+			<script>this.state.setFlag('fuel_uranium', true);</script>
+		</fuelUranium>
+		<growMilk>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="snippets" id="grow_milk1" speaker="this" />
+			<dialogue section="snippets" id="grow_milk2" speaker="object" />
+			<run procedure="npcCutsceneEnd" />
+			<script>this.state.setFlag('grow_milk', true);</script>
+		</growMilk>
+		<npcDead>
+			<run procedure="npcCutsceneStart" />
+			<dialogue text="getText('snippets.npc_dead1{name:'+getText(getCharacter(getDeadNPCs(this.state)[0]).params.name).get()+'}')" speaker="this" />
+			<dialogue section="snippets" id="npc_dead2" pai="true" expression="sad" />
+			<run procedure="npcCutsceneEnd" />
+			<script>this.state.setFlag('npc_dead', true);</script>
+		</npcDead>
+		<beginSpeak><script>playTalk();</script></beginSpeak>
+		<endSpeak><script>if(closed) playIdle();</script></endSpeak>
+	</character>
+	<object id="fake_npc" model="scavenger" health="50" speed="0.033" jump="1.2" ground="shadow" rotate_ground="false" self="NPC" block="WORLD|PROJECTILE|STRUCTURE|BLUEPRINT|PLAYER|NPC|ENEMY" modelBottom="true" access="action">
+		<infoInit>this.params.name = this.xml.exists("name")?parseString(this.xml.get("name")):'names>'+this.id; for(s in this.shapes) s.density = 0.5; this.stopFriction = 5;</infoInit>
+		<shape type="capsule" radius="0.22" height="1.2" />
+		<transform>matrix.setScale(0.005,0.005,0.005);</transform>
+		<init><run procedure="npc.init" /><script>
+		atWork = new Mutable(); atWork.set(false); function exit(o, ?onComplete){
+			var f = o.vars.get("openDoor"); if(f != null) f(); playWalk();
+			tmpPoint.copy(o.info.params.entrance); o.invTransformPoint(tmpPoint);
+			this.body.setType(BODY_STATIC); this.moveTo(tmpPoint.x, tmpPoint.y, this.getZ()+0.11, function(){
+				npcCloseDoor(o); this.body.setType(BODY_DYNAMIC); this.setPosition(this.getX(), this.getY(), this.getZ());
+				playIdle(); if(onComplete != null) onComplete();
+			});
+		} talking = false; stop_movement = false; function onFrame(){}
+		handleQuestIndicator(this, "talk", [this.state], "update_indicators", 1);
+		</script></init>
+		<onSelect><choose>
+			<blockingEvent wait="false" if="!talking">
+			<script>talking = true; if(quest_indicator != null){quest_indicator.lerp(quest_indicator.objectX,quest_indicator.objectY,quest_indicator.objectZ,0,20,remove); quest_indicator = null;}</script>
+			<sound id="select" source="this" /><run procedure="npcCutsceneStart" />
+			<run xml="this.info.xml" event="talk" />
+			<run procedure="npcCutsceneEnd" /><script>talking = false; this.state.dispatchEvent(new Event("update_indicators"));</script>
+			<onSkip><script>object.dispatchEvent(new ObjectEvent("warning", getText('npc.talk_skip{name:'+getName().get()+'}')));</script></onSkip>
+			</blockingEvent>
+			<script>object.dispatchEvent(new ObjectEvent("warning", getText('npc.only_one{name:'+getName().get()+'}')));</script>
+		</choose></onSelect>
+		<onFrame>onFrame();
+		if(this.hasMoveTo() || this.models[0].isAnimating() || talking || stop_movement) return;
+		if(path == null || !this.area.canEnter(path.x, path.y, path.z, this.info.self)){
+			if(path != null){setPath(null); playIdle();} getDestination(frames); if(path != null) this.facePos(path.x+0.5, path.y+0.5, 15);
+		} else if(this.body.getType() == BODY_DYNAMIC){playWalk(); followPath(frames);}
+		</onFrame>
+		<footstep><script>defaultFootstep(this, type);</script></footstep>
+		<addedToArea><script>playIdle()</script></addedToArea>
+		<getSelection>selection.bounds.copy(this.info.aabb); selection.actionTooltip = getTextTemplate('actions.talk', {name:this.vars.get('getName')()}); return true;</getSelection>
+		<onDamage><script>this.flash(2,0,0,1,8);</script></onDamage>
+		<onBlocked><script>this.flash(0,1,2,1,8);</script></onBlocked>
+		<beginSpeak><script>playTalk();</script></beginSpeak>
+		<endSpeak><script>if(closed) playIdle();</script></endSpeak>
+	</object>
+	<structure id="frozen_npc" npc="true" static="true" modelBottom="true" access="0">
+		<infoInit>
+		var id = this.xml.get("info"); var s = BaseInfo._get("character", id); if(s == null) s = getObject(id); if(s == null) s = getCharacter("npc"); this.params.npc = s;
+		if(!this.xml.elementsNamed("transform").hasNext()) this.modelTransform = s.modelTransform;
+		if(this.models.length == 0){for(m in s.models) this.models.push(m);}
+		if(this.shapes.length == 0) this.copyShapes(s);
+		this.params.name = s.params.name; this.params.idle = this.xml.get("idle"); if(this.params.idle == null) this.params.idle = "idle";
+		this.params.skills = {}; for(s in SKILLS){var v = parseInt(this.xml.get(s)); this.params.skills[s] = v*100; this.params.npc.params.max_skill[s] += v;}
+		</infoInit>
+		<init><script>
+		this.models[0].setAnimation(this.info.params.idle, true, null, 0); cryopod = null; for(s in SKILLS){var v = this.info.params.skills[s]; if(v > 0) this.storage.get(s).setInt(v);}
+		function getName(){var n = this.storage.get("name"); return n.isString()?n:getText(this.info.params.name);} this.storage.get('event').setString("onAwaken");
+		</script></init>
+		<addedToArea><script>
+		var ar = this.area.getObjects(function(o){return o.info.id == "cryopod_broken";}, makeBounds(this.getX(), this.getY(), this.getZ(), 1, 1, 1));
+		if(ar.length == 1){cryopod = ar[0]; cryopod.vars.set("npc", this); cryopod.vars.get("closeDoor")();}
+		</script></addedToArea>
+		<removedFromArea><script if="cryopod != null">cryopod.vars.set("npc", null); cryopod.vars.get("openDoor")(); cryopod = null;</script></removedFromArea>
+	</structure>
+
+	<procedure id="npcCutsceneStart">
+		<script modal="true">
+			for(m in object.models) if(m.visible == 4) m.visible = 3; if(this.vars.get("atWork").get()) this.vars.get("exit")(this.vars.get("work").get(), null, true);
+			this.vars.get("playIdle")(); cobj = container.object;
+			container.setObject(null);
+			var to = new Point((object.getX()+this.getX())*0.5,(object.getY()+this.getY())*0.5,(object.getZ()+this.getZ())*0.5);
+			var from = new Point(this.getX()-to.x, this.getY()-to.y, this.getZ()-to.z); from.crossProduct(new Point(0,0,1), from);
+			var dz = from.length()*0.25; from.z += dz; var distance = 2.0/from.length();
+			var fraction = this.area.raytrace(true, function(o){return o != this &amp;&amp; o != object;}, to, new Point(from.x*distance+to.x,from.y*distance+to.y,from.z*distance+to.z), PLAYER);
+			if(fraction == 1) distance *= fraction; else {
+				from.z -= dz*2; var d = -2.0/from.length();
+				var v = this.area.raytrace(true, function(o){return o != this &amp;&amp; o != object;}, to, new Point(from.x*d+to.x,from.y*d+to.y,from.z*d+to.z), PLAYER);
+				if(v > fraction) distance = v*d;
+				else {distance *= fraction; from.z += dz*2;}
+			} from.scaleBy(distance); from.x += to.x; from.y += to.y; from.z += to.z; var faceCam = 0.2;
+			object.facePos(Utils.interp(this.getX(), from.x, faceCam), Utils.interp(this.getY(), from.y, faceCam), 15);
+			this.facePos(Utils.interp(object.getX(), from.x, faceCam), Utils.interp(object.getY(), from.y, faceCam), 15);
+			container.getChildAt(0).lerp(new LookToKeyframe(container.camera, from, to), 30, onComplete);
+			var v = vec3(this.getX()-object.getX(), this.getY()-object.getY(), 0); v.scaleEq(1.0/Math.pow(v.length(),4)); v.z = 10; this.body.addLinearVelocity(v);
+			var v = vec3(object.getX()-this.getX(), object.getY()-this.getY(), 0); v.scaleEq(1.0/Math.pow(v.length(),4)); v.z = 10; object.body.addLinearVelocity(v);
+		</script><script>object.stop();</script>
+	</procedure>
+	<procedure id="npcCutsceneEnd">
+		<script modal="true">
+			var t = object.getEyeTransform(), from = new Point(t._positionX, t._positionY, t._positionZ+container.offsetZ);
+			var to = object.getViewDir().add(from);
+			container.getChildAt(0).lerp(new LookToKeyframe(container.camera, from, to), 30, onComplete);
+		</script><script>for(m in object.models) if(m.visible == 3) m.visible = 4; container.setObject(cobj); cobj = null;</script>
+	</procedure>
+
+	<character id="miner" extends="npc" job="miner">
+		<transform>matrix.setScale(0.053,0.053,0.053); matrix.set(3,1,-0.05); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+		var idles = ["idle1", "tool", "inspect"];
+		function playIdle(){
+			this.models[0].setAnimation(random()>0.8?"tool":"idle1", false, playIdle, 1, ANIM_TRANSITION, true); this.models[0].animation.isAnimating = false;
+		}
+		function playWork(w){
+			if(!this.models[0].setAnimation("work_"+w.info.id, true, null, 1, ANIM_TRANSITION)) this.models[0].setAnimation("work_lab", true, null, 1, ANIM_TRANSITION);
+		}
+		function playTalk(){this.models[0].setAnimation("talk", true, null, 1, ANIM_TRANSITION);}
+		function waitForPathfind(){
+			this.models[0].setAnimation(random()>0.5?selectRandom(idles):"idle1", false, playIdle, 1, ANIM_TRANSITION, true);
+		}</script></init>
+	</character>
+	<character id="miner1" extends="miner" talk_sfx="talking7" model="miner1">
+		<onAwaken>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="intros" id="miner1" speaker="this" />
+			<dialogue section="intros" id="miner2" pai="true" expression="happy" />
+			<dialogue section="intros" id="miner3" speaker="this" />
+			<dialogue section="intros" id="miner4" pai="true" expression="sad" />
+			<dialogue section="intros" id="miner5" speaker="this" />
+			<dialogue section="intros" id="miner6" speaker="object" />
+			<script modal="true">this.models[0].setAnimation("inspect", false, onComplete, 1, ANIM_TRANSITION);</script>
+			<dialogue section="intros" id="miner7" speaker="this" />
+			<section if="!hasBlueprints(state, ['rig_blueprint'])">
+				<dialogue section="intros" id="miner8" speaker="this" />
+				<script>unlockBlueprints(state, object, ["rig_blueprint"])</script><wait seconds="1" modal="false" />
+			</section>
+			<run procedure="npcCutsceneEnd" />
+		</onAwaken>
+	</character>
+	<character id="miner2" extends="miner" talk_sfx="talking6" model="miner2">
+		<onAwaken>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="intros" id="miner9" speaker="this" />
+			<dialogue section="intros" id="miner10" pai="true" expression="smile" />
+			<dialogue section="intros" id="miner11" speaker="this" />
+			<sound id="vibraslap" /><script modal="true">this.models[0].setAnimation("inspect", false, onComplete, 1, ANIM_TRANSITION);</script>
+			<dialogue section="intros" id="miner12" speaker="this" />
+			<dialogue section="intros" id="miner13" speaker="object" />
+			<dialogue section="intros" id="miner14" speaker="this" />
+			<dialogue section="intros" id="miner15" speaker="object" />
+			<dialogue section="intros" id="miner16" speaker="this" />
+			<section if="!hasBlueprints(state, ['rig_blueprint'])">
+				<dialogue section="intros" id="miner17" speaker="this" />
+				<script>unlockBlueprints(state, object, ["rig_blueprint"])</script><wait seconds="1" modal="false" />
+			</section>
+			<run procedure="npcCutsceneEnd" />
+		</onAwaken>
+	</character>
+	<procedure id="chef.pizza">
+		<dialogue section="intros" id="chef9" speaker="this" />
+		<dialogue section="intros" id="chef10" speaker="this" />
+		<script modal="true">this.models[0].setAnimation("laugh", false, onComplete, 0.5, ANIM_TRANSITION);</script>
+		<script if="!object.hasQuest('pizza')">object.addQuest("pizza")</script>
+	</procedure>
+	<character id="chef" extends="npc" job="chef">
+		<transform>matrix.setScale(0.053,0.053,0.053); matrix.set(3,1,-0.05); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+		var idles = ["idle1", "idle2", "laugh"];
+		function playIdle(){
+			this.models[0].setAnimation(random()>0.8?"idle2":"idle1", false, playIdle, 0.5, ANIM_TRANSITION, true); this.models[0].animation.isAnimating = false;
+		}
+		function playWork(w){
+			if(!this.models[0].setAnimation("work_"+w.info.id, true, null, 0.5, ANIM_TRANSITION)) this.models[0].setAnimation("work_lab", true, null, 0.5, ANIM_TRANSITION);
+		}
+		function waitForPathfind(){
+			this.models[0].setAnimation(random()>0.5?selectRandom(idles):"idle1", false, playIdle, 0.5, ANIM_TRANSITION, true);
+		} function checkPizza(e){
+			if(this.storage.get('event').getString() == null &amp;&amp; !this.state.host.hasQuest('pizza') &amp;&amp; !this.state.host.questComplete('pizza') &amp;&amp; this.state.getFlag('grow_milk')){
+				this.storage.get("event").setString("pizza");
+			}
+		} this.storage.get("event").addEventListener("updated", checkPizza);
+		</script></init>
+		<addedToArea><script>this.state.addEventListener("change_flag", checkPizza); checkPizza(null);</script></addedToArea>
+		<removedFromArea><script>this.state.removeEventListener("change_flag", checkPizza);</script></removedFromArea>
+		<pizza>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="intros" id="chef8.2" speaker="this" />
+			<run procedure="chef.pizza" />
+			<run procedure="npcCutsceneEnd" />
+			<script>this.storage.get('event').delete();</script><save />
+		</pizza>
+	</character>
+	<character id="chef1" extends="chef" talk_sfx="talking4" model="chef1">
+		<onAwaken>
+			<run procedure="npcCutsceneStart" />
+			<script>this.models[0].setAnimation("idle2", true, null, 0.5, ANIM_TRANSITION);</script>
+			<dialogue section="intros" id="chef1" />
+			<dialogue section="intros" id="chef2" speaker="this" />
+			<dialogue section="intros" id="chef3" pai="true" expression="smile" />
+			<script modal="true">this.models[0].setAnimation("laugh", false, onComplete, 0.5, ANIM_TRANSITION);</script>
+			<dialogue section="intros" id="chef4" speaker="this" />
+			<script if="hasBlueprints(state, ['kitchen_blueprint'])">state.setFlag("chef", true);</script>
+			<choose>
+				<section if="!state.getFlag('chef')">
+					<script>state.setFlag("chef", true);</script>
+					<dialogue section="intros" id="chef5" speaker="object" />
+					<dialogue section="intros" id="chef6" speaker="this" />
+					<script>unlockBlueprints(state, object, ["kitchen_blueprint"])</script><wait seconds="1" modal="false" />
+					<dialogue section="intros" id="chef7" speaker="this" />
+				</section>
+				<section>
+					<dialogue section="intros" id="chef8" speaker="object" />
+					<run procedure="chef.pizza" if="!object.hasQuest('pizza') && !object.questComplete('pizza')" />
+				</section>
+			</choose>
+			<run procedure="npcCutsceneEnd" />
+		</onAwaken>
+	</character>
+	<character id="chef2" extends="chef" talk_sfx="talking1" model="chef2">
+		<onAwaken>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="intros" id="chef11" speaker="this" />
+			<dialogue section="intros" id="chef12" speaker="object" />
+			<dialogue section="intros" id="chef13" speaker="this" />
+			<dialogue section="intros" id="chef14" speaker="this" />
+			<script if="hasBlueprints(state, ['kitchen_blueprint'])">state.setFlag("chef", true);</script>
+			<choose>
+				<section if="!state.getFlag('chef')">
+					<script>state.setFlag("chef", true);</script>
+					<dialogue section="intros" id="chef15" speaker="object" />
+					<dialogue section="intros" id="chef16" speaker="this" />
+					<script>unlockBlueprints(state, object, ["kitchen_blueprint"])</script><wait seconds="1" modal="false" />
+					<dialogue section="intros" id="chef17" speaker="this" />
+				</section>
+				<section>
+					<dialogue section="intros" id="chef8" speaker="object" />
+					<run procedure="chef.pizza" if="!object.hasQuest('pizza') && !object.questComplete('pizza')" />
+				</section>
+			</choose>
+			<run procedure="npcCutsceneEnd" />
+		</onAwaken>
+	</character>
+	<character id="farmer" extends="npc" job="farmer">
+		<transform>matrix.setScale(0.053,0.053,0.053); matrix.set(3,1,-0.05); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<init><script>
+		var idles = ["idle1", "idle2", "idle3"];
+		function playIdle(){
+			this.models[0].setAnimation(random()>0.8?"idle2":"idle1", false, playIdle, 1, ANIM_TRANSITION, true); this.models[0].animation.isAnimating = false;
+		}
+		function playWork(w){
+			if(!this.models[0].setAnimation("work_"+w.info.id, true, null, 1, ANIM_TRANSITION)) this.models[0].setAnimation("work_lab", true, null, 1, ANIM_TRANSITION);
+		}
+		function playTalk(){this.models[0].setAnimation("talk", true, null, 1, ANIM_TRANSITION);}
+		function waitForPathfind(){
+			this.models[0].setAnimation(random()>0.6?selectRandom(idles):"idle1", false, playIdle, 1, ANIM_TRANSITION, true);
+		}</script></init>
+	</character>
+	<character id="farmer1" extends="farmer" talk_sfx="talking5" model="farmer1">
+		<onAwaken>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="intros" id="farmer1" speaker="this" />
+			<script modal="true">this.models[0].setAnimation("idle2", false, onComplete, 1, ANIM_TRANSITION);</script>
+			<dialogue section="intros" id="farmer2" speaker="this" />
+			<dialogue section="intros" id="farmer3" pai="true" expression="sad" />
+			<dialogue section="intros" id="farmer4" speaker="this" />
+			<dialogue section="intros" id="farmer5" speaker="this" />
+			<section if="!hasRecipes('hydroponics', state.storage, ['grow_wheat','grow_sugar'])">
+				<dialogue section="intros" id="farmer6" speaker="this" />
+				<script>unlockRecipes(object, "hydroponics", state.storage, ["grow_wheat","grow_sugar"])</script><wait seconds="1" modal="false" />
+			</section>
+			<dialogue section="intros" id="farmer7" speaker="this" />
+			<dialogue section="intros" id="farmer8" pai="true" expression="happy" />
+			<run procedure="npcCutsceneEnd" />
+		</onAwaken>
+	</character>
+	<character id="farmer2" extends="farmer" talk_sfx="talking4" model="farmer2">
+		<onAwaken>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="intros" id="farmer9" pai="true" expression="happy" />
+			<dialogue section="intros" id="farmer10" speaker="this" />
+			<dialogue section="intros" id="farmer11" speaker="this" />
+			<dialogue section="intros" id="farmer12" pai="true" />
+			<script>this.models[0].setAnimation("idle2", false, this.vars.get('playIdle'), 1, ANIM_TRANSITION);</script>
+			<dialogue section="intros" id="farmer13" pai="true" expression="smile" />
+			<dialogue section="intros" id="farmer14" speaker="this" />
+			<dialogue section="intros" id="farmer15" speaker="object" />
+			<choose>
+				<section if="!hasRecipes('hydroponics', state.storage, ['grow_wheat','grow_sugar'])">
+					<dialogue section="intros" id="farmer16" speaker="this" />
+					<script>unlockRecipes(object, "hydroponics", state.storage, ["grow_wheat","grow_sugar"])</script><wait seconds="1" modal="false" />
+					<dialogue section="intros" id="farmer17" speaker="object" />
+				</section>
+				<dialogue section="intros" id="farmer18" speaker="this" />
+			</choose>
+			<run procedure="npcCutsceneEnd" />
+		</onAwaken>
+	</character>
+	<character id="scientist" extends="npc" talk_sfx="talking7" model="scientist" job="scientist">
+		<init><script>
+		function playIdle(){
+			this.models[0].setAnimation(random()>0.5?"idle1":"idle2", false, playIdle, 0.5, ANIM_TRANSITION, true); this.models[0].animation.isAnimating = false;
+		}
+		function waitForPathfind(){
+			this.models[0].setAnimation(random()>0.5?"idle1":"idle2", false, playIdle, 0.5, ANIM_TRANSITION, true);
+		}</script></init>
+		<onAwaken>
+			<run procedure="npcCutsceneStart" />
+			<script modal="true">this.models[0].setAnimation("work", false, onComplete, 0.5, ANIM_TRANSITION);</script>
+			<dialogue section="intros" id="scientist1" speaker="this" />
+			<dialogue section="intros" id="scientist2" pai="true" expression="smile" />
+			<dialogue section="intros" id="scientist3" speaker="this" />
+			<dialogue section="intros" id="scientist4" speaker="this" />
+			<dialogue section="intros" id="scientist5" speaker="object" />
+			<dialogue section="intros" id="scientist6" speaker="this" />
+			<menu section="intros">
+				<choice id="amazing"><dialogue section="intros" id="scientist7" speaker="this" /></choice>
+				<choice id="gross"><dialogue section="intros" id="scientist8" speaker="this" /></choice>
+			</menu>
+			<script>unlockRecipes(object, "hydroponics", state.storage, ["grow_meat","grow_milk"])</script><wait seconds="1" modal="false" />
+			<run procedure="npcCutsceneEnd" />
+		</onAwaken>
+	</character>
+	<character id="soldier" extends="npc" talk_sfx="talking1" model="soldier" job="soldier">
+		<transform>matrix.setScale(0.0055,0.0055,0.0052);</transform>
+		<init><script>
+		var idles = ["idle1", "idle2", "idle3"];
+		function playIdle(){
+			this.models[0].setAnimation(random()>0.5?selectRandom(idles):"idle3", false, playIdle, 0.5, ANIM_TRANSITION, true); this.models[0].animation.isAnimating = false;
+		}
+		function waitForPathfind(){
+			this.models[0].setAnimation(random()>0.5?selectRandom(idles):"idle3", false, playIdle, 0.5, ANIM_TRANSITION, true);
+		}</script></init>
+		<onAwaken>
+			<run procedure="npcCutsceneStart" />
+			<script modal="true">this.models[0].setAnimation("idle1", false, onComplete, 1, ANIM_TRANSITION);</script>
+			<dialogue section="intros" id="soldier1" speaker="this" />
+			<dialogue section="intros" id="soldier2" speaker="object" />
+			<dialogue section="intros" id="soldier3" speaker="this" />
+			<dialogue section="intros" id="soldier4" pai="true" expression="happy" />
+			<dialogue section="intros" id="soldier5" speaker="this" />
+			<dialogue section="intros" id="soldier6" speaker="object" />
+			<dialogue section="intros" id="soldier7" speaker="this" />
+			<dialogue section="intros" id="soldier8" speaker="this" />
+			<dialogue section="intros" id="soldier9" speaker="this" />
+			<script>object.addQuest("laser_gun");</script>
+			<run procedure="npcCutsceneEnd" />
+		</onAwaken>
+		<laserGun>
+			<run procedure="npcCutsceneStart" />
+			<dialogue section="intros" id="soldier11" speaker="this" />
+			<dialogue section="intros" id="soldier12" speaker="this" />
+			<script>gun = object.inventory.getById("laser_gun"); range = getData("upgrade", "range");</script>
+			<section if="gun != null && range.getLevel(gun.storage) == 0">
+				<dialogue section="intros" id="soldier12.1" speaker="this" />
+				<script>range.setLevel(gun.storage, 1);</script>
+			</section>
+			<dialogue section="intros" id="soldier13" speaker="this" />
+			<dialogue section="intros" id="soldier14" speaker="this" />
+			<dialogue section="intros" id="soldier15" speaker="this" />
+			<run procedure="npcCutsceneEnd" />
+			<script>this.storage.get('event').delete();</script><save />
+		</laserGun>
+	</character>
+
+	<structure id="frozen_miner1" extends="frozen_npc" info="miner1" mining="1" idle="idle1" />
+	<structure id="frozen_miner2" extends="frozen_npc" info="miner2" mining="1" idle="idle1" />
+
+	<structure id="frozen_chef1" extends="frozen_npc" info="chef1" cooking="1" idle="idle1" />
+	<structure id="frozen_chef2" extends="frozen_npc" info="chef2" cooking="1" idle="idle1" />
+
+	<structure id="frozen_farmer1" extends="frozen_npc" info="farmer1" cooking="1" idle="idle1" />
+	<structure id="frozen_farmer2" extends="frozen_npc" info="farmer2" cooking="1" idle="idle1" />
+
+	<structure id="frozen_scientist" extends="frozen_npc" info="scientist" electronics="1" idle="idle1" />
+
+	<structure id="frozen_soldier" extends="frozen_npc" info="soldier" electronics="10" idle="idle3" />
+</data>

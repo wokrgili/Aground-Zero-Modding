@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<script>
+	function getObjectIconModels(info){
+		var models = []; for(m in info.models) if(m.type &lt; 2){
+			var r = getModel(m.id); if(r != null){
+				var model = new Model(r, 0, 0, 0, m.tint, m); model.mipmapTextures = r.mipmapTextures; if(info.params.icon_anim != null) model.setAnimation(info.params.icon_anim, false, null, 0);
+				model.transform.copy(m.transform == null?info.modelTransform:m.transform); models.push(model);
+			}
+		} if(info.params.iconModels != null) info.params.iconModels(models); return models;
+	}
+	function getObjectIconCamera(info,width,height){
+		var div = 1.0/Math.tan(30*PI/180);
+		var dist = Math.max(info.aabb.max_x, info.aabb.max_z*width/height)*div-info.aabb.min_y+0.1, camera = new Camera(); camera.fov = dist;
+		if(info.params.iconCamera == null){
+			var dz = 1.3+info.aabb.min_z, tilt = info.params.iconTilt == null?Math.atan2(dz,dist):info.params.iconTilt; dist += Math.max(0, info.aabb.max_y*Math.tan(tilt)*div);
+			camera.rotation.pan(PI); camera.rotation.tilt(tilt); camera.rotation.pan(info.params.iconPan == null?0.2:info.params.iconPan); camera.moveRelative(0, dist, 0);
+		} else info.params.iconCamera(dist, camera); return camera;
+	}
+	function updateObjectIcon(info,width,height){
+		var camera = getObjectIconCamera(info,width,height), models = getObjectIconModels(info);
+		if(info.params.icon == null) info.params.icon = makeIcon(width,height); var l = Math.sqrt(camera.fov)*6; camera.fov = 60;
+		renderIcon(info.params.icon, camera, models, null, new Color(l,l,l), new Color(0.25,0.25,0.25));
+	}
+	function makeObjectIcon(info, ?w, ?h){
+		if(w == null) w = 256; if(h == null) h = 144;
+		if(info.params.icon == null) updateObjectIcon(info,w,h); return info.params.icon;
+	}
+	function getBlueprintName(id){
+		var o = getStructure(id); if(o == null) return 'common.none'; else if(o.params.build != null) return o.params.build.params.name; else return o.params.name;
+	}
+	function getStructureItemName(id){return '[color=ff2222][text='+getBlueprintName(id)+'][/color]';}
+	function remove(b){b.remove();}
+	function buildHold(this, object, build, type, frames, recipe, partial, costs){
+		if(object.getPower() == 0 || build == null || this.area == null){object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_power"))); return -1;}
+		var item = object.inventory.getById("build"); if(item == null){object.dispatchEvent(new ObjectEvent("warning", getText("warning.cannot_"+type))); return -1;} frames *= getItemMul(item, "speed");
+		if(this.getHealth() == this.max_health.get()){
+			var o = build.create(object.state); var a = this.area; this.remove(); if(o != null){
+				o.copyTransform(this); o.storage.copy(this.storage, false); o.storage.get('partial').delete();
+				a.add(o,false); object.dispatchEvent(new ObjectEvent("build_blueprint", o));
+				object.state.runEvent(getScreenForPlayer(object), "onBuild", null, "object", o);
+				playSoundAt(a, o, "place_metal");
+			} return 1;
+		} var i = 0, total = 0; for(c in recipe.requirements){
+			var cost = Math.ceil(c.count*Math.min(1,(this.getHealth()-1+(partial.get()+frames)/recipe.timePerCost)/recipe.cost))-Math.ceil(c.count*Math.min(1,(this.getHealth()-1+partial.get()/recipe.timePerCost)/recipe.cost));
+			costs[i] = cost; total += cost; if(cost > 0 &amp;&amp; cost > object.inventory.getCountById(c.id)){
+				object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_"+type+"{item:"+c.id+"}"))); return -1;
+			} i++;
+		} if(total > 0){
+			var i = 0; var p = new Point(object.getX(), object.getY(), object.getZ()-0.2); this.transformPoint(p); for(c in recipe.requirements){
+				var ct = costs[i++]; if(ct > 0){
+					object.inventory.removeById(c.id, ct);
+					this.addBillboard(getItem(c.id).getIcon(), p.x, p.y, p.z).lerp(0,0,0,1,20,function(b){b.lerp(0,0,0,0,10,remove);});
+				}
+			}
+		} partial.set(partial.get()+frames); if(partial.get() >= recipe.timePerCost){
+			partial.set(partial.get()-recipe.timePerCost); this.addHealth(1); object.charge(-getItemMul(item, "cost"));
+			if(this.getHealth() == this.max_health.get()){
+				var o = build.create(object.state); var a = this.area; this.remove(); if(o != null){
+					o.copyTransform(this); o.storage.copy(this.storage, false); o.storage.get('partial').delete();
+					a.add(o,false); object.dispatchEvent(new ObjectEvent("build_blueprint", o));
+					object.state.runEvent(getScreenForPlayer(object), "onBuild", null, "object", o);
+					playSoundAt(a, o, "place_metal");
+				} return 1;
+			}
+		} return 0;
+	}
+	function fakeBuildHold(this, frames, recipe, partial){
+		if(this.getHealth() == this.max_health.get()) return true;
+		partial.set(partial.get()+frames); if(partial.get() >= recipe.timePerCost){
+			partial.set(partial.get()-recipe.timePerCost); this.addHealth(1);
+			if(this.getHealth() == this.max_health.get()) return true;
+		} return false;
+	}
+	function dismantleHold(this, object, type, frames, recipe, partial){
+		if(object.getPower() == 0 || this.area == null){object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_power"))); return -1;}
+		var item = object.inventory.getById("build"); if(item == null){object.dispatchEvent(new ObjectEvent("warning", getText("warning.cannot_"+type))); return -1;} frames *= getItemMul(item, "speed");
+		if(partial.get() &lt;= 0 &amp;&amp; this.getHealth() == 1){this.setHealth(0); return 1;}
+		var p = null; for(c in recipe.requirements){
+			var add = Math.ceil(c.count*Math.max(0,(this.getHealth()-1+partial.get()/recipe.timePerCost)/recipe.cost))-Math.ceil(c.count*Math.max(0,(this.getHealth()-1+(partial.get()-frames)/recipe.timePerCost)/recipe.cost));
+			if(add > 0){
+				var i = makeItem(c.id, add); if(!object.addItem(i)) object.dropItem(i, 0.25);
+				else {
+					if(p == null){p = new Point(this.getX(), this.getY(), this.getZ()); object.transformPointEye(p);}
+					object.addBillboard(getItem(c.id).getIcon(), p.x, p.y, p.z).lerp(0,0,-0.4,1,20,function(b){b.lerp(0,0,0,0,10,remove);});
+				}
+			}
+		} partial.set(partial.get()-frames); if(partial.get() &lt; 0){
+			partial.set(partial.get()+recipe.timePerCost); this.addHealth(-1); object.charge(-getItemMul(item, "cost")); if(this.getHealth() == 0) return 1;
+		} return 0;
+	}
+	function fakeDismantleHold(this, frames, recipe, partial){
+		if(this.getHealth() == 1) return true;
+		partial.set(partial.get()-frames); if(partial.get() &lt; 0){
+			partial.set(partial.get()+recipe.timePerCost); this.addHealth(-1); return this.getHealth() == 0;
+		} return false;
+	}
+	function buildToolAnim(object){
+		if(!object.hasTrack(LookToKeyframe)) object.loopLerp(new ToolScaleKeyframe(1.05,0.95,1.05), 20);
+	}
+	function stopToolAnim(object){
+		if(!object.hasTrack(LookToKeyframe)){object.clearTrack(ToolScaleKeyframe); object.clearTrack(ToolMoveKeyframe); object.resetToolTransform();}
+	}
+	function knockbackTool(object, ?delta){
+		if(object.hasTrack(LookToKeyframe)) return; if(delta == null) delta = 0.1; var t = object.tool.info.transform == null?object.info.modelTransform:object.tool.info.transform;
+		var k = new ToolMoveKeyframe(t.get(3,0), t.get(3,1), t.get(3,2)); var from = k.copy(0); k.y += delta;
+		object.lerp(k, 5, function(){if(!object.hasTrack(LookToKeyframe)) object.lerp(from, 5);});
+	}
+	function knockbackModel(object, ?delta){
+		if(object.hasTrack(ModelScaleKeyframe)) return; if(delta == null) delta = 0.1; var t = object.info.modelTransform;
+		var k = new ModelMoveKeyframe(t.get(3,0), t.get(3,1), t.get(3,2)); var from = k.copy(0); k.y += delta;
+		object.lerp(k, 5, function(){if(!object.hasTrack(ModelScaleKeyframe)) object.lerp(from, 5);});
+	}
+	function makeAnimatedIcon(info){
+		var camera = getObjectIconCamera(info, 256, 144), models = getObjectIconModels(info); var l = Math.sqrt(camera.fov)*6; camera.fov = 60;
+		var ret = {info:info, camera:camera, models:models, light:new Color(l,l,l), ambient: new Color(0.25,0.25,0.25)};
+		ret.update = function(icon, frames){
+			if(frames > 0 &amp;&amp; ret.particles != null &amp;&amp; ret.particles.length > 0){
+				var ar = ret.particles; ret.particles = []; Area.particlesStep(ar, ret.particles, frames);
+			} renderIcon(icon, ret.camera, ret.models, ret.particles, ret.light, ret.ambient);
+		} ret.step = function(icon, frames){ret.update(icon, frames);}
+		ret.destroy = function(){
+			if(ret.particles != null){for(p in ret.particles) p.destroy(); Utils.clear(ret.particles);}
+		} return ret;
+	}
+	function scaleAnimatedIcon(icon, scaleX, scaleY, scaleZ, length){
+		length *= 2; icon.scaleFrame = 0; icon.superUpdate = icon.update; icon.update = function(tex, frames){
+			icon.scaleFrame = Utils.fract(icon.scaleFrame+frames/length); var f = icon.scaleFrame*2; if(f > 1) f = 2-f;
+			var sx = Utils.interp(1, scaleX, f), sy = Utils.interp(1, scaleY, f), sz = Utils.interp(1, scaleZ, f);
+			for(m in icon.models){
+				m.transform.copy(m.info.transform == null?icon.info.modelTransform:m.info.transform);	
+				m.transform.set(0, 0, m.transform.get(0,0)*sx); m.transform.set(1, 1, m.transform.get(1,1)*sy); m.transform.set(2, 2, m.transform.get(2,2)*sz);
+			} icon.superUpdate(tex, frames);
+		}
+	}
+	</script>
+	<particles id="fake_item" type="transparent" sheet="{core}/items/icons.png" item="steel" power="1" dispatchFrom="new Point(0,0,-0.1)" dispatchTo="new Point(0,-1.5,-0.1)" speed="0.03" alpha="4" spawnCount="1">
+		<init>var i = this.xml.exists("icon")?eval(this.xml.get('icon')):getItem(this.xml.get('item')).getIcon(); x = i.x; size = i.scale/i.sheet.tileWidth; alpha = parseFloat(this.xml.get("alpha")); color = i.color;
+		dispatchFrom = eval(this.xml.get("dispatchFrom")); velocity = eval(this.xml.get("dispatchTo")); velocity.subeq(dispatchFrom); velocity.scaleBy(parseFloat(this.xml.get("speed")));
+		</init>
+		<spawn x="x">
+			particle.x = dispatchFrom.x; particle.y = dispatchFrom.y; particle.z = dispatchFrom.z; particle.color.copy(color);
+			particle.velX = velocity.x; particle.velY = velocity.y; particle.velZ = velocity.z; particle.scale = size; particle.alpha = alpha; particle.decay = 0.1;
+		</spawn>
+	</particles>
+	<procedure id="build.object"><script>
+	buildParticles = this.info.xml.get("build_particles"); cancelBuild = false;
+	sfx = new Mutable(); buildObjects = []; dismantleObjects = []; point = new Point();
+
+	function clearBuild(){
+		cancelBuild = true; if(buildParticles != null){this.removeParticlesById(buildParticles); this.clearTrack(ModelScaleKeyframe); this.resetModelTransform();}
+		var s = sfx.get(); if(s != null) s.stop(); sfx.set(null); if(buildObjects.length > 0 || dismantleObjects.length > 0) stopBuild();
+	}
+	function stopBuildObject(object, ar){
+		cancelBuild = true; if(ar.remove(object)){
+			var id = (ar == buildObjects?"build":"dismantle");
+			object.removeLight(id); stopToolAnim(object); object.removeParticlesById(id);
+			if(buildObjects.length == 0 &amp;&amp; dismantleObjects.length == 0) clearBuild();
+		}
+	}
+	function startBuild(){
+		if(buildParticles != null){this.addParticles(buildParticles); this.loopLerp(new ModelScaleKeyframe(1.05,0.95,1.05), 20);}
+		sfx.set(playSoundAt(this.area, this, "fabricator", true));
+	}
+	function startBuildObject(object, ar, point){
+		var id = (ar == buildObjects?"build":"dismantle");
+		ar.push(object); object.addParticles(id, "target", point); object.addLight(id); buildToolAnim(object);
+	}
+	function stopBuild(){
+		cancelBuild = true; for(o in buildObjects){
+			o.removeLight("build"); stopToolAnim(o); o.removeParticlesById("build");
+		} Utils.clear(buildObjects);
+		for(o in dismantleObjects){
+			o.removeLight("dismantle"); stopToolAnim(o); o.removeParticlesById("dismantle");
+		} Utils.clear(dismantleObjects);
+	}
+	remainingReqs = new Mutable(); remainingReqs.set(""); 
+	function updateRemainingReqs(){
+		var b = new StringBuf(), req = recipe.requirements, first = true;
+		for(r in req){
+			var cost = Math.ceil(r.count*Math.min(1,(this.getHealth()-1+partial.get()/recipe.timePerCost)/recipe.cost));
+			if(cost != r.count){if(first) first = false; else b.add(", "); b.add("[item="); b.add(r.id); b.add("] x"); b.add(r.count-cost);}
+		} remainingReqs.set(b.toString());
+	}
+	</script></procedure>
+	<structure id="build_object" self="BLUEPRINT" block="WORLD|STRUCTURE|BLUEPRINT|PLAYER|NPC|ENEMY|ITEM|PROJECTILE" static="true" defense="4" build_particles="construct" tool="build">
+		<infoInit>
+		var s = this.xml.exists("info")?getStructure(this.xml.get("info")):(this.xml.exists("character")?getCharacter(this.xml.get("character")):getObject(this.xml.get("object"))); if(s == null) return;
+		this.params.build = s; s.params.blueprint = this;
+		if(!this.xml.elementsNamed("transform").hasNext()) this.modelTransform = s.modelTransform;
+		if(this.xml.get("copy_models") != "false"){
+			for(m in s.models) if(m.type &lt; 2) this.models.push(m);
+			if(s.models.length > 0 &amp;&amp; s.models[0].type == 0){var m = s.models[0].clone(); m.type = 2; m.tint.set(2,2,2,0.25); this.models.push(m);}
+		} var first = null, hasSel = false; for(m in this.models){if(m.type == 0) first = m; if(m.type == 2) hasSel = true;} if(!hasSel &amp;&amp; first != null){
+			var m = first.clone(); m.type = 2; m.tint.set(2,2,2,0.25); this.models.push(m);
+		} if(this.xml.get("auto_arrow") != "false" &amp;&amp; s.params.dispatchFrom != null){
+			var t = makeMatrix(); t.setScale(0.5,0.5,0.5); t.translate(-0.25,-0.25, s.aabb.min_z+0.1);
+			var dx = s.params.dispatchTo.x-s.params.dispatchFrom.x, dy = s.params.dispatchTo.y-s.params.dispatchFrom.y;
+			var b = new Basis(); b.pan(Math.atan2(dy, dx)); t.append(b.getMatrix());
+			t.translate(s.params.dispatchFrom.x+Utils.sign(dx)*1.125, s.params.dispatchFrom.y+Utils.sign(dy)*1.125, 0);
+			var m = new ModelInfo("output"); m.type = 2; m.tint.set(2,2,2,0.25); m.transform = t; this.models.push(m);
+		} if(this.shapes.length == 0) this.copyShapes(s); this.params.defense = eval(this.xml.get("defense"));
+		this.params.name = s.params.name; this.params.icon_anim = s.params.icon_anim;
+		</infoInit>
+		<init><script>
+		build = this.info.params.build; if(build == null) return;
+		recipe = this.info.params.recipe; if(recipe == null) recipe = getData("recipe", this.info.xml.get("recipe")); if(recipe == null) return;
+		this.max_health.set(recipe.cost+1);
+		partial = this.storage.get('partial'); if(partial.get() == null){partial.setFloat(0); this.health.set(1);}
+		for(model in this.models){
+			model.emissionTint.set(0,0,0); if(this.info.params.icon_anim != null) model.setAnimation(this.info.params.icon_anim, false, null, 0);
+			else if(model.animation != null) model.animation.setAnimationSpeed(0);
+		}
+		function getBuildProgress(){return (this.getHealth()-1+partial.get()/recipe.timePerCost)/recipe.cost;}
+		function updateModelClip(e){
+			var p = 0.125+0.875*(this.getHealth()-1+partial.get()/recipe.timePerCost)/recipe.cost;
+			var b = this.getAABB(), z = Utils.interp(b.min_z, b.max_z, p);
+			for(m in this.models) if(m.info.type &lt; 2) m.max_z = z;
+		} costs = []; for(c in recipe.requirements) costs.push(0);
+		this.health.addEventListener("updated", updateModelClip); partial.addEventListener("updated", updateModelClip);
+		this.addEventListener("body_moved", updateModelClip);
+		</script><run procedure="build.object" /></init>
+		<addedToArea><script>updateModelClip(null); updateRemainingReqs();</script></addedToArea>
+		<removedFromArea><script>if(buildObjects.length > 0 || dismantleObjects.length > 0) clearBuild();</script></removedFromArea>
+		<onRelease><script>stopBuildObject(object, buildObjects)</script></onRelease>
+		<onHold>cancelBuild = false;
+		if(buildHold(this, object, build, "build", frames, recipe, partial, costs) == 0){
+			if(!cancelBuild){
+				if(buildObjects.indexOf(object) == -1){point.set(this.getX(), this.getY(), this.getZ()); startBuildObject(object, buildObjects, point);}
+				if(sfx.get() == null) startBuild();
+			}
+		} else stopBuildObject(object, buildObjects);
+		updateRemainingReqs();
+		</onHold>
+		<onAltRelease><script>stopBuildObject(object, dismantleObjects)</script></onAltRelease>
+		<onAltHold>cancelBuild = false;
+		if(dismantleHold(this, object, "build", frames, recipe, partial) == 0){
+			if(!cancelBuild){
+				if(dismantleObjects.indexOf(object) == -1){point.set(this.getX(), this.getY(), this.getZ()); startBuildObject(object, dismantleObjects, point);}
+				if(sfx.get() == null) startBuild();
+			}
+		} else stopBuildObject(object, dismantleObjects);
+		updateRemainingReqs();
+		</onAltHold>
+		<getSelection>
+		selection.bounds.copy(this.info.aabb); selection.setTooltips(getText("actions.build{structure:"+this.info.params.name+"}"),
+			getText("actions.dismantle{hold:true}{structure:"+this.info.params.name+"}"), null, this.vars.get("remainingReqs")); return true;
+		</getSelection>
+		<onDeath><script>playSoundAt(this.area, vec3(this.getX(), this.getY(), this.getZ()), "break", false, 1, 2); area.addParticles("break", this.getX(), this.getY(), this.getZ()); this.remove();</script></onDeath>
+		<onDamage><script>playSoundAt(this.area, this, "structure_hit"); this.flash(2,0,0,1,8);</script></onDamage>
+	</structure>
+	<structure id="blueprint" extends="build_object">
+		<infoInit>var s = this.params.build; if(s == null) return; this.params.getEdgeTiles = s.params.getEdgeTiles;
+		this.params.desc = this.xml.exists("desc")?parseString(this.xml.get("desc")):'structure>'+this.id;</infoInit>
+		<addedToArea><script if="this.info.powered">for(n in this.info.params.getEdgeTiles(this)) area.replaceGround(n.x, n.y, n.z, 0);</script></addedToArea>
+	</structure>
+	<particles id="construct" x="0" type="emissive" extends="break" size="0.001953125" width="0.5" height="0.5" depth="0.5" speed="0.02" power="1" spawnCount="0" />
+	<script>STRUCTURE_TYPES = ["power", "produce", "base", "vehicle", "decor"];</script>
+	
+	<particles id="storehouse1" extends="fake_item" item="steel" dispatchFrom="new Point(-2.5,-0.5,-0.5)" dispatchTo="new Point(0,-0.5,-0.5)" />
+	<particles id="storehouse2" extends="fake_item" item="steel" dispatchFrom="new Point(0,0,-0.5)" dispatchTo="new Point(-2.5,0,-0.5)" />
+	<structure id="storehouse_blueprint" extends="blueprint" type="base" info="storehouse" recipe="build_storehouse">
+		<infoInit>
+		this.params.makeScreens = function(){
+			var xml = getStructure("storehouse").xml.elementPathsNamed("texture").next();
+			var w = eval(xml.get('width')), h = eval(xml.get('height'));
+			this.params.screens = [makeIcon(w, h), makeIcon(w, h)];
+			var vars = createVariables(), inv = new Inventory(10, 1); vars.set("this", {inventory:inv});
+			Object._setTexture(this.params.screens[0], xml, vars, null);
+			inv.addItem(makeItem('steel')); Object._setTexture(this.params.screens[1], xml, vars, null);
+		}
+		this.params.iconModels = function(models){
+			if(this.params.screens == null) this.params.makeScreens(); var r = models[1].renderable.clone(); r.set("emissionTexture", this.params.screens[0]); models[1].renderable = r;
+		}
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this);
+			ret.particles = []; ret.frames = 0; var a = ret.models[0].animation.animations[0];
+			a.onComplete = function(){
+				if(a.animationSpeed > 0) a.animationSpeed = -1; else {ret.frames = 0; a.animationSpeed = 1;}
+			}
+			ret.step = function(icon, frames){
+				var old = ret.frames; ret.frames += frames; if(old &lt; 70 &amp;&amp; ret.frames >= 70){ret.particles.push(Area.makeParticles(getParticles("storehouse1")));}
+				if(old &lt; 100 &amp;&amp; ret.frames >= 100) ret.models[1].renderable.set("emissionTexture", this.params.screens[1]);
+				if(old &lt; 570 &amp;&amp; ret.frames >= 570){
+					ret.particles.push(Area.makeParticles(getParticles("storehouse2")));
+					ret.models[1].renderable.set("emissionTexture", this.params.screens[0]);
+				} ret.models[0].step(frames); ret.update(icon, frames);
+			} return ret;
+		}
+		</infoInit>
+	</structure>
+	<particles id="factory_iron" extends="fake_item" item="iron" dispatchFrom="new Point(-1.5,0,-0.1)" dispatchTo="new Point(0,0,-0.1)" />
+	<structure id="factory_blueprint" extends="blueprint" type="produce" info="factory" recipe="build_factory">
+		<infoInit>
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); ret.models[0].animation.animations[0].onComplete = function(){ret.particles.push(Area.makeParticles(getParticles("factory_iron")));}
+			ret.particles = [Area.makeParticles(getParticles("factory")), Area.makeParticles(getParticles("fake_item"))];
+			scaleAnimatedIcon(ret, 1.02,0.98,1.02, 10);
+			ret.step = function(icon, frames){
+				ret.models[0].step(frames);
+				ret.models[1].texCrop.y -= frames*0.01; if(ret.models[1].texCrop.y &lt; -2){
+					ret.models[1].texCrop.y += 2; ret.models[0].animation.setFrame(0); ret.particles.push(Area.makeParticles(getParticles("fake_item")));
+				} ret.update(icon, frames);
+			} return ret;
+		}
+		</infoInit>
+	</structure>
+	<particles id="generator_coal" extends="fake_item" item="coal" dispatchFrom="new Point(-1.5,0,-0.3)" dispatchTo="new Point(0,0,-0.3)"  />
+	<structure id="generator_blueprint" extends="blueprint" type="power" info="generator" recipe="build_generator" desc="'structure>generator_blueprint{power:'+this.params.build.xml.get('power_gen')+'}'">
+		<infoInit>
+		this.params.iconModels = function(models){models[0].emissionTint.set(1.5,0.5,0);}
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); ret.frames = 0;
+			scaleAnimatedIcon(ret, 1.02,0.98,1.02, 20);
+			ret.particles = [Area.makeParticles(getParticles("coal_generator")), Area.makeParticles(getParticles("generator_coal"))];
+			ret.step = function(icon, frames){
+				ret.frames += frames; if(ret.frames > 200){ret.frames -= 200; ret.particles.push(Area.makeParticles(getParticles("generator_coal")));}
+				ret.models[0].step(frames); ret.update(icon, frames);
+			} return ret;
+		}
+		</infoInit>
+	</structure>
+	<structure id="battery_blueprint" extends="blueprint" type="power" info="battery" recipe="build_battery" desc="'structure>battery_blueprint{power:'+this.params.build.xml.get('power')+'}'">
+		<infoInit>
+		this.params.iconModels = function(models){models[1].texCrop.y = 0.08*5; models[1].emissionTint.setInt(BATTERY_COLORS[5], false);}
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); ret.frames = 0; ret.delta = 1;
+			ret.step = function(icon, frames){
+				ret.frames += frames*ret.delta;
+				var p = Math.round(ret.frames/20); if(p &lt; 0){p = 0; ret.delta = 1;} else if(p &gt; 6){p = 6; ret.delta = -1;}
+				ret.models[1].texCrop.y = 0.08*p; ret.models[1].emissionTint.setInt(BATTERY_COLORS[p], false); ret.update(icon, frames);
+			} return ret;
+		}
+		</infoInit>
+	</structure>
+	<structure id="cryopod_blueprint" extends="blueprint" type="base" info="cryopod" recipe="build_cryopod">
+		<infoInit>
+		this.params.iconModels = function(models){models[1].userData = 'top';}
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this);
+			ret.step = function(icon, frames){ret.models[1].step(frames); ret.update(icon, frames);}
+			return ret;
+		}
+		</infoInit>
+	</structure>
+	<particles id="grow_tomato" extends="fake_item" item="tomato" dispatchFrom="new Point(-0.5,0,0)" dispatchTo="new Point(-0.5,1.5,0)" gravityZ="-0.001" alpha="6" />
+	<structure id="hydroponics_blueprint" extends="blueprint" type="produce" info="hydroponics" recipe="build_hydroponics" model="hydroponics" copy_models="false">
+		<model id="hydroponics_glass" tint="55ffffff" type="transparent" />
+		<infoInit>
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); var r = getModel("tomatoes");
+			var model = new Model(r); model.mipmapTextures = r.mipmapTextures; var a = model.animation.animations[0];
+			a.onComplete = function(){
+				if(a.animationSpeed > 0){
+					a.animationSpeed = -5; ret.particles.push(Area.makeParticles(getParticles("grow_tomato")));
+					ret.particles.push(Area.makeParticles(getParticles("harvest")));
+				} else a.animationSpeed = 1;
+			}
+			model.transform.copy(ret.models[0].transform); ret.models.unshift(model);
+			ret.particles = []; ret.models[ret.models.length-1].userData = 'top';
+			ret.step = function(icon, frames){ret.models[0].step(frames); ret.update(icon, frames);}
+			return ret;
+		} this.params.iconPan = 0.6;
+		</infoInit>
+	</structure>
+	<structure id="bunker_blueprint" extends="blueprint" info="bunker" type="base" recipe="build_bunker">
+		<infoInit>
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this);
+			var a = ret.models[0].animation; a.setAnimationCount(2); var list = ret.models[0].renderable.renderable.animations;
+			var mask = 0; for(i in 7...12) mask = Bitmask.set(mask, i, true); a.animations[0].set(list[1], true); a.animations[0].tracks = mask;
+			var mask = 0; for(i in 0...7) mask = Bitmask.set(mask, i, true); for(i in 12...15) mask = Bitmask.set(mask, i, true); a.animations[1].set(list[0], false, null, 0.66); a.animations[1].tracks = mask; a.setFrame(0);
+			ret.step = function(icon, frames){ret.models[0].step(frames); ret.update(icon, frames);}
+			return ret;
+		}
+		</infoInit>
+	</structure>
+	<particles id="mine_coal" extends="fake_item" item="coal" dispatchFrom="new Point(0.5,0,-0.5)" dispatchTo="new Point(0.5,-1.5,0)" gravityZ="-0.002" alpha="6" />
+	<structure id="rig_blueprint" extends="blueprint" info="rig" type="produce" recipe="build_lab">
+		<infoInit>
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); ret.models[0].animation.animations[0].loop = true;
+			ret.particles = [Area.makeParticles(getParticles("mine_coal"))]; ret.frames = 100;
+			scaleAnimatedIcon(ret, 1.02,0.98,1.02, 60);
+			ret.step = function(icon, frames){
+				ret.models[0].step(frames); ret.frames -= frames; if(ret.frames &lt; 0){ret.particles.push(Area.makeParticles(getParticles("mine_coal"))); ret.frames += 100;}
+				ret.update(icon, frames);
+			} return ret;
+		}
+		</infoInit>
+	</structure>
+	<structure id="light_blueprint" extends="blueprint" info="light" type="decor" recipe="build_battery" />
+	<particles id="craft_chip" extends="fake_item" item="chip" dispatchFrom="new Point(0,-0.5,0.2)" dispatchTo="new Point(-1.5,-0.5,0.2)" gravityZ="-0.001" alpha="6" />
+	<structure id="lab_blueprint" extends="blueprint" info="lab" type="produce" recipe="build_lab">
+		<infoInit>
+		this.params.iconModels = function(models){models[1].userData = 'top';}
+		this.params.iconCamera = function(dist, camera){
+			dist -= 0.4; var dz = 1.3+this.aabb.min_z, tilt = Math.atan2(dz,dist); camera.rotation.tilt(-tilt); camera.rotation.pan(-1); camera.moveRelative(-0.125, dist, 0);
+		}
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); scaleAnimatedIcon(ret, 1.02,0.98,1.02, 10);
+			ret.particles = [Area.makeParticles(getParticles("lab"))];
+			var dispatch; var work = function(){ret.models[0].setAnimation("lab|lab|arms|BaseLayer", false, dispatch, 1, 0, true);};
+			dispatch = function(){
+				ret.models[0].setAnimation("lab|lab|flap|BaseLayer", false, work); ret.particles.push(Area.makeParticles(getParticles("craft_chip")));
+			} work(); ret.step = function(icon, frames){ret.models[0].step(frames); ret.update(icon, frames);}
+			return ret;
+		}
+		</infoInit>
+	</structure>
+	<particles id="cook_bread" extends="fake_item" item="bread" dispatchFrom="new Point(-0.75,0,0.2)" dispatchTo="new Point(-0.75,-1.5,0.2)" gravityZ="-0.001" alpha="6" />
+	<structure id="kitchen_blueprint" extends="lab_blueprint" info="kitchen" recipe="build_kitchen">
+		<infoInit>
+		this.params.iconModels = function(models){}
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); ret.models[0].animation.animations[0].loop = true;
+			scaleAnimatedIcon(ret, 1.02,0.98,1.02, 10);
+			ret.particles = [Area.makeParticles(getParticles("kitchen")), Area.makeParticles(getParticles("cook_bread"))]; ret.frames = 100;
+			ret.step = function(icon, frames){
+				ret.models[0].step(frames); ret.frames -= frames; if(ret.frames &lt; 0){ret.particles.push(Area.makeParticles(getParticles("cook_bread"))); ret.frames += 100;}
+				ret.update(icon, frames);
+			} return ret;
+		}
+		</infoInit>
+	</structure>
+	<structure id="chest_blueprint" extends="blueprint" type="base" info="chest" recipe="build_chest">
+		<infoInit>
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); ret.models[0].animation.setAnimationSpeed(1);
+			ret.step = function(icon, frames){ret.models[0].step(frames); ret.update(icon, frames);}
+			return ret;
+		}
+		</infoInit>
+	</structure>
+	<structure id="teleportal_blueprint" extends="blueprint" type="base" info="teleportal" recipe="build_teleportal" model="teleportal" copy_models="true">
+		<infoInit>
+		this.params.animateIcon = function(){
+			var ret = makeAnimatedIcon(this); var r = getModel("teleportalFX"), model = new Model(r); model.tint.set(); model.emissionTint.set(1.3,1.3,1.3); model.emissionAlpha = false;
+			model.mipmapTextures = r.mipmapTextures; model.transform.copy(ret.models[0].transform); ret.models.push(model);
+			model.setAnimation("loop", true, null, 0.25); ret.models[1].texCrop.y = -0.9;
+			ret.step = function(icon, frames){
+				ret.models[1].step(frames); ret.models[1].texCrop.x = Utils.mod(ret.models[1].texCrop.x+frames*0.006, 1);
+				ret.models[1].texCrop.y = Math.min(ret.models[1].texCrop.y+frames*0.008, -0.5); ret.update(icon, frames);
+			} return ret;
+		}
+		<!--this.params.checkPlace = function(area, selection, item){
+			if(area.info.params.temporary == true) return getText('warning.no_teleportal{structure:'+this.params.build.params.name+'}'); else return null;
+		};-->
+		</infoInit>
+	</structure>
+</data>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<script>function addIntClamped(d, v, min, max){
+		var old = d.get(); d.setInt(Utils.clampi((old == null?0:old)+v, min, max));
+	}
+	_struc_id_letters = [];
+	function createStructureId(){
+		var ret = new StringBuf(); if(_struc_id_letters.length == 0){
+			for(i in 65...91) _struc_id_letters.push(i); shuffle(_struc_id_letters);
+		} ret.addChar(_struc_id_letters.pop());
+		ret.add(Std.string(randInt(10,99))); return ret.toString();
+	}
+	</script>
+	<procedure id="manned.info">
+		<formattedText text="getText('structure.worker{skill:'+this.info.params.skill+'}')" size="20" color="ffff88" width="width" align="left" />
+		<text text="this.vars.get('npcName')" size="16" width="width" y="22" align="left" />
+		<script>y = 42;</script>
+	</procedure>
+	<structure id="manned_grow" extends="grow" tooltip="actions.manage" entrance="new Point(0,-1.5,0)">
+		<infoInit>this.params.skill = this.xml.get("skill");</infoInit>
+		<init><script>
+		if(!this.storage.get("id").hasData()) this.storage.get("id").setString(createStructureId());
+		function getName(){return concat(getText(this.info.params.name), this.storage.get("id").getString(), " ");}
+		this.storage.get("enabled").setBool(false); npc = new Mutable(); npc.set(null); npcName = new MutableMutable(getText("common.none"));
+		function setNPC(n){
+			var old = npc.get(); if(old == n) return;
+			if(n != null){var func = n.vars.get("setWork"); func(this);} else if(old != null){var func = old.vars.get("setWork"); func(null);}
+		} function updateNPC(e){
+			var n = npc.get(); workerWarning(n == null); npcName.setMutable(n == null?getText("common.none"):n.vars.get('getName')()); if(n != null &amp;&amp; this.info.params.skill != null) updateSpeed(n); else speed = 1;
+		} npc.addEventListener("updated", updateNPC); workerWarning(true);
+		function completeRecipe(r){
+			var n = npc.get(); if(n != null &amp;&amp; this.info.params.skill != null){addIntClamped(n.storage.get(this.info.params.skill), Math.round(Math.sqrt(r.cost)), 0, n.info.params.max_skill[this.info.params.skill]*100); updateSpeed(n);}
+		} function updateSpeed(n){
+			var i = n.storage.get(this.info.params.skill).getInt(); speed = 1+0.5*Utils.clampi(Math.floor(i == null?0:i/100), 0, n.info.params.max_skill[this.info.params.skill]);
+		}
+		</script></init>
+		<removedFromArea><script>setNPC(null);</script></removedFromArea>
+		<onSelect>
+			<sound id="select" source="this" /><window id="manned_grow" title="getName()" recipe="this.storage.get('recipe')" skill="this.info.params.skill" recipes="getRecipesByTypes(this.info.params.types, state.storage)" progress="progress" worker="npcName" hasWorker="this.storage.get('enabled')" setWorker="setNPC" grow="this.info.xml.get('grow_label')" /><stop />
+		</onSelect>
+		<info height="y"><run procedure="manned.info" /></info>
+	</structure>
+	<structure id="manned_craft" extends="craft" tooltip="actions.manage" entrance="new Point(0,-1.5,0)">
+		<infoInit>this.params.skill = this.xml.get("skill");</infoInit>
+		<init><script>
+		if(!this.storage.get("id").hasData()) this.storage.get("id").setString(createStructureId());
+		function getName(){return concat(getText(this.info.params.name), this.storage.get("id").getString(), " ");}
+		this.storage.get("enabled").setBool(false); npc = new Mutable(); npc.set(null); npcName = new MutableMutable(getText("common.none"));
+		function setNPC(n){
+			var old = npc.get(); if(old == n) return;
+			if(n != null){var func = n.vars.get("setWork"); func(this);} else if(old != null){var func = old.vars.get("setWork"); func(null);}
+		} function updateNPC(e){
+			var n = npc.get(); workerWarning(n == null); npcName.setMutable(n == null?getText("common.none"):n.vars.get('getName')()); if(n != null &amp;&amp; this.info.params.skill != null) updateSpeed(n); else speed = 1;
+		} npc.addEventListener("updated", updateNPC); workerWarning(true);
+		function completeRecipe(r){
+			var n = npc.get(); if(n != null &amp;&amp; this.info.params.skill != null){addIntClamped(n.storage.get(this.info.params.skill), Math.round(Math.sqrt(r.cost)), 0, n.info.params.max_skill[this.info.params.skill]*100); updateSpeed(n);}
+		} function updateSpeed(n){
+			var i = n.storage.get(this.info.params.skill).getInt(); speed = 1+0.5*Utils.clampi(Math.floor(i == null?0:i/100), 0, n.info.params.max_skill[this.info.params.skill]);
+		} var superRequestItems = requestItems;
+		function requestItems(){
+			var items = superRequestItems(); if(shouldProgress) return items; var n = npc.get(); items = items.filter(function(i){return i.count > 0;});
+			if(n != null &amp;&amp; items.length > 0) n.vars.get("requestItems")(items); return items;
+		}
+		</script></init>
+		<removedFromArea><script>setNPC(null);</script></removedFromArea>
+		<onSelect>
+			<sound id="select" source="this" /><window id="manned_craft" title="getName()" recipe="this.storage.get('recipe')" skill="this.info.params.skill" recipes="getRecipesByTypes(this.info.params.types, state.storage)" requirements="this.inventory" to="object.inventory" to_title="getText('structure.inventory')" progress="progress" worker="npcName" hasWorker="this.storage.get('enabled')" setWorker="setNPC" allowRequest="allowRequest" limit="limit" /><stop />
+		</onSelect>
+		<info height="y"><run procedure="manned.info" /></info>
+	</structure>
+
+	<light id="factory" type="point" r="3.5" g="3.5" b="3" direct_light="false" />
+	<particles id="factory" extends="break" up="true" size="0.002" offsetY="0.7" offsetZ="0.2" width="0.1" height="0.1" depth="0.5" speed="0.02" power="1" spawnCount="0" />
+	<structure id="factory" extends="craft" model="factory" power_use="5" operate_particles="factory" loop_sfx="factory">
+		<shape type="box" width="1" height="2" depth="1" />
+		<model id="factory_belt" />
+		<transform>matrix.setScale(0.5,0.5,0.5); var b = new Basis(); b.pan(PI/2); matrix.append(b.getMatrix());</transform>
+		<light id="factory" />
+		<recipe type="basic" />
+		<init><script>
+		this.models[0].animation.setAnimationSpeed(0);
+		function onFrame(frames){if(shouldProgress) this.models[1].texCrop.y -= frames*0.01;}
+		var superCompleteRecipe = completeRecipe;
+		function completeRecipe(r){superCompleteRecipe(r); this.models[0].animation.setFrame(0); this.models[0].animation.setAnimationSpeed(2);}
+		</script></init>
+	</structure>
+
+	<light id="hydroponics" type="point" r="1.5" g="2.5" b="3.5" />
+	<particles id="harvest" extends="break" up="true" offsetZ="-0.6" color="0xd8a77d" size="0.004" width="0.2" height="0.2" depth="1" speed="0.03" power="4" spawnCount="60" />
+	<structure id="hydroponics" extends="grow" model="hydroponics" power_use="3" scale_anim="false">
+		<infoInit>this.params.dispatchFrom.set(-0.5,0,0); this.params.dispatchTo = new Point(-0.5,1.5,0);</infoInit>
+		<model id="tomatoes" />
+		<model id="hydroponics_glass" tint="55ffffff" type="transparent" />
+		<transform>matrix.set(3,1,0.1); var b = new Basis(); b.pan(PI); matrix.append(b.getMatrix());</transform>
+		<shape type="box" width="2" height="2" depth="3" />
+		<groundBounds x="-1.2" y="-1" z="-1.35" width="2.4" height="2" depth="2.7" />
+		<light id="hydroponics" />
+		<recipe type="hydroponics" />
+		<init><script>
+		this.models[1].cutoffSq = 0.25; this.models[1].animation.setAnimationSpeed(0); this.models[1].animation.animations[0].onComplete = function(){this.models[1].animation.setAnimationSpeed(0);}
+		function updateProgress(e){
+			if(this.models[1].animation.animations[0].animationSpeed == 0) this.models[1].animation.setFrame(progress.get()*this.models[1].animation.animations[0].animation.duration/1000000);
+		} function setRecipe(r){
+			this.setModel(1, r.xml.get("model")); this.models[1].animation.setAnimationSpeed(0); this.models[1].animation.animations[0].onComplete = function(){this.models[1].animation.setAnimationSpeed(0);}
+			updateProgress(null);
+		} progress.addEventListener("updated", updateProgress); setRecipe(recipe);
+		function completeRecipe(r){this.addParticles("harvest"); playSoundAt(this.area, this, "plant_seed"); this.models[1].animation.setAnimationSpeed(-5);}
+		</script></init>
+	</structure>
+
+	<light id="lab" type="point" r="3.5" g="3.5" b="3" />
+	<structure id="rig" extends="manned_grow" model="rig" power_use="5" grow_label="structure.mine" skill="mining" loop_sfx="rig" entrance="new Point(-0.5,1.01,-0.5)" workPos="new Point(-0.6, 0.55, -0.5)" viewPos="new Point(-0.6,0,-0.5)">
+		<infoInit>this.params.dispatchFrom.set(0.5,0,0); this.params.dispatchTo = new Point(0.5,-1.5,0);</infoInit>
+		<shape type="box" x="0.275" width="1.1" height="1.7" depth="3.25" />
+		<shape type="box" x="-0.525" z="-1.125" width="0.6" height="0.6" depth="1" />
+		<transform>matrix.setScale(0.5,0.5,0.5); matrix.set(3,0,0.275); matrix.set(3,1,0.25);</transform>
+		<light id="lab" />
+		<recipe type="rig" />
+		<init><script>
+		this.models[0].setAnimation("both_loop", true, null, 0);
+		function updateShouldProgress(){
+			this.models[0].animation.setAnimationSpeed(shouldProgress?1:0);
+		}
+		</script></init>
+	</structure>
+
+	<particles id="lab" x="0" offsetY="-0.5" offsetZ="0.1" type="emissive" up="true" extends="break" size="0.000390625" width="0.125" height="0.125" depth="0.125" speed="0.01" power="1" spawnCount="0" />
+	<structure id="L_craft" extends="manned_craft" power_use="5" ground="shadowL">
+		<infoInit>this.params.getEdgeTiles = structureLEdgeTiles;</infoInit>
+		<shape type="box" y="-0.55" width="2" height="0.9" depth="1" />
+		<shape type="box" x="0.7" width="0.6" height="2" depth="1" />
+		<transform>matrix.setScale(0.5,0.5,0.5)</transform>
+	</structure>
+	<structure id="lab" extends="L_craft" model="lab" operate_particles="lab" skill="electronics" loop_sfx="lab" entrance="new Point(-0.01,0.25,0)" viewPos="new Point(-0.01,0,0)">
+        <infoInit>this.params.dispatchFrom.set(0,-0.5,0); this.params.dispatchTo = new Point(-1.5,-0.5,0);</infoInit>
+	    <model id="lab_glass" tint="55ffffff" type="transparent" />
+		<light id="lab" />
+		<recipe type="lab" />
+		<recipe type="tool" />
+		<init><script>
+		this.models[0].setAnimation("lab|lab|arms|BaseLayer", true, null, 0);
+		function updateShouldProgress(){
+			if(!this.models[0].isAnimating()) this.models[0].animation.setAnimationSpeed(shouldProgress?1:0);
+		}
+		var superCompleteRecipe = completeRecipe;
+		function completeRecipe(r){superCompleteRecipe(r); this.models[0].setAnimation("lab|lab|flap|BaseLayer", false, function(){this.models[0].setAnimation("lab|lab|arms|BaseLayer", true); updateShouldProgress();}, 2);}
+		</script></init>
+	</structure>
+
+	<particles id="kitchen" offsetX="0.7" offsetY="0.7" offsetZ="0.1" type="emissive" up="true" extends="break" size="0.002" width="0.075" height="0.075" depth="0.125" speed="0.01" power="0.2" spawnCount="0" />
+	<structure id="kitchen" extends="L_craft" model="kitchen" operate_particles="kitchen" skill="cooking" loop_sfx="kitchen" entrance="new Point(-0.1,0.05,0)" viewPos="new Point(-0.1,0,0)">
+		<infoInit>this.params.dispatchFrom.set(-0.75,0,0); this.params.dispatchTo = new Point(-0.75,-1.5,0);</infoInit>
+		<light id="lab" />
+		<recipe type="kitchen" />
+		<init><script>
+		this.models[0].setAnimation("loop", true, null, 0); this.models[0].emissionTint.set(0,1,1);
+		function updateShouldProgress(){
+			var v = shouldProgress?1:0; this.models[0].emissionTint.set(v,1,1);
+			this.models[0].animation.setAnimationSpeed(v);
+		}
+		</script></init>
+	</structure>
+</data>
