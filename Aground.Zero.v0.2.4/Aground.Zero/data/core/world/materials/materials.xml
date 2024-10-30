@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<texture id="cave_floor" color="cave_floor.png" normal="cave_floor_n.png" />
+	<texture id="cave_ceiling" color="cave_ceiling.png" normal="cave_ceiling_n.png" />
+	<texture id="cave_wall" color="cave_wall.png" normal="cave_wall_n.png" />
+	<texture id="rock_floor" color="granite_floor.png" normal="granite_floor_n.png" />
+	<texture id="rock_ceiling" color="granite_ceiling.png" normal="granite_ceiling_n.png" />
+	<texture id="rock_wall" color="granite_wall.png" normal="granite_wall_n.png" />
+	<texture id="bedrock_floor" color="bedrock_floor.png" normal="bedrock_floor_n.png" />
+	<texture id="bedrock_ceiling" color="bedrock_ceiling.png" normal="bedrock_ceiling_n.png" />
+	<texture id="bedrock_wall" color="bedrock_wall.png" normal="bedrock_wall_n.png" />
+	<texture id="metal_floor" color="metal_floor.png" normal="metal_floor_n.png" />
+	<texture id="metal_ceiling" color="metal_ceiling.png" normal="metal_ceiling_n.png" />
+	<texture id="metal_wall" color="metal_wall.png" normal="metal_wall_n.png" />
+	<texture id="metal_door" color="metal_door.png" normal="metal_door_n.png" />
+	<texture id="metal_wall2" color="metal_wall2.png" normal="metal_wall2_n.png" />
+	<setSpecular normal="cave_floor_n.png" specular="black" />
+	<setSpecular normal="cave_ceiling_n.png" specular="black" />
+	<setSpecular normal="cave_wall_n.png" specular="black" />
+	<setSpecular normal="granite_floor_n.png" specular="white" scale="0.3" />
+	<setSpecular normal="granite_ceiling_n.png" specular="white" scale="0.3" />
+	<setSpecular normal="granite_wall_n.png" specular="white" scale="0.3" />
+	<setSpecular normal="bedrock_floor_n.png" specular="white" />
+	<setSpecular normal="bedrock_ceiling_n.png" specular="white" />
+	<setSpecular normal="bedrock_wall_n.png" specular="white" />
+	<setSpecular normal="metal_floor_n.png" specular="white" scale="0.7" />
+	<setSpecular normal="metal_ceiling_n.png" specular="white" scale="0.7" />
+	<setSpecular normal="metal_wall_n.png" specular="white" scale="0.7" />
+	<setSpecular normal="metal_door_n.png" specular="white" scale="0.7" />
+	<setSpecular normal="metal_wall2_n.png" specular="white" scale="0.7" />
+	<texture id="coal" color="coal.png" normal="coal_n.png" />
+	<setSpecular normal="coal_n.png" specular="white" />
+	<texture id="iron" color="iron.png" normal="iron_n.png" />
+	<texture id="gold" color="gold.png" normal="gold_n.png" />
+	<texture id="diamond" color="diamond.png" normal="diamond_n.png" />
+	<texture id="titanium" color="titanium.png" normal="titanium_n.png" />
+	<texture id="uranium" color="uranium.png" normal="uranium_n.png" />
+	<material id="cave" sides="cave_wall" bottom="cave_ceiling" top="cave_floor" mine_power="1" />
+	<material id="cave_ramp" name="material>cave" sides="cave_wall" bottom="cave_ceiling" top="cave_floor" ramp="true" mine_power="1" />
+    <material id="rock" sides="rock_wall" bottom="rock_ceiling" top="rock_floor" mine_power="2" />
+	<material id="rock_ramp" name="material>rock" sides="rock_wall" bottom="rock_ceiling" top="rock_floor" ramp="true" mine_power="2" />
+	<material id="bedrock" sides="bedrock_wall" bottom="bedrock_ceiling" top="bedrock_floor" />
+	<material id="metal" sides="metal_wall" bottom="metal_ceiling" top="metal_floor" mine_power="5" step="metal" />
+	<material id="metal2" name="material>metal" sides="metal_wall2" bottom="metal_ceiling" top="metal_floor" mine_power="5" step="metal" />
+	<material id="metal_door" name="material>metal" sides="metal_door" bottom="metal_ceiling" top="metal_floor" mine_power="5" step="metal" />
+	<material id="coal" texture="coal" item="coal" />
+	<material id="iron" texture="iron" item="iron" />
+	<material id="gold" texture="gold" item="gold" />
+	<material id="diamond" texture="diamond" item="diamond">
+		<onDig>
+			<script>if(dig.object != null &amp;&amp; dig.object.isPlayer()) incStat(container, state, "diamonds", 1);</script>
+		</onDig>
+	</material>
+	<material id="titanium" texture="titanium" item="titanium" />
+	<material id="uranium" texture="uranium" item="uranium" />
+	<include id="paint/paint.xml" />
+	<setSpecular normal="no_normal.png" specular="white" scale="0.3" />
+
+	<!-- LEGACY MATERIALS - keeping them around for alpha saves -->
+	<material id="bottom" extends="bedrock" />
+	<material id="floor" extends="cave" />
+	<material id="ceiling" extends="cave" />
+	<material id="top" extends="cave" />
+	<material id="floor_ramp" extends="cave_ramp" />
+	<material id="top_ramp" extends="cave_ramp" />
+	<material id="window" visible="false" />
+</data>
