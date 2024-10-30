@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<model id="build" path="build.wobj" texture="build_D.png" emission="build_E.png" normal="build_N.png" />
+	<setSpecular normal="build_N.png" specular="white" scale="0.7" />
+	<model id="drill" path="drill.wobj" texture="drill_D.png" emission="drill_E.png" normal="drill_N.png" />
+	<setSpecular normal="drill_N.png" specular="white" scale="0.7" />
+	<model id="laser_gun" path="laser_gun.wobj" texture="laser_gun_D.png" emission="laser_gun_E.png" normal="laser_gun_N.png" />
+	<setSpecular normal="laser_gun_N.png" specular="white" scale="0.7" />
+	<model id="shovel" path="shovel.wobj" texture="shovel_D.png" emission="shovel_E.png" normal="shovel_N.png" />
+	<setSpecular normal="shovel_N.png" specular="white" scale="0.7" />
+</data>

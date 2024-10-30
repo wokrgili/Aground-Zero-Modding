@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <model id="bat" path="bat.wobj" texture="bat.png" normal="batN.png" />
+	<setSpecular normal="batN.png" specular="batS.png" />
+	<model id="wyrm" path="wyrm.wobj" texture="wyrm_D.png" normal="wyrm_N.png" />
+	<setSpecular normal="wyrm_N.png" specular="white" />
+</data>
