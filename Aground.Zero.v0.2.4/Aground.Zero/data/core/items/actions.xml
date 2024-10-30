@@ -1,0 +1,727 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<script>
+	function attack(object, attacker, attack, point, projectile, projectileData){
+		if(object.health.get() == 0) return;
+		if(object.vars.get("invulnerable") == true){object.runEvent(null,"onBlocked",null,"point",point); return;}
+		var f = object.vars.get("onAttack"); if(f != null) attack = f(attack, point, projectile, projectileData); else attack -= getItemValue(object, "defense");
+		if(attack &lt;= 0) return; var dmg = Math.round(attack); object.runEvent(null, "onDamage", null, "damage", dmg); object.addHealth(-dmg);
+		object.vars.set("attacker", attacker); object.runEvent(null,"onHit",null,"point",point); if(object.health.get() == 0){
+			var c = getScreenForPlayer(attacker); object.runEvent(c, "onKilled", null, "killer", attacker);
+			if(attacker != null) attacker.runEvent(c, "onKill", null, "object", object);
+		}
+	} function getMaxLevel(state, item, upgrade){var l = state.storage.get(item == null || item.count == null?"suit":item.info.id).getInt(); return Utils.min(l==null?1:l, upgrade.max_level);}
+	function unlockBlueprints(state, object, blueprints){
+		var ar = state.storage.get("blueprints").getArray(); if(ar == null){ar = []; state.storage.get("blueprints").setArray(DATA_STRING, ar);}
+		var ct = 0; for(id in blueprints) if(ar.indexOf(id) == -1){ar.push(id); ct++;}
+		if(ct > 0 &amp;&amp; object != null){
+			state.storage.get("blueprints").fireUpdate(ar); object.dispatchEvent(new ObjectEvent("notification", getText("structure.blueprints")));
+			state.dispatchEvent(new Event("update_indicators")); return true;
+		} else return false;
+	} function hasBlueprints(state, blueprints){
+		var ar = state.storage.get("blueprints").getArray(); if(ar == null) return false;
+		for(id in blueprints) if(ar.indexOf(id) == -1) return false; return true;
+	}
+
+	function materialRenderable(m, ?ramp){
+		if(m.ramp){
+			if(ramp == null) ramp = 0;
+			if(m.params.renderables == null){
+				var tex = textureToImages(m.getTextureForFace(LEFT));
+				var ar = []; for(id in ["ramp", "ramp_outer", "ramp_inner"]){
+					var r = makeObject(getPrimitive(id), tex.first, tex.second); r.texCrop.set(0,0,0.5,0.5); ar.push(r);
+				} m.params.renderables = ar;
+			} return m.params.renderables[ramp>>1];
+		} else {
+			if(m.params.renderable == null){
+				var tex = textureToImages(m.getTextureForFace(LEFT));
+				m.params.renderable = makeObject(getPrimitive("cube"), tex.first, tex.second);
+				m.params.renderable.texCrop.set(0,0,0.5,0.5);
+			} return m.params.renderable;
+		}
+	}
+	function makeMaterialIcon(m, ?ramp){
+		if(ramp == null) ramp = 0; var ret; if(m.ramp){if(m.params.icons == null) m.params.icons = []; ret = m.params.icons[ramp];} else ret = m.params.icon;
+		if(ret == null){
+			var div = 1.0/Math.tan(30*PI/180);
+			var dist = 0.5*div+0.6, camera = new Camera(), models = [new Model(materialRenderable(m, ramp))]; camera.fov = 60;
+			var dz = 1.3-0.6, tilt = Math.atan2(dz,dist); dist += Math.max(0, 0.5*Math.tan(tilt)*div);
+			if(m.ramp &amp;&amp; ((ramp&amp;1) == 1)){camera.rotation.tilt(PI); camera.rotation.pan(PI-0.2);}
+			camera.rotation.pan(PI); camera.rotation.tilt(tilt); camera.rotation.pan(0.2); camera.moveRelative(0, dist, 0);
+			ret = makeIcon(144,144); var l = Math.sqrt(dist)*6;
+			renderIcon(ret, camera, models, null, new Color(7,7,7), new Color(0.25,0.25,0.25));
+			if(m.ramp) m.params.icons[ramp] = ret; else m.params.icon = ret;
+		} return ret;
+	}
+	tmpBasis = new Basis(); tmpPoint = new Point(); tmpBounds = makeBounds(0,0,0,0,0,0);
+	</script>
+	<data type="upgrade">
+		this.stat = this.xml.exists("stat")?this.xml.get("stat"):this.id; this.name = this.xml.exists("name")?this.xml.get("name"):'upgrades.'+this.id;
+		this.desc = this.xml.exists("desc")?this.xml.get("desc"):'upgrade.desc.'+this.id;
+		this.max_level = parseInt(this.xml.get("max_level")); this.strength = this.xml.exists("strength")?parseFloat(this.xml.get("strength")):1;
+		this.getLevel = function(storage){var d = storage.get(this.stat); return d.isInt()?Math.round(d.getInt()/this.strength):0;}
+		this.setLevel = function(storage, level){storage.get(this.stat).setInt(Math.round(level*this.strength));}
+		this.levelCost = function(level){return [{id:"chip", count:1&lt;&lt;(level-1)}];}
+		this.getName = function(){return getText(this.name);}
+		this.getDesc = function(){return getText(this.desc);}
+		this.hasRequirements = function(inventory, level){
+			var req = this.levelCost(level); for(r in req){
+				if(inventory.getCountById(r.id) &lt; r.count) return false;
+			} return true;
+		}
+	</data>
+	<upgrade id="float">
+		<init>
+		this.getLevel = function(storage){var d = storage.get(this.stat); return d.isFloat()?Math.round(d.getFloat()/this.strength):0;}
+		this.setLevel = function(storage, level){storage.get(this.stat).setFloat(this.strength*level);}
+		</init>
+	</upgrade>
+	<upgrade id="add">
+		<init>
+		this.start = this.xml.exists("start")?parseFloat(this.xml.get("start")):1;
+		this.getLevel = function(storage){var d = storage.get(this.stat); return d.isFloat()?Math.round((d.getFloat()-this.start)/this.strength):0;}
+		this.setLevel = function(storage, level){storage.get(this.stat).setFloat(this.start+this.strength*level);}
+		</init>
+	</upgrade>
+	<upgrade id="mul">
+		<init>
+		this.getLevel = function(storage){var d = storage.get(this.stat); return d.isFloat()?Math.round(Math.log(d.getFloat())/Math.log(this.strength)):0;}
+		this.setLevel = function(storage, level){storage.get(this.stat).setFloat(Math.pow(this.strength, level));}
+		</init>
+	</upgrade>
+	<upgrade id="mine" max_level="4" />
+	<upgrade id="power" max_level="4" strength="-1" />
+	<upgrade id="range" extends="add" max_level="4" strength="0.5" />
+	<upgrade id="light" extends="add" max_level="3" strength="0.66" />
+	<upgrade id="speed" extends="mul" max_level="4" strength="1.5" />
+	<upgrade id="cost" extends="mul" max_level="4" strength="0.66" />
+	<upgrade id="itemcollect" extends="float" max_level="4" strength="0.5" />
+	<upgrade id="storage" max_level="2">
+		<init>
+		this.levelCost = function(level){return [{id:"chip", count:1&lt;&lt;((level-1)*2)}];}
+		</init>
+	</upgrade>
+	<upgrade id="power_gen" extends="add" max_level="4" strength="0.75" />
+	<upgrade id="cspeed" stat="speed" name="upgrades.speed" extends="add" max_level="3" strength="0.33" />
+	<upgrade id="attack" extends="add" max_level="4" strength="0.25" />
+	<upgrade id="defense" max_level="4" strength="2" />
+	<upgrade id="rate" extends="add" max_level="3" strength="0.33" />
+	<upgrade id="oxygen" max_level="4" strength="10" />
+
+	<particles id="fire" type="emissive" width="0.0078125" height="0.0078125" depth="0.0078125" speed="0.125" size="0.001953125" power="4" spawnCount="0">
+		<init>width = parseFloat(this.xml.get("width")); height = parseFloat(this.xml.get("height")); point = new Point(); t = target.clone();
+		depth = parseFloat(this.xml.get("depth")); speed = parseFloat(this.xml.get("speed")); size = parseFloat(this.xml.get("size")); x = parseInt(this.xml.get('x'));</init>
+		<spawn x="x">
+			var v = spawner.eyeToObject(0, -0.9, -0.4); particle.x = (random()*2.0-1.0)*width+v.x; particle.y = (random()*2.0-1.0)*height+v.y; particle.z = (random()*2.0-1.0)*depth+v.z;
+			point.set(t.x-particle.x, t.y-particle.y, t.z-particle.z); var len = point.length(); point.scaleBy(1.0/len);
+			particle.velX = point.x*speed; particle.velY = point.y*speed; particle.velZ = point.z*speed; particle.scale = size; particle.decay = 0.1; particle.alpha = particle.decay*len/speed;
+		</spawn>
+		<updatePos>t.copy(target); spawner.transformPoint(t);</updatePos>
+	</particles>
+	<particles id="mine" sheet="icons.png" x="1" extends="fire" />
+	<particles id="build" sheet="icons.png" x="2" extends="fire" />
+	<particles id="dismantle" sheet="icons.png" x="3" extends="fire" />
+	<light id="mine" type="point" r="8" g="2" b="2" offsetY="-0.5" fade="0.25" />
+	<light id="build" type="point" r="2" g="8" b="2" offsetY="-0.5" fade="0.25" />
+	<light id="dismantle" type="point" r="6" g="6" b="2" offsetY="-0.5" fade="0.25" />
+	<script>
+	function getItemDelta(item, name){
+		if(item.storage.get(name).isInt()) return item.storage.get(name).getInt(); else return 0;
+	}
+	function getItemMul(item, name){
+		if(item.storage.get(name).isFloat()) return item.storage.get(name).getFloat(); else return 1.0;
+	}
+	function getItemValue(item, name){var p = item.info.params[name]; return (p==null?0:p)+getItemDelta(item, name);}
+	function getItemRange(item){var p = item.info.params.range; return (p==null?0:p)*getItemMul(item, "range");}
+	</script>
+	<action id="mine">
+		<init>
+		info.params.mine = eval(info.xml.get("mine")); info.params.power = eval(info.xml.get("power"));
+		info.params.range = eval(info.xml.get("range")); if(info.params.range == null) info.params.range = 3;
+		info.params.upgrades = ["mine", "power", "range"];
+		</init>
+		<onActivate>particles = new Mutable(); sfx = new Mutable(); if(!exists('hitPos')) hitPos = new Point();
+		function startMine(object){
+			particles.set(object.addParticles("mine", "target", hitPos)); object.addLight("mine"); sfx.set(playSoundAt(area, object, "laserdrill", true));
+			if(!object.hasTrack(LookToKeyframe)) object.loopLerp(new ToolMoveKeyframe(0,-0.65,-0.4), 5);
+		}
+		function stopMine(object){
+			object.removeParticles(particles.get()); particles.set(null); object.removeLight("mine"); var s = sfx.get(); if(s != null) s.stop(); sfx.set(null); stopToolAnim(object);
+		} if(settings.get('mine_reticle').getBool() == true){
+			var t = getTile('reticle'); if(t != null){
+				reticle = makeLerpable(t.createDisplay()); reticle.alpha = 0.5; reticle.y = -360; reticle.colorTransform.setColor(0xff8888); gui.notifications.addChild(reticle);
+			}
+		} hit_frames = 0;
+		</onActivate>
+		<onDeactivate>if(exists('reticle')) reticle.remove();</onDeactivate>
+		<getSelection>var ret; selection.altTooltip = getText("actions.flashlight"); hit_object = null;
+		if(Action.raytrace(container, area, getItemRange(item), selection.pos, hitPos, alwaysTrue, SELECTABLE|ENEMY) == Infinity){
+			var o = area.raytraceCallback.object; if(o != null &amp;&amp; (o.info.self&amp;ENEMY) != 0){
+				hit_object = o; selection.boundsTransform.load(o.getTransform());
+				selection.pos.copy(o.getPosition()); selection.bounds.copy(o.info.aabb);
+				if(object.getPower() >= getItemValue(item, "power")){selection.actionTooltip = getText("actions.mine_enemy"); ret = true;}
+				else {ret = false; selection.warning = getText("warning.no_power");}
+			} else ret = false;
+		} else {
+			var s = Action.mineSelection(area, selection, getItemValue(item, "mine"));
+			var err; if(area.info.params.checkMine != null &amp;&amp; (err = area.info.params.checkMine(area, selection, s)) != null){
+				ret = false; selection.warning = err;
+			} else if(s &lt; 0){
+				s = -s; ret = true; if((s&amp;LADDER) != 0) selection.actionTooltip = getText("actions.remove_item{item:ladder}");
+				else if((s&amp;CABLE) != 0) selection.actionTooltip = getText("actions.remove_item{item:cable}");
+				else if((s&amp;SPLITTER) != 0) selection.actionTooltip = getText("actions.remove_item{item:splitter}");
+				else if((s&amp;BELT) != 0) selection.actionTooltip = getText("actions.remove_item{item:belt}");
+				else if((s&amp;DRAIN) != 0) selection.actionTooltip = getText("actions.remove_item{item:drain}");
+			} else if(object.getPower() >= s*getItemValue(item, "power")){selection.actionTooltip = getText("actions.mine"); ret = true;}
+			else {ret = false; if(s &lt; 1000) selection.warning = getText("warning.no_power");}
+		} if(ret) return true; else {if(particles.get() != null) stopMine(object); return false;}
+		</getSelection>
+		<onRelease><script>if(particles.get() != null) stopMine(object);</script></onRelease>
+		<onHold>
+		var power = 0; if(hit_object != null){
+			hit_frames += frames; if(hit_frames > 15){
+				hit_frames -= 15; object.addPower(-getItemValue(item, "power")); attack(hit_object, object, getItemValue(item, "mine"), hitPos, null, null);
+			}
+		} else power = Action.mineHold(area, object, selection, getItemValue(item, "mine"), frames)*getItemValue(item, "power");
+		if(power > 0){
+			playSoundAt(area, selection.pos, "break", false, 3, 2); object.addPower(-power); if(particles.get() != null) stopMine(object);
+		} else {
+			if(particles.get() == null) startMine(object);
+			else particles.get().vars.get("target").copy(hitPos);
+		}
+		</onHold>
+		<onAlternate><sound id="'flashlight_'+(object.storage.get('flashlight').getBool()?'off':'on')" source="object" /><script>var d = object.storage.get("flashlight"); d.setBool(!d.getBool());</script></onAlternate>
+	</action>
+	
+	<action id="place_ground">
+		<init>info.params.flags = eval(info.xml.get("place")); info.params.range = eval(info.xml.get("range")); if(info.params.range == null) info.params.range = 3;</init>
+		<clearSelection>model.visible = 0;</clearSelection>
+		<getSelection>
+		if(Action.raytrace(container, area, getItemRange(item), selection.pos, null, alwaysTrue, SELECTABLE) == Infinity) return false; else {
+			var ret = Action.emptyGroundSelection(area, selection, POWSTRUC|SWITCH); var m = model.transform, alpha = 0.25; model.updateTransform();
+			if(ret &amp;&amp; Action.getStructureOnTile(area, selection.pos.x, selection.pos.y, selection.pos.z) != null) ret = false;
+			if((item.info.params.flags&amp;CABLE) != 0){
+				model.setRenderable(getModel("cable")); m.copy(cableTransform);
+				if((area.getGround(Math.round(selection.pos.x), Math.round(selection.pos.y), Math.round(selection.pos.z)+1)&amp;CABLE) != 0) ret = false;
+			} else if((item.info.params.flags&amp;SPLITTER) != 0){
+				var r = -ground_rot*PI/2; var c = Math.cos(r); var s = Math.sin(r);
+				m.setAr([c,-s,0,0,s,c,0,0,0,0,1,0,0,0,0,1]); m.prepend(beltTransform); model.setRenderable(getModel("splitter"));
+				selection.rotateTooltip = getText("actions.rotate");
+				if((area.getGround(Math.round(selection.pos.x), Math.round(selection.pos.y), Math.round(selection.pos.z)+1)&amp;BELT) != 0) alpha = 0.75;
+			} else if((item.info.params.flags&amp;BELT) != 0){
+				var r = -ground_rot*PI/2; var c = Math.cos(r); var s = Math.sin(r);
+				m.setAr([c,-s,0,0,s,c,0,0,0,0,1,0,0,0,0,1]); m.prepend(beltTransform); model.setRenderable(getModel("belt"));
+				selection.rotateTooltip = getText("actions.rotate");
+				if((area.getGround(Math.round(selection.pos.x), Math.round(selection.pos.y), Math.round(selection.pos.z)+1)&amp;BELT) != 0) alpha = 0.75;
+			} else if((item.info.params.flags&amp;DRAIN) != 0){
+				model.setRenderable(getModel("drain")); m.copy(drainTransform);
+				if((area.getGround(Math.round(selection.pos.x), Math.round(selection.pos.y), Math.round(selection.pos.z)+1)&amp;DRAIN) != 0) ret = false;
+			} var ramp = area.get(Math.round(selection.pos.x), Math.round(selection.pos.y), Math.round(selection.pos.z)).ramp;
+			if((ramp&amp;RAMP_BOTTOM) != 0){
+				if((ramp&amp;RAMP_LEFT) != 0) m.appendArray([1,0,-1,0,0,1,0,0,0,0,1,0,0.05,0,-0.5,1]);
+				else if((ramp&amp;RAMP_RIGHT) != 0) m.appendArray([1,0,1,0,0,1,0,0,0,0,1,0,-0.05,0,-0.5,1]);
+				else if((ramp&amp;RAMP_BACK) != 0) m.appendArray([1,0,0,0,0,1,-1,0,0,0,1,0,0,0.05,-0.5,1]);
+				else if((ramp&amp;RAMP_FRONT) != 0) m.appendArray([1,0,0,0,0,1,1,0,0,0,1,0,0,-0.05,-0.5,1]);
+			} m.translate(selection.pos.x+0.5, selection.pos.y+0.5, selection.pos.z+1);
+			model.tint.set(2,2,2,alpha); selection.grid.set(0.5,0.5,1,0.25); selection.gridDir.set(0.0,0.0,1.0,0.0);
+			if(ramp != 0 &amp;&amp; (item.info.params.flags&amp;DRAIN) != 0){selection.warning = getText("warning.no_place"); return false;}
+			var err; if(area.info.params.checkPlace != null &amp;&amp; (err = area.info.params.checkPlace(area, selection, item)) != null){
+				selection.warning = err; return false;
+			} if(ret){selection.actionTooltip = getText("actions.place{item:"+item.info.id+"}"); model.visible = 1;} else if(lastPos.x == Infinity) selection.warning = getText("warning.no_place"); return ret;
+		}
+		</getSelection>
+		<onActivate>if(!exists('ground_rot')) ground_rot = 0; model = new Model(null); model.visible = 0; area.selected.push(model); if(!exists('lastPos')) lastPos = new Point(Infinity);</onActivate>
+		<onDeactivate>area.selected.remove(model); model = null;</onDeactivate>
+		<onRotate><script>ground_rot += right?1:-1;</script></onRotate>
+		<onPress><script>lastPos.set(Infinity);</script></onPress>
+		<onHold>if(selection.pos.x != Infinity &amp;&amp; !selection.pos.equals(lastPos)){
+			lastPos.copy(selection.pos); playSoundAt(area, selection.pos, "place");
+			var x = Math.round(selection.pos.x); var y = Math.round(selection.pos.y); var z = Math.round(selection.pos.z)+1;
+			Action.mineGround(area, x, y, z, null);
+			var f = area.getGround(x, y, z)|item.info.params.flags;
+			if((item.info.params.flags&amp;BELT) != 0){
+				f = setDir(f, ground_rot%4);
+			} area.setGround(x, y, z, f);
+			area.addParticles("break", selection.pos.x+0.5, selection.pos.y+0.5, selection.pos.z+0.75);
+			object.dispatchEvent(new ObjectEvent("place_ground", item.info.params.flags)); item.count -= 1;
+			selection.pos.x = Infinity;
+		}
+		</onHold>
+	</action>
+
+	<action id="place_ladder">
+		<init>info.params.range = eval(info.xml.get("range")); if(info.params.range == null) info.params.range = 3;</init>
+		<clearSelection>model.visible = 0;</clearSelection>
+		<getSelection>
+		if(Action.raytrace(container, area, getItemRange(item), selection.pos, null, alwaysTrue, SELECTABLE) == Infinity) return false; else {
+			var x = Math.round(selection.pos.x), y = Math.round(selection.pos.y), z = Math.round(selection.pos.z);
+			var fail = area.isBlocking(x, y, z) != 0; var old = area.getGround(x, y, z); var r = 0;
+			switch(Action.getFace(area)){
+				case 0: selection.flags = LADDER_L; selection.bounds.set(x-0.125, y, z, 0.125, 1, 1); x--; r = PI/2;
+				case 1: selection.flags = LADDER_R; x++; selection.bounds.set(x, y, z, 0.125, 1, 1); r = 3*PI/2;
+				case 2: selection.flags = LADDER_U; y++; selection.bounds.set(x, y, z, 1, 0.125, 1);
+				case 3: selection.flags = LADDER_D; selection.bounds.set(x, y-0.125, z, 1, 0.125, 1); y--; r = PI;
+				case 4: fail = true; z++; selection.bounds.set(x, y, z, 1, 1, 0.125);
+				case 5: fail = true; selection.bounds.set(x, y, z-0.125, 1, 1, 0.125); z--;
+			} var c = Math.cos(r); var s = Math.sin(r);
+			model.transform.load([c,s,0,0,-s,c,0,0,0,0,1,0,selection.pos.x+0.5,selection.pos.y+0.5,selection.pos.z+0.5,1]);
+			model.updateTransform();
+			selection.grid.set(0.5,0.5,1,0.25); selection.gridDir.set(1.0,1.0,0.0,1.0);
+			var err; if(area.info.params.checkPlace != null &amp;&amp; (err = area.info.params.checkPlace(area, selection, item)) != null){
+				selection.warning = err; return false;
+			} else if(z >= area.info.params.place_depth){selection.warning = getText("warning.place_depth"); return false;}
+			if(fail || area.isBlocking(x,y,z) != -1 || (old&amp;selection.flags) != 0){if(lastPos.x == Infinity) selection.warning = getText("warning.no_place"); return false;}
+			selection.actionTooltip = getText("actions.place{item:"+item.info.id+"}"); model.visible = 1; return true;
+		}
+		</getSelection>
+		<onActivate>model = new Model(area.info.groundInfo.getLadderModel()); model.clampTextures = true; model.tint.set(2,2,2,0.25); model.visible = 0; area.selected.push(model); if(!exists('lastPos')) lastPos = new Point(Infinity);</onActivate>
+		<onDeactivate>area.selected.remove(model); model = null;</onDeactivate>
+		<onPress><script>lastPos.set(Infinity);</script></onPress>
+		<onHold>if(selection.pos.x != Infinity &amp;&amp; !selection.pos.equals(lastPos)){
+			lastPos.copy(selection.pos); playSoundAt(area, selection.pos, "place");
+			var x = Math.round(selection.pos.x); var y = Math.round(selection.pos.y); var z = Math.round(selection.pos.z);
+			area.addGround(x, y, z, selection.flags);
+			area.addParticles("break", (selection.bounds.min_x+selection.bounds.max_x)*0.5, (selection.bounds.min_y+selection.bounds.max_y)*0.5, selection.pos.z+0.5);
+			object.dispatchEvent(new Event("place_ladder")); item.count -= 1; selection.pos.x = Infinity;
+		}</onHold>
+	</action>
+
+	<script>
+	function eatBillboardAnim(b){b.lerp(0, -0.1, -0.3, 1, 30);}
+	function hideEatBillboard(b){b.lerp(b.objectX, b.objectY, b.objectZ, 0, 10, remove);}
+	function autoEatBillboardAnim(b){b.lerp(0, -0.1, -0.3, 1, 30, hideEatBillboard);}
+	function eatItem(object, item){
+		var h = getItemValue(item, "health"); if(h != 0) object.addHealth(h);
+		var h = getItemValue(item, "hunger"); if(h != 0) object.addHunger(h); item.count -= 1;
+	}
+	function autoEat(object, item){
+		if(object.area != null) playSoundAt(object.area, object, "eat");
+		var eat_billboard = object.addBillboard(item.info.getIcon(), 0, 0, -0.6);
+		eat_billboard.alpha = 0; eat_billboard.lerp(0, -0.5, -0.075, 1, item.info.params.frames*0.5, autoEatBillboardAnim);
+		eatItem(object, item);
+	}
+	</script>
+	<action id="eat" desc="'item.descriptions>eat{health:'+item.params.health+'}{hunger:'+item.params.hunger+'}'" accessStructures="action">
+		<init>info.params.health = info.xml.exists("health")?eval(info.xml.get("health")):0;
+		info.params.hunger = info.xml.exists("hunger")?eval(info.xml.get("hunger")):0; info.params.frames = info.xml.exists("frames")?eval(info.xml.get("frames")):60;</init>
+		<onAltHold>
+			if(eat_frames >= item.info.params.frames){
+				if((item.info.params.health &lt;= 0 || object.getHealth() == object.getMaxHealth()) &amp;&amp; (item.info.params.hunger &lt;= 0 || object.getHunger() == object.getMaxHunger())){
+					object.dispatchEvent(new ObjectEvent("warning", getText("warning.full"))); return;
+				} eat_sfx = playSoundAt(area, object, "eat"); eat_billboard = object.addBillboard(item.info.getIcon(), 0, 0, -0.6);
+				eat_billboard.alpha = 0; eat_billboard.lerp(0, -0.5, -0.075, 1, item.info.params.frames*0.5, eatBillboardAnim);
+			} eat_frames -= frames; if(eat_frames &lt;= 0){
+				if(eat_billboard != null){hideEatBillboard(eat_billboard); eat_billboard = null;}
+				eat_frames = item.info.params.frames; eatItem(object, item);
+			}
+		</onAltHold>
+		<getSelection>selection.altTooltip = getText("actions.eat{item:"+item.info.id+"}");</getSelection>
+		<onActivate>eat_frames = item.info.params.frames; eat_sfx = null; eat_billboard = null;</onActivate>
+		<onAltRelease><script>eat_frames = item.info.params.frames; if(eat_sfx != null){eat_sfx.stop(); eat_sfx = null;}
+		if(eat_billboard != null){eat_billboard.lerp(eat_billboard.objectX, eat_billboard.objectY, eat_billboard.objectZ, 0, 10, remove); eat_billboard = null;}</script></onAltRelease>
+		<onDeactivate>if(eat_sfx != null){eat_sfx.stop(); eat_sfx = null;}
+		if(eat_billboard != null){eat_billboard.lerp(eat_billboard.objectX, eat_billboard.objectY, eat_billboard.objectZ, 0, 10, remove); eat_billboard = null;}</onDeactivate>
+	</action>
+
+	<action id="place_object">
+		<init>
+		info.params.range = eval(info.xml.get("range")); if(info.params.range == null) info.params.range = 3; info.params.place = "actions.place_blueprint";
+		info.params.getBuildMutable = function(state, item){
+			var b = item.info.params.mutable; if(b == null){b = new Mutable(); item.info.params.mutable = b; b.set(item.info.xml.get("place"));} return b;
+		}; info.params.consume = info.xml.get("consume") == "true"; info.params.allowRotate = info.xml.get("allowRotate") != "false";
+		</init>
+		<clearSelection>for(m in models) m.visible = 0;</clearSelection>
+		<getSelection>selection.altTooltip = getText(item.info.params.alternate);
+		if(build == null || models.length == 0) return false;
+		var r = build_rot;
+		var ret = Action.placeSelection(container, object, area, selection, build, r, getItemRange(item), build.params.place_water == true), b = selection.bounds;
+		if(ret &amp;&amp; (b.min_x &lt;= 0 || b.max_x >= area.getWidth() || b.min_y &lt;= 0 || b.max_y >= area.getHeight() || b.min_z &lt;= 0 || b.max_z >= area.getDepth())) ret = false;
+		var c = Math.cos(r); var s = Math.sin(r);
+		for(m in models){
+			m.transform.copy(m.info.transform == null?build.modelTransform:m.info.transform);
+			m.transform.appendArray([c,s,0,0,-s,c,0,0,0,0,1,0,selection.pos.x,selection.pos.y,selection.pos.z,1]); m.updateTransform();
+		} selection.grid.set(0.5,0.5,1,0.25); selection.gridDir.set(0.0,0.0,1.0,0.0);
+		if(item.info.params.allowRotate) selection.rotateTooltip = getText("actions.rotate");
+		var err; if(area.info.params.checkPlace != null &amp;&amp; (err = area.info.params.checkPlace(area, ret?selection:null, item)) != null){
+			selection.warning = err; return false;
+		} if(build.params.checkPlace != null &amp;&amp; (err = build.params.checkPlace(area, ret?selection:null, item)) != null){
+			selection.warning = err; return false;
+		} if(ret){selection.actionTooltip = getText(item.info.params.place+"{structure:"+build.params.name+"}"); for(m in models) m.visible = 1;} else selection.warning = getText("warning.no_place"); return ret;
+		</getSelection>
+		<onActivate>
+		var b = item.info.params.getBuildMutable(state, item);
+		build = null; models = []; if(!exists('build_rot')) build_rot = PI; updateBuild = function(e){
+			for(m in models) area.selected.remove(m); Utils.clear(models); build = getStructure(b.get());
+			if(build == null) return; for(m in build.models) if(item.info.params.acceptModel == null || item.info.params.acceptModel(m)){
+				var r = getModel(m.id); if(r != null){
+					var model = new Model(r, 0, 0, 0, m.tint, m); if(m.type != 2) model.tint.set(2,2,2,0.25); model.visible = 0;
+					if(build.params.icon_anim != null) model.setAnimation(build.params.icon_anim, false, null, 0);
+					if(model.animation != null) model.animation.setAnimationSpeed(0); models.push(model); area.selected.push(model);
+				}
+			}
+		} b.addEventListener("updated", updateBuild); updateBuild(null);
+		</onActivate>
+		<onDeactivate>for(m in models) area.selected.remove(m); models = null; item.info.params.getBuildMutable(state, item).removeEventListener("updated", updateBuild);</onDeactivate>
+		<onRotate><script>if(item.info.params.allowRotate) build_rot += right?-PI/2:PI/2;</script></onRotate>
+		<onSelect>
+			<set id="build" value="getStructure(item.info.params.getBuildMutable(state, item).get())" />
+			<run xml="this.xml" event="onAltRelease" if="build == null" />
+			<section if="build != null && selection.pos.x != Infinity">
+				<sound id="place_metal" source="selection.pos" />
+				<script>
+				knockbackTool(object);
+				var o = build.create(object.state); o.setPosition(selection.pos.x,selection.pos.y,selection.pos.z);
+				if(item.info.params.allowRotate) o.setRotation(0, 0, build_rot); area.add(o);
+				area.addParticles("break", selection.pos.x, selection.pos.y, selection.pos.z);
+				object.dispatchEvent(new ObjectEvent("place_blueprint", o)); if(item.info.params.consume == true) item.count -= 1;
+				</script>
+			</section>
+		</onSelect>
+	</action>
+	<action id="build" extends="place_object">
+		<init>
+		info.params.range = eval(info.xml.get("range")); if(info.params.range == null) info.params.range = 3; info.params.place = "actions.place_blueprint";
+		info.params.upgrades = ["speed", "cost"]; info.params.alternate = "actions.select_blueprint"; info.params.acceptModel = function(m){return m.type == 2;}
+		info.params.getBuildMutable = function(state, item){
+			var b = item.storage.get('build'); if(!b.hasData()){var ar = state.storage.get("blueprints").getArray(); if(ar != null &amp;&amp; ar.length > 0) b.setString(ar[0]);}
+			return b;
+		}; info.params.allowRotate = info.xml.get("allowRotate") != "false";
+		</init>
+		<onAlternate>
+			<sound id="select" source="object" /><set id="up" value="false" />
+			<script if="!object.hasTrack(LookToKeyframe)">
+			object.clearTrack(ToolScaleKeyframe); object.clearTrack(ToolMoveKeyframe); up = true;
+			object.lerp(new LookToKeyframe(object.getToolTransform(), new Point(-0.2,-0.5,-0.2), new Point(8,8,-8)), 20);
+			</script>
+			<window id="select_structure" title="structure.select" selected="item.storage.get('build').getString()">
+				<script>item.storage.get("build").setString(structure.id);</script>
+			</window>
+			<script if="up">object.vars.get("showTool")(object.getToolTransform(), null)</script>
+		</onAlternate>
+	</action>
+
+	<action id="craft" accessStructures="action">
+		<init>info.params.upgrades = ["speed", "cost"]; info.params.types = []; for(e in info.xml.elementsNamed("recipe")) info.params.types.push(e.get("type")); info.params.craft_sfx = info.xml.get("craft_sfx");</init>
+		<getSelection>selection.altTooltip = getText("actions.craft");</getSelection>
+		<onAlternate><choose>
+			<script if="!object.questComplete('mine')">object.dispatchEvent(new ObjectEvent("warning", getText('warning.assembler_disabled')));</script><section>
+				<script>var data = item.storage.get('progress'); if(!data.hasData()) data.setInt(0);</script><sound id="select" source="object" />
+				<window id="invcraft" title="item.getName()" object="object" recipe="item.storage.get('recipe')" count="item.storage.get('ct')" recipes="getRecipesByTypes(item.info.params.types, state.storage)" progress="item.storage.get('progress')" />
+			</section>
+		</choose></onAlternate>
+		<onFrame>
+			if(item.params.working == null) item.params.working = new Mutable(); if(item.params.sfx == null) item.params.sfx = new Mutable();
+			var recipe = getData("recipe", item.storage.get('recipe').getString()); if(recipe == null || object.getPower() == 0){
+				var s = item.params.sfx.get(); if(s != null) s.stop(); item.params.sfx.set(null); item.params.working.set(false); return;
+			} var rcost = recipe.cost*getItemMul(item, "cost");
+			var p = item.storage.get("progress"); var old = Math.ceil(p.getInt()*rcost/1000000);
+			p.addInt(Math.round(frames*getItemMul(item, "speed")*1000000/(recipe.timePerCost*recipe.cost)));
+			var cur = Utils.min(1000000, p.getInt()); var cost = Math.ceil(cur*rcost/1000000)-old;
+			if(cost != 0) object.addPower(-cost); if(cur >= 1000000){
+				var me = item;
+				p.setInt(0); for(r in recipe.creates){var i = craftItem(r); if(!object.collectItem(i)){playSoundAt(area, object, "throw"); object.dropItem(i, 0.25);}}
+				var ct = me.storage.get('ct'); if(ct.isInt()){
+					if(ct.getInt() > 1) ct.addInt(-1); else ct.delete();
+				} else {
+					me.storage.get('recipe').delete(); var s = me.params.sfx.get(); if(s != null) s.stop(); me.params.sfx.set(null); me.params.working.set(false);
+				} object.state.runEvent(getScreenForPlayer(object), "onCraft", null, "item", me);
+			} else {
+				if(item.info.params.craft_sfx != null &amp;&amp; item.params.sfx.get() == null) item.params.sfx.set(playSoundAt(object.area, object, item.info.params.craft_sfx, true, 0.5));
+				item.params.working.set(true);
+			}
+		</onFrame>
+		<infoChanged>
+		if(item.params.working != null) item.params.working.set(false); if(item.params.sfx != null){
+			var s = item.params.sfx.get(); if(s != null) s.stop(); item.params.sfx.set(null);
+		}
+		</infoChanged>
+	</action>
+
+	<action id="place_block">
+		<init>
+		info.params.range = eval(info.xml.get("range")); if(info.params.range == null) info.params.range = 3; info.params.place = "actions.shovel";
+		info.params.getMaterialMutable = function(state, item){
+			var b = item.info.params.mutable; if(b == null){b = new Mutable(); item.info.params.mutable = b; b.set(item.info.xml.get("place"));} return b;
+		}; info.params.consume = info.xml.get("consume") == "true";
+		</init>
+		<clearSelection>model.visible = 0;</clearSelection>
+		<getSelection>selection.altTooltip = getText(item.info.params.alternate); selection.rotateTooltip = ramp?getText("actions.rotate"):null;
+		if(Action.raytrace(container, area, getItemRange(item), selection.pos, null, alwaysTrue, SELECTABLE) == Infinity) return false;
+		else if(Action.adjacentSelection(area, selection)){
+			tmpBasis.identity(); if((item.storage.get('ramp').getInt()&amp;1) == 1)tmpBasis.tilt(PI); tmpBasis.pan(-shovel_rot*PI/2);
+			tmpPoint.set(-selection.pos.x-0.5,-selection.pos.y-0.5,-selection.pos.z-0.5); tmpBasis.getInverseMatrix(model.transform, tmpPoint); model.updateTransform();
+			selection.grid.set(0.5,0.5,1,0.25); selection.gridDir.set(1.0,1.0,1.0,1.0);
+			if(object.getPower() &lt; getItemValue(item, "power")){selection.warning = getText("warning.no_power"); return false;}
+			var err; if(area.info.params.checkPlace != null &amp;&amp; (err = area.info.params.checkPlace(area, selection, item)) != null){
+				selection.warning = err; return false;
+			} else if(selection.pos.z >= area.info.params.place_depth){selection.warning = getText("warning.place_depth"); return false;}
+			selection.actionTooltip = getText(item.info.params.place); model.visible = 1; return true;
+		} else {selection.warning = getText("warning.no_place"); return false;}
+		</getSelection>
+		<onActivate>var data = item.info.params.getMaterialMutable(state, item); ramp = false; if(!exists('shovel_rot')) shovel_rot = 0;
+		model = new Model(null); model.visible = 0; model.texCrop.set(0,0,0.5,0.5); model.tint.set(2,2,2,0.25); area.selected.push(model);
+		updateMat = function(e){
+			var info = MaterialInfo.get(data.get()); ramp = info.ramp; model.setRenderable(materialRenderable(info, item.storage.get('ramp').getInt()));
+		} data.addEventListener("updated", updateMat); item.storage.get('ramp').addEventListener("updated", updateMat); updateMat(null);
+		</onActivate>
+		<onDeactivate>area.selected.remove(model); model = null; item.info.params.getMaterialMutable(state, item).removeEventListener("updated", updateMat); item.storage.get('ramp').removeEventListener("updated", updateMat);</onDeactivate>
+		<onRotate><script>shovel_rot += right?-1:1;</script></onRotate>
+		<onSelect><script>if(selection.pos.x != Infinity){
+			knockbackTool(object, -0.1); playSoundAt(area, selection.pos, "break", false, 3, 2); object.addPower(-getItemValue(item, "power"));
+			var x = Math.round(selection.pos.x); var y = Math.round(selection.pos.y); var z = Math.round(selection.pos.z);
+			var tile = item.info.params.getMaterialMutable(state, item).get();
+			Action.mineLadder(area, x-1, y, z, LADDER_R); Action.mineLadder(area, x+1, y, z, LADDER_L);
+			Action.mineLadder(area, x, y-1, z, LADDER_U); Action.mineLadder(area, x, y+1, z, LADDER_D);
+			var rid = -shovel_rot%4; if(rid &lt; 0) rid += 4; if(!ramp) area.setWaterLevel(x, y, z, 0);
+			rid += item.storage.get('ramp').getInt()*4;
+			area.replaceGround(x, y, z, 0); area.set(x, y, z, tile, null, Generate.RAMPS[rid]); var b = area.getBrickBreak(x, y, z); if(b != null) b.setFrame(b.getMaxFrame()-0.01);
+			if(item.info.params.consume == true) item.count -= 1;
+		}</script></onSelect>
+	</action>
+	<action id="shovel" extends="place_block">
+		<init>
+		info.params.power = eval(info.xml.get("power")); info.params.range = eval(info.xml.get("range")); if(info.params.range == null) info.params.range = 3;
+		info.params.place = "actions.shovel"; info.params.upgrades = ["power", "range"]; info.params.alternate = "actions.select_material";
+		info.params.getMaterialMutable = function(state, item){
+			var b = item.storage.get("mat"); if(!b.isString()) b.setString("cave"); return b;
+		}; info.params.getMaterials = function(state, object){
+			var ar = []; var d = object.storage.get('dig').getObject(); if(d != null) for(id in d.keys()) if(d.get(id).getInt() > 0){
+				var m = MaterialInfo.get(id); if(m != null &amp;&amp; m.mine_power &lt; 9999 &amp;&amp; m.xml.get('can_place') != 'false') ar.push(id);
+			} return ar;
+		}
+		</init>
+		<onAlternate>
+			<sound id="select" source="object" /><set id="up" value="false" />
+			<script if="!object.hasTrack(LookToKeyframe)">
+			object.clearTrack(ToolScaleKeyframe); object.clearTrack(ToolMoveKeyframe); up = true;
+			object.lerp(new LookToKeyframe(object.getToolTransform(), new Point(-0.2,-0.5,-0.2), new Point(8,8,-8)), 20);
+			</script>
+			<script if="!item.storage.get('ramp').isInt()">item.storage.get('ramp').setInt(0);</script>
+			<window id="select_material" title="material.select" materials="item.info.params.getMaterials(state, object)" selected="item.storage.get('mat').getString()" ramp="item.storage.get('ramp')">
+				<script>item.storage.get("mat").setString(material.id);</script>
+			</window>
+			<script if="up">object.vars.get("showTool")(object.getToolTransform(), null)</script>
+		</onAlternate>
+	</action>
+
+	<light id="laser_target" type="spot" tile="flashlight" spread="0.005" r="300" g="0" b="0" offsetY="-0.8" offsetZ="-0.4" indirect_light="false" />
+	<action id="shoot" accessStructures="none">
+		<init>
+		info.params.attack = eval(info.xml.get("attack")); info.params.range = eval(info.xml.get("range"));
+		info.params.rate = 60.0/eval(info.xml.get("rate")); info.params.power = eval(info.xml.get("power"));
+		info.params.shield = eval(info.xml.get("shield"));
+		info.params.upgrades = ["attack", "rate", "power", "range"];
+		info.params.fireProjectile = function(item, area, object, range){
+			playSoundAt(area, object, "laser"); var l = new PointLight(4,1,1,0.25); l.renderDust = false;
+			area.fireProjectile(item.clone(), object, Icon.fromTile(getTile('bolt'),TYPE_EMISSIVE,0.3), object.getX(), object.getY(), object.getZ(), object.getViewDir(), 0.75, range, object.notSelf, l);
+		}
+		info.params.onHit = function(p, area, data){
+			playSoundAt(area, data.object, "bolt_hit");
+		} info.params.upgradeDesc = function(item){
+			if(item.id == 'power') return getText("upgrade.desc>shoot_power").get(); else return item.getDesc().get();
+		}
+		</init>
+		<getSelection>selection.setTooltips(getText("actions.shoot{item:"+item.info.id+"}"), getText("actions.shield")); return true;</getSelection>
+		<onActivate>object.addLight("laser_target"); sfx = new Mutable();</onActivate>
+		<onDeactivate>object.removeLight("laser_target");</onDeactivate>
+		<onHold>
+		var rate = item.info.params.rate/getItemMul(item, "rate"); if(item.storage.get("partial").getFloat() >= rate){
+			item.storage.get("partial").setFloat(0); var p = getItemValue(item, "power"); if(object.getPower() >= p){
+				object.addPower(-p); var range = getItemRange(item); knockbackTool(object);
+				item.info.params.fireProjectile(item, area, object, range);
+			} else object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_power")));
+		}
+		</onHold>
+		<onFrame>item.storage.get("partial").addFloat(frames);</onFrame>
+		<onHit><script>
+		this.scale_decay = -0.2*this.scale; if(data.object != null){
+			this.item.info.params.onHit(this, area, data);
+			if((data.object.info.self&amp;STRUCTURE) == 0) attack(data.object, this.spawner, this.item.info.params.attack*getItemMul(this.item, "attack"), data.point, this, data);
+		} if(data.tile != null &amp;&amp; Action.getStructureOnTile(area, data.tile[0], data.tile[1], data.tile[2]) == null){
+			if(Action.mineTile(area, null, data.tile[0], data.tile[1], data.tile[2], 2, 16) > 0) playSoundAt(area, vec3(data.tile[0]+0.5, data.tile[1]+0.5, data.tile[2]+0.5), "break", false, 3, 2);
+		}
+		</script></onHit>
+		<onAltPress><script>
+		shield_pow = item.info.params.shield*getItemMul(item, "shield");
+		if(object.getPower() &lt; shield_pow) object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_power"))); else {
+			object.vars.set("invulnerable", true); object.power_use += shield_pow; sfx.set(playSoundAt(area, object, "energy_shield", true));
+		}
+		</script></onAltPress>
+		<onAltRelease><script if="sfx.get() != null">
+		object.vars.set("invulnerable", false); object.setTint(1,1,1); object.power_use -= shield_pow; sfx.get().stop(); sfx.set(null);
+		</script></onAltRelease>
+		<onAltHold>
+		if(object.getPower() == 0){container.gui.releaseAltPress(); object.dispatchEvent(new ObjectEvent("warning", getText("warning.no_power")));}
+		</onAltHold>
+	</action>
+
+	<action id="upgrade" accessStructures="action">
+		<getSelection>selection.altTooltip = getText("actions.upgrade");</getSelection>
+		<onAlternate><sound id="select" source="object" /><window id="upgrade" title="item.getName()" inventory="object.inventory" /></onAlternate>
+	</action>
+
+	<action id="blueprint">
+		<onCollect><script if="object.isPlayer()">var id = item.storage.get('id').getString(); var level = item.storage.get('lvl').getInt();
+		if(id == null) id = "suit"; if(level == null) level = 1;
+		if(level > 0){
+			var itxt = '[item='+id+']';
+			var cur = state.storage.get(id).getInt(); if(cur == null) cur = 1; if(level > cur){
+				state.storage.get(id).setInt(level); object.dispatchEvent(new ObjectEvent("notification", getText("upgrades.unlocked{item:"+itxt+"}{level:"+level+"}")));
+			} else object.dispatchEvent(new ObjectEvent("notification", getText("upgrades.already_unlocked{item:"+itxt+"}{level:"+level+"}{recipe:}")));
+		} else {
+			var recipe = item.storage.get('recipe').getString(), i = item.storage.get('item').getString();
+			var ret = recipe == null?unlockBlueprints(state, object, [id]):unlockRecipes(object, id, state.storage, [recipe], i);
+			if(!ret) object.dispatchEvent(new ObjectEvent("notification", getText("upgrades.already_unlocked{item:"+(getItem(i) == null?getStructureItemName(id):'[item='+i+']')+"}{level:"+level+"}{recipe:"+(recipe == null?'':recipe)+"}")));
+		} item.count = 0;
+		</script></onCollect>
+	</action>
+
+	<action id="paint">
+		<init>
+		info.params.power = eval(info.xml.get("power")); info.params.range = eval(info.xml.get("range")); if(info.params.range == null) info.params.range = 3;
+		info.params.upgrades = ["power", "range"];
+		info.params.getMaterials = function(state, object){
+			var ar = [], map = BaseInfo.map.get('material'); for(id in map.keys()){var m = map.get(id); if(m.xml.get('paint') == 'true') ar.push(id);}
+			var d = state.storage.get("r.paint"), ids = d.getArray(); if(ids != null) for(id in ids){
+				if(BaseInfo.exists("material", id) &amp;&amp; ar.indexOf(id) == -1) ar.push(id);
+			} return ar;
+		}
+		</init>
+		<clearSelection>model.visible = 0;</clearSelection>
+		<getSelection>selection.altTooltip = getText("actions.select_paint");
+		if(Action.raytrace(container, area, getItemRange(item), selection.pos, hitPos, alwaysTrue, SELECTABLE) == Infinity) return false;
+		model.transform.load([1.01,0,0,0,0,1.01,0,0,0,0,1.01,0,selection.pos.x+0.5,selection.pos.y+0.5,selection.pos.z+0.5,1]); model.updateTransform();
+		selection.grid.set(0.5,0.5,1,0.25); selection.gridDir.set(1.0,1.0,1.0,1.0);
+		if(object.getPower() &lt; getItemValue(item, "power")){selection.warning = getText("warning.no_power"); return false;}
+		var err; if(area.info.params.checkPlace != null &amp;&amp; (err = area.info.params.checkPlace(area, selection, item)) != null){
+			selection.warning = err; return false;
+		} var overlay = MaterialInfo.get(area.get(Math.round(selection.pos.x),Math.round(selection.pos.y),Math.round(selection.pos.z)).data);
+		if(overlay != null &amp;&amp; overlay.xml.get("paint") != "true" &amp;&amp; overlay.xml.get("paintable") != "true" &amp;&amp; item.info.params.getMaterials(state, object).indexOf(overlay.id) == -1){
+			selection.warning = getText("warning.no_paint"); return false;
+		} selection.actionTooltip = getText("actions.paint"); model.visible = 1; return true;
+		</getSelection>
+		<onActivate>var data = item.storage.get("mat"); if(!data.isString()) data.setString("white"); if(!exists('hitPos')) hitPos = new Point();
+		model = new Model(null); model.visible = 0; model.texCrop.set(0,0,0.5,0.5); model.tint.set(1,1,1,0.5); area.transparent.push(model);
+		updatePaint = function(e){
+			var info = MaterialInfo.get(data.getString()); ramp = info.ramp; model.setRenderable(materialRenderable(info));
+		} data.addEventListener("updated", updatePaint); updatePaint(null);
+		</onActivate>
+		<onDeactivate>area.transparent.remove(model); model = null; item.storage.get('mat').removeEventListener("updated", updatePaint);</onDeactivate>
+		<onHold>if(selection.pos.x != Infinity){
+			var x = Math.round(selection.pos.x); var y = Math.round(selection.pos.y); var z = Math.round(selection.pos.z);
+			var tile = item.storage.get("mat").getString(); if(!area.setOverlay(x, y, z, tile == "clear"?null:tile)) return;
+			knockbackTool(object, -0.1); playSoundAt(area, selection.pos, "place");
+			if(!hasParticles("paint_"+tile)){
+				var m = MaterialInfo.get(tile), color = Color.fromInt(textureToImages(m.getTextureForFace(LEFT)).first.at(92,37));
+				var t = color.b; color.b = color.r; color.r = t; color.a = 1;
+				loadXML("&lt;particles id='paint_"+tile+"' extends='break' color='0x"+toHex(color.toInt())+"' white='100' />");
+			} object.addPower(-getItemValue(item, "power")); area.addParticles("paint_"+tile, hitPos.x, hitPos.y, hitPos.z); selection.pos.x = Infinity;
+		}</onHold>
+		<onAlternate>
+			<sound id="select" source="object" /><set id="up" value="false" />
+			<script if="!object.hasTrack(LookToKeyframe)">
+			object.clearTrack(ToolScaleKeyframe); object.clearTrack(ToolMoveKeyframe); up = true;
+			object.lerp(new LookToKeyframe(object.getToolTransform(), new Point(-0.2,-0.5,-0.2), new Point(8,8,-8)), 20);
+			</script>
+			<window id="select_material" title="material.select_paint" materials="item.info.params.getMaterials(state, object)" selected="item.storage.get('mat').getString()">
+				<script>item.storage.get("mat").setString(material.id);</script>
+			</window>
+			<script if="up">object.vars.get("showTool")(object.getToolTransform(), null)</script>
+		</onAlternate>
+	</action>
+
+	<action id="bucket">
+		<init>
+		info.params.range = eval(info.xml.get("range")); if(info.params.range == null) info.params.range = 3;
+		</init>
+		<clearSelection>model.visible = 0;</clearSelection>
+		<getSelection>
+		if(Action.raytrace(container, area, getItemRange(item), selection.pos, null, alwaysTrue, SELECTABLE, null, true) == Infinity) return false;
+		else if(Action.adjacentSelection(area, selection, false, true)){
+			if(area.getWaterBlock(selection.pos.x+0.5, selection.pos.y+0.5, selection.pos.z+0.5).length > 0){
+				selection.warning = getText("warning.no_place"); return false;
+			} var l = item.storage.get("level").getInt(); if(l == null) l = 0; var w = area.getWaterLevel(Math.round(selection.pos.x),Math.round(selection.pos.y),Math.round(selection.pos.z));
+			model.transform.load([1,0,0,0,0,1,0,0,0,0,l/7,0,selection.pos.x+0.5,selection.pos.y+0.5,selection.pos.z+(w*2+l)/14,1]); model.updateTransform();
+			selection.grid.set(0.5,0.5,1,0.25); selection.gridDir.set(1.0,1.0,1.0,1.0);
+			var err; if(area.info.params.checkPlace != null &amp;&amp; (err = area.info.params.checkPlace(area, selection, item)) != null){
+				selection.warning = err; return false;
+			} else if(selection.pos.z >= area.info.params.place_depth){selection.warning = getText("warning.place_depth"); return false;}
+			if(l > 0){selection.actionTooltip = getText("actions.bucket_dump"); model.visible = 1;}
+			else {
+				if(w == 0){selection.warning = getText("warning.no_water"); return false;}
+				selection.actionTooltip = getText("actions.bucket_fill");
+			 } return true;
+		} else {selection.warning = getText("warning.no_place"); return false;}
+		</getSelection>
+		<onActivate>
+		var info = MaterialInfo.get("white"); model = new Model(materialRenderable(info)); var c = area.waterColor;
+		model.visible = 0; model.texCrop.set(0,0,0.5,0.5); model.tint.set(c.r,c.g,c.b,0.25); area.selected.push(model);
+		</onActivate>
+		<onDeactivate>area.selected.remove(model); model = null;</onDeactivate>
+		<onSelect><script>if(selection.pos.x != Infinity){
+			knockbackTool(object, -0.1);
+			var x = Math.round(selection.pos.x); var y = Math.round(selection.pos.y); var z = Math.round(selection.pos.z);
+			var d = item.storage.get("level"); var l = d.getInt(); if(l > 0){
+				l -= area.addWaterLevel(x,y,z,l); if(l > 0 &amp;&amp; area.isBlocking(x,y,z+1) == -1) l -= area.addWaterLevel(x,y,z+1,l);
+				if(d.getInt() == l){container.gui.showWarning(getText("warning.full_water")); return;} d.setInt(l); playSoundAt(area, selection.pos, "enter_water");
+			} else {
+				var l = area.getWaterLevel(x,y,z); d.setInt(l); area.setWaterLevel(x,y,z,0); playSoundAt(area, selection.pos, "exit_water");
+			} area.addParticles("break", selection.pos.x+0.5, selection.pos.y+0.5, selection.pos.z+0.5).colorMatrix.setColor(area.waterColor, 0.75);
+		}</script></onSelect>
+	</action>
+
+	<script>
+	function clearOreMap(container){
+		if(container.params.updateOreMap == null){
+			container.params.updateOreMap = function(e){
+				if(container.params.ore_map == null) return;
+				var b = container.params.ore_map.get(Area.getIdx(e.x,e.y,e.z)); if(b != null) b.remove();
+			}
+		} container.params.ore_map = new IntMap(); var ar = container.params.ore_locators;
+		if(ar != null &amp;&amp; ar.length > 0){for(b in ar) b.lerp(b.x, b.y, b.z, 0, 30, remove); Utils.clear(ar);}
+		if(container.params.ore_area != null){container.params.ore_area.removeEventListener("updated", container.params.updateOreMap); container.params.ore_area = null;}
+	}</script>
+	<action id="ore_detector">
+		<init>
+		info.params.power = eval(info.xml.get("power")); info.params.range = eval(info.xml.get("range")); if(info.params.range == null) info.params.range = 8;
+		info.params.getOres = function(state, object){
+			var ar = getRecipesByTypes(["rig"], state.storage), ret = []; for(r in ar) ret.push(r.creates[0].id); return ret;
+		}
+		</init>
+		<onActivate>var o = item.storage.get('ore'); if(!o.hasData()) o.setString("coal");</onActivate>
+		<getSelection>
+		selection.setTooltips(getText("actions.ore_detector{item:"+item.storage.get('ore').getString()+"}"), getText("actions.change_ore"));
+		if(object.getPower() &lt; getItemValue(item, "power")){selection.warning = getText("warning.no_power"); return false;}
+		</getSelection>
+		<onSelect>
+			<script if="selection.warning == null">
+			clearOreMap(container);
+			var ar = container.params.ore_locators; if(ar == null){ar = []; container.params.ore_locators = ar;} 
+			var info = getItem(item.storage.get("ore").getString()), area = object.area; if(info == null || area == null) return;
+			object.addPower(-getItemValue(item, "power")); playSound("scan"); container.params.ore_area = area; area.addEventListener("updated", container.params.updateOreMap);
+			var i = info.getIcon().clone(); i.type = TYPE_INDICATOR; var range = getItemRange(item), r2 = range*range;
+			var r = new RenderableOverlay(getModel("shield"), object.getX(), object.getY(), object.getZ(), Color.WHITE);
+			area.overlays.push(r); var scale = 1; container.stage.addFrameListener(function(frames){
+				if(area.overlays == null) return false;
+				scale += frames*0.4; r.transform.set(0,0,scale); r.transform.set(1,1,scale); r.transform.set(2,2,scale); r.texCrop.x = Utils.mod(r.texCrop.x+frames*0.006, 1);
+				if(scale > range*1.8){if(r.color.alpha &lt; 0.1*frames){area.overlays.remove(r); return false;} r.color.alpha -= frames*0.1;} return true;
+			}, false);
+			var ox = object.getX(), oy = object.getY(), oz = object.getZ(), sx = Math.floor(ox-range), sy = Math.floor(oy-range), sz = Math.floor(oz-range);
+			var ex = Math.ceil(ox+range), ey = Math.ceil(oy+range), ez = Math.ceil(oz+range);
+			for(z in sz...ez) for(y in sy...ey) for(x in sx...ex) if(area.getOverlay(x, y, z) == info.id){
+				var dx = x+0.5-ox, dy = y+0.5-oy, dz = z+0.5-oz; if(dx*dx+dy*dy+dz*dz &lt; r2){
+					var b = area.addBillboard(i, x+0.5, y+0.5, z+0.5); b.alpha = 0; b.lerp(b.x, b.y, b.z, 1, 30); ar.push(b);
+					container.params.ore_map.set(Area.getIdx(x,y,z), b);
+				}
+			}
+			</script>
+		</onSelect>
+		<onAlternate>
+			<script>clearOreMap(container);</script>
+			<sound id="select" source="object" />
+			<window id="select_item" title="material.select_ore" items="item.info.params.getOres(state, object)" selected="item.storage.get('ore').getString()">
+				<script>item.storage.get("ore").setString(selected.info.id);</script>
+			</window>
+		</onAlternate>
+	</action>
+</data>

@@ -1,0 +1,921 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<lang id="en_US" version="0.2.4">
+	<section id="common">
+		<text id="play">Start</text>
+		<text id="reload">Reload</text>
+		<text id="multiplayer">Multiplayer</text>
+		<text id="title">Return to Title</text>
+		<text id="options">Options</text>
+		<text id="exit">Exit</text>
+		<text id="yes">Yes</text>
+		<text id="no">No</text>
+		<text id="confirm">Confirm</text>
+		<text id="history">History</text>
+		<text id="credits">Credits</text>
+		<text id="community">Community</text>
+		<text id="achievements">Achievements</text>
+		<text id="autosave">Autosave:</text>
+		<text id="slot">Slot {slot}:</text>
+		<text id="new_game">&lt; New Game &gt;</text>
+		<text id="empty_slot">&lt; Empty Slot &gt;</text>
+		<text id="corrupt_slot">Corrupted Slot</text>
+		<text id="select_save">Select Save Slot</text>
+		<text id="delete_save">Are you sure you wish to delete this slot?</text>
+		<text id="save_incomplete">Save incomplete - some objects/items/areas may be missing. This is usually because you are missing a mod or the save is from a different version of the game.</text>
+		<text id="save_corrupt">Save corrupted! It could not be loaded either because it was a bad save version, or the campaign could not be found or is from a missing mod.</text>
+		<text id="export_fail">Cannot export: Save corrupted.</text>
+		<text id="export_desc">Export Save</text>
+		<text id="delete_desc">Delete Save</text>
+		<text id="import">Import Save</text>
+		<text id="overwrite">Are you sure you wish to overwrite this slot?</text>
+		<text id="import_fail">Cannot import: Save corrupted.</text>
+		<text id="import_save">Can only import files on Title Screen.</text>
+		<text id="saving">Saving...</text>
+		<text id="muted">Game Muted</text>
+		<text id="unmuted">Game Unmuted</text>
+		<text id="save">Save Game</text>
+		<text id="load">Load Game</text>
+		<text id="quit">Quit to Title</text>
+		<text id="return_game">Return to Game</text>
+		<text id="close">Close</text>
+		<text id="confirm_quit">Do you wish to quit? Any unsaved progress will be lost.</text>
+		<text id="health">Health</text>
+		<text id="hunger">Hunger</text>
+		<text id="power">Power</text>
+		<text id="oxygen">Oxygen</text>
+		<text id="charge">Store Battery Power [size=16][color=ffffff](hold)</text>
+		<text id="discharge">Retrieve Battery Power [size=16][color=ffffff](hold)</text>
+		<text id="pause">Pause</text>
+		<text id="resume">Resume</text>
+		<text id="none">None</text>
+		<text id="play_time">Play Time</text>
+		<text id="ok">Ok</text>
+		<text id="cancel">Cancel</text>
+		<text id="reset">Reset</text>
+		<text id="keyboard">Keyboard</text>
+		<text id="gamepad">Gamepad</text>
+		<text id="rename">Change Name</text>
+		<text id="ctc">Hit [key=cancel height=15] to Continue</text>
+		<text id="sort">Sort</text>
+		<text id="add_all">Add All</text>
+		<text id="random">Random</text>
+		<text id="dead">You have died.</text>
+		<text id="unknown">???</text>
+	</section>
+	<section id="structure">
+		<text id="base">Base</text>
+		<text id="power">Power</text>
+		<text id="produce">Production</text>
+		<text id="vehicle">Vehicle</text>
+		<text id="decor">Decor</text>
+		<text id="all">All</text>
+		<text id="craft">Craft:</text>
+		<text id="build">Build:</text>
+		<text id="grow">Grow:</text>
+		<text id="mine">Mine:</text>
+		<text id="worker">[color=cccccc]Worker:[/color] [text=npc>{skill}]</text>
+		<text id="upgrade">Upgrade:</text>
+		<text id="ingredients">Ingredients:</text>
+		<text id="craft_time">Time:</text>
+		<text id="craft_seconds">{sec} seconds.</text>
+		<text id="fuel">Fuel:</text>
+		<text id="fuel_seconds">{sec} seconds of fuel each.</text>
+		<text id="fuel_minutes">{min} minutes of fuel each.</text>
+		<text id="fuel_infinite">Lasts indefinitely.</text>
+		<text id="select">Select Blueprint</text>
+		<text id="inventory">Inventory</text>
+		<text id="storehouse">Storehouse</text>
+		<text id="factory">Factory</text>
+		<text id="generator">Generator</text>
+		<text id="battery">Battery</text>
+		<text id="cryopod">Cryopod</text>
+		<text id="cryopod_npc">{npc}'s Cryopod</text>
+		<text id="chest">Chest</text>
+		<text id="teleportal">Teleportal</text>
+		<text id="hydroponics">Hydroponics</text>
+		<text id="light">Floodlight</text>
+		<text id="bunker">Bunker</text>
+		<text id="rig">Mining Rig</text>
+		<text id="lab">Electronics Lab</text>
+		<text id="kitchen">Kitchen</text>
+		<text id="blueprint_printer">Blueprint Printer</text>
+		<text id="blueprint_printer_blueprint">Prints [item=blueprint]s.</text>
+		<text id="professor_pod">Professor's Pod</text>
+		<text id="professor_pod_use">I shouldn't mess with things I don't understand...</text>
+		<text id="door">Door</text>
+		<text id="locker">Locker</text>
+		<text id="debris">Debris</text>
+		<text id="limit">Craft Limit\n[size=16](-1 for unlimited)</text>
+		<text id="teleportal_desc">Anything entering this teleportal will be instantly transported to the selected teleportal as long as both teleportals are powered and not paused.</text>
+		<text id="storehouse_blueprint">Stores items and dispatches them to factories and generators connected by belts. Items can enter any side.</text>
+		<text id="chest_blueprint">Stores up to 10 items. Can be pushed around.</text>
+		<text id="factory_blueprint">Crafts items.</text>
+		<text id="generator_blueprint">Generates {power} [tile=power scale=0.25 ignoreHeight] Power/Second while fueled.</text>
+		<text id="battery_blueprint">Stores {power} power. Charges when there is surplus power on the grid, discharges when there is a deficit.</text>
+		<text id="hydroponics_blueprint">Grows crops.</text>
+		<text id="bunker_blueprint">A place to rest for up to 4 people.\nProduces [tile=gui.oxygen scale=0.5] Oxygen.</text>
+		<text id="rig_blueprint">Extracts ores from the ground. Requires a worker.</text>
+		<text id="light_blueprint">Lights up your base when turned on.</text>
+		<text id="lab_blueprint">Creates [item=chip]s and tools. Requires a worker.</text>
+		<text id="kitchen_blueprint">Cooks food. Requires a worker.</text>
+		<text id="teleportal_blueprint">Lets you travel instantly between this and any other teleportal.</text>
+		<text id="cryopod_blueprint">Stalls hunger, heals health, recharges batteries and lets you advance time when sealed inside.</text>
+		<text id="cryopod_broken">The [color=ff2222][text=structure.cryopod][/color] is not functioning.</text>
+		<text id="select_craft">Craft an item...</text>
+		<text id="craft_title">Select Item to Craft:</text>
+		<text id="fuel_title">Select Fuel to Use:</text>
+		<text id="build_title">Select Object to Build:</text>
+		<text id="upgrade_title">Select Item to Upgrade:</text>
+		<text id="size">Size: {x}x{y}x{z}</text>
+		<text id="count">x{count}</text>
+		<text id="power_gen">[tile=power scale=0.25 ignoreHeight] Power Generation (per Second):</text>
+		<text id="power_use">[tile=power scale=0.25 ignoreHeight] Power Usage (per Second):</text>
+		<text id="power_cost">Requires {cost} [tile=power scale=0.25 ignoreHeight] Power/Second.</text>
+		<text id="power_build">[tile=power scale=0.25 ignoreHeight] {cost} Power</text>
+		<text id="add_power">+{power} /</text>
+		<text id="select_worker">[color=cccccc]Select Worker:[/color] [text=npc>{skill}]</text>
+		<text id="cryopod_occupied">The [color=ff2222][text=structure.cryopod][/color] is occupied by {npc}.</text>
+		<text id="cryopod_no_home">It would be cruel to wake them up before there was a [color=ff2222][text=structure.bunker][/color] for them to stay in.</text>
+		<text id="cryopod_open">Would you like to open the [color=ff2222][text=structure.cryopod][/color] and wake {npc} up?</text>
+		<text id="cryopod_repair">You can't repair the [color=ff2222][text=structure.cryopod][/color] while someone is inside it.</text>
+		<text id="cryopod_opening">The [color=ff2222][text=structure.cryopod][/color] is already being activated.</text>
+		<text id="cryopod_open_skip">Finish your current conversation before opening the [color=ff2222][text=structure.cryopod][/color]!</text>
+		<text id="npcs">Inhabitants:</text>
+		<text id="add_npc">Add Inhabitant</text>
+		<text id="home">Home:</text>
+		<text id="work">Work:</text>
+		<text id="blueprints">Unlocked new blueprints in the [item=build]!</text>
+		<text id="recipe">Unlocked new [color=ff2222][text=structure.{type}][/color] recipes!</text>
+		<text id="recipe_item">Unlocked new [item={item}] recipes!</text>
+		<text id="rename_teleportal">Set a name for this [color=ff2222][text=structure.teleportal][/color].</text>
+		<text id="npc_take">Allow survivors to access this storehouse?</text>
+		<text id="indicator">Show Locator?</text>
+		<text id="time">Set Hour:</text>
+		<text id="ramp">Ramp</text>
+		<text id="allow_request">Allow requesting items from storehouses.</text>
+		<text id="allow_request_desc">If disabled, storehouses will never dispatch items to this structure, it will only use items it has, and items sent to it from producers (like mining rigs).</text>
+		<text id="set_priority">Set Item Priority</text>
+		<text id="priority_high">Splitters will send items to this Storehouse if it is the closest one with high priority.</text>
+		<text id="priority_low">Splitters will only send items to this Storehouse if there is no connected Storehouse with higher priority.</text>
+		<text id="priority_none">This Storehouse will not accept items of this type from belts.</text>
+		<text id="request_items">Request Items</text>
+		<text id="request_items_desc">Dispatches a specific item to this storehouse from a connected storehouse.</text>
+	</section>
+	<section id="material">
+		<text id="select">Select Material</text>
+		<text id="cave">Sandstone</text>
+		<text id="rock">Granite</text>
+		<text id="bedrock">Bedrock</text>
+		<text id="metal">Metal</text>
+		<text id="hardness">Hardness: {hardness}</text>
+
+		<text id="select_paint">Select Paint</text>
+		<text id="black">Black</text>
+		<text id="blue">Blue</text>
+		<text id="dblue">Dark Blue</text>
+		<text id="gray">Gray</text>
+		<text id="green">Green</text>
+		<text id="orange">Orange</text>
+		<text id="pink">Pink</text>
+		<text id="purple">Purple</text>
+		<text id="red">Red</text>
+		<text id="white">White</text>
+		<text id="yellow">Yellow</text>
+		<text id="clear">Clear</text>
+
+		<text id="select_ore">Select Ore</text>
+	</section>
+	<section id="items">
+		<text id="suit">Protosuit</text>
+		<text id="mine">Laser Drill</text>
+		<text id="build">Fabricator</text>
+		<text id="craft">Assembler</text>
+		<text id="paint">Painter</text>
+		<text id="coal">Coal</text>
+		<text id="iron">Iron Ore</text>
+		<text id="gold">Gold Ore</text>
+		<text id="diamond">Diamond</text>
+		<text id="titanium">Titanium</text>
+		<text id="uranium">Uranium</text>
+		<text id="exotic_matter">Exotic Matter</text>
+		<text id="steel">Steel Bar</text>
+		<text id="wire">Gold Wire</text>
+		<text id="cable">Cable</text>
+		<text id="ladder">Ladder</text>
+		<text id="belt">Conveyor Belt</text>
+		<text id="splitter">Splitter</text>
+		<text id="drain">Drain</text>
+		<text id="tomato">Tomato</text>
+		<text id="shovel">Materializer</text>
+		<text id="chip">Upgrade Chip</text>
+		<text id="laser_gun">Laser Gun</text>
+		<text id="nutrient_bar">Nutrient Block</text>
+		<text id="dragonblood">Dragonblood</text>
+		<text id="blueprint">Blueprint</text>
+		<text id="blueprint_item">{item} Blueprint</text>
+		<text id="blueprint_lvl">{item} Blueprint {level}</text>
+		<text id="ai_core">AI Core</text>
+		<text id="bucket">Bucket</text>
+		<text id="ore_detector">Ore Detector</text>
+
+		<text id="wheat">Wheat</text>
+		<text id="sugar">Sugar</text>
+		<text id="meat">Meat</text>
+		<text id="milk">Milk</text>
+		<text id="soup">Tomato Soup</text>
+		<text id="steak">Steak</text>
+		<text id="bread">Bread</text>
+		<text id="pasta">Pasta</text>
+		<text id="pancakes">Pancakes</text>
+		<text id="cheese">Cheese</text>
+		<text id="hamburger">Hamburger</text>
+		<text id="cheeseburger">Cheeseburger</text>
+		<text id="pizza">Pizza</text>
+		<text id="ice_cream">Ice Cream</text>
+		<text id="cake">Cake</text>
+	</section>
+	<section id="item.types">
+		<text id="material">Raw Material</text>
+		<text id="processed">Processed Material</text>
+		<text id="food">Food</text>
+		<text id="utility">Utility</text>
+		<text id="tool">Tool</text>
+	</section>
+	<section id="item.descriptions">
+		<text id="mine">Mines blocks.</text>
+		<text id="build">Builds blueprints.</text>
+		<text id="craft">Crafts items.</text>
+		<text id="paint">Paints blocks.</text>
+		<text id="ore_detector">Detects nearby ores of a chosen type.</text>
+		<text id="cable">Connects structures to power sources.</text>
+		<text id="ladder">Can climb, and also connects cables.</text>
+		<text id="belt">Moves items along the ground.</text>
+		<text id="drain">Stops water from flowing above it.</text>
+		<text id="splitter">Moves items along the ground. Rotates to send items towards structures that need that item (based on priorities).</text>
+		<text id="shovel">Fills in blocks.</text>
+		<text id="bucket">Carries water.</text>
+		<text id="chip">Upgrades tools and your protosuit.</text>
+		<text id="laser_gun">Fires bolts of energy.</text>
+		<text id="eat">Restores [if={health}!=0|[color=ff8c8c]{health} health[/color]][if={health}!=0 && {hunger}!=0| and ][if={hunger}!=0|[color=8cff8c]{hunger} hunger[/color]].</text>
+		<text id="blueprint_unlock">Unlocks {item}[if={level}>0| level {level} upgrades][if='{recipe}'.length != 0| recipes].</text>
+	</section>
+	<section id="actions">
+		<text id="mine">[size=16](hold)[/size] Mine [size=18][color=ffff88]Block</text>
+		<text id="mine_enemy">[size=16](hold)[/size] Mine [size=18][color=ffff88]Enemy</text>
+		<text id="flashlight">Toggle [size=18][color=ffff88]Flashlight</text>
+		<text id="build">[size=16](hold)[/size] Build [size=18][color=ffff88][text={structure}]</text>
+		<text id="dismantle">[if={hold}|[size=16](hold)[/size] ]Dismantle [size=18][color=ffff88][text={structure}]</text>
+		<text id="paint">Paint [size=18][color=ffff88]Block</text>
+		<text id="use">Use [size=18][color=ffff88][text={structure}]</text>
+		<text id="repair">[size=16](hold)[/size] Repair [size=18][color=ffff88][text={structure}]</text>
+		<text id="toggle">Toggle [size=18][color=ffff88][text={structure}]</text>
+		<text id="scan">Scan [size=18][color=ffff88][text={structure}]</text>
+		<text id="ore_detector">Detect [size=18][color=ffff88][text=items.{item}]</text>
+		<text id="change_ore">Change [size=18][color=ffff88]Ore</text>
+		<text id="place_blueprint">Place [size=18][color=ffff88][text={structure}]</text>
+		<text id="open">Open [size=18][color=ffff88][text={structure}]</text>
+		<text id="close">Close [size=18][color=ffff88][text={structure}]</text>
+		<text id="manage">Manage [size=18][color=ffff88][text={structure}]</text>
+		<text id="place">Place [size=18][color=ffff88][text=items.{item}]</text>
+		<text id="select_blueprint">Change [size=18][color=ffff88]Blueprint</text>
+		<text id="select_material">Change [size=18][color=ffff88]Material</text>
+		<text id="select_paint">Change [size=18][color=ffff88]Paint</text>
+		<text id="eat">[size=16](hold)[/size] Eat [size=18][color=ffff88][text=items.{item}]</text>
+		<text id="craft">Craft [size=18][color=ffff88]Item</text>
+		<text id="shovel">Place [size=18][color=ffff88]Block</text>
+		<text id="bucket_fill">Fill [size=18][color=ffff88]Bucket</text>
+		<text id="bucket_dump">Empty [size=18][color=ffff88]Bucket</text>
+		<text id="shoot">Shoot [size=18][color=ffff88][text=items.{item}]</text>
+		<text id="shield">[size=16](hold)[/size] Shield</text>
+		<text id="upgrade">Upgrade [size=18][color=ffff88]Items</text>
+		<text id="remove_item">Remove [size=18][color=ffff88][text=items.{item}]</text>
+		<text id="talk">Talk to [size=18][color=ffff88]{name}</text>
+		<text id="give">Give [size=18][color=ffff88]Items</text>
+		<text id="rotate">Rotate</text>
+		<text id="appearance">Change [size=18][color=ffff88]Appearance</text>
+		<text id="set_time">Advance [size=18][color=ffff88]Time</text>
+	</section>
+	<section id="npc">
+		<text id="civilian">Civilian</text>
+		<text id="miner">Miner</text>
+		<text id="farmer">Farmer</text>
+		<text id="chef">Chef</text>
+		<text id="scientist">Scientist</text>
+		<text id="soldier">Soldier</text>
+		<text id="electronics">Electronics</text>
+		<text id="mining">Mining</text>
+		<text id="cooking">Cooking</text>
+		<text id="to_work">I'm well rested and off to work!</text>
+		<text id="to_home">Nothing beats going home after a long day at work!</text>
+		<text id="to_work_fail">The path to my work station is blocked!</text>
+		<text id="to_home_fail">The path to my bunker is blocked!</text>
+		<text id="hungry">So hungry... can barely keep moving...</text>
+		<text id="homeless">We need to build more bunkers, there's no place for me to sleep!</text>
+		<text id="no_air">I can't breathe! We need to drain the water from our base!</text>
+		<text id="no_air_outside">I can't breathe out there! We need to drain the water from our base!</text>
+		<text id="no_power">My bunker's not powered, I can't recharge!</text>
+		<text id="working">I feel like I'm getting quite good at operating this equipment!</text>
+		<text id="no_food">What's it take to get some food around here?</text>
+		<text id="idle">Good day! At least, I think it's day - I can never tell down here...</text>
+
+		<text id="talk_skip">Finish your current conversation before talking to {name}.</text>
+		<text id="only_one">Someone is already talking to {name}.</text>
+
+		<text id="lab_door1">I locked the door out of the lab during the attack - I didn't want to let anything dangerous in!</text>
+		<text id="lab_door2">But, it appears I've misplaced the keycard! Silly me - at least the [color=ff2222][text=structure.teleportal][/color] is functioning!</text>
+	</section>
+	<section id="names">
+		<text id="pai">PAI</text>
+		<text id="miner1">Sandy</text>
+		<text id="miner2">Opal</text>
+		<text id="farmer1">Sesame</text>
+		<text id="farmer2">Grainne</text>
+		<text id="chef1">Alfredo</text>
+		<text id="chef2">Benedict</text>
+		<text id="scientist">Andromeda</text>
+		<text id="soldier">Gunner</text>
+		<text id="professor">Professor</text>
+		<text id="scavenger">Scavenger</text>
+	</section>
+	<section id="map">
+		<text id="deep_caves">Deep Caves</text>
+		<text id="old_base">Old Bunker</text>
+		<text id="professor_lab">Professor's Lab</text>
+		<text id="subway">Subways</text>
+		<text id="flooded_city">Flooded City</text>
+		<text id="surface">Surface</text>
+		<text id="sandbox">Abandoned Isle</text>
+	</section>
+	<section id="warning">
+		<text id="focus">Click for Focus</text>
+		<text id="control_disconnect">The controller was disconnected!</text>
+		<text id="no_build">Cannot build: needs [item={item}].</text>
+		<text id="no_repair">Cannot repair: needs [item={item}].</text>
+		<text id="cannot_build">You cannot build without a [item=build]!</text>
+		<text id="cannot_repair">You cannot repair without a [item=build]!</text>
+		<text id="dismantle">Are you sure you wish to dismantle this structure?</text>
+		<text id="full">You are not hungry.</text>
+		<text id="full_power">Your protosuit does not need to be recharged.</text>
+		<text id="bunker_full">Cannot set home: {structure} is full.</text>
+		<text id="crafting">The {name} is currently crafting an item.</text>
+		<text id="no_ingredients">Not enough ingredients to craft.</text>
+		<text id="no_power">Not enough power.</text>
+		<text id="not_powered">The [text={structure}] is not powered!</text>
+		<text id="no_place">Cannot be placed here.</text>
+		<text id="no_teleportal">[text={structure}]s cannot be placed in this area.</text>
+		<text id="place_depth">Cannot place: too high up!</text>
+		<text id="no_water">There's no water here to carry!</text>
+		<text id="full_water">The location is already full of water!</text>
+		<text id="too_hard">Your [item=mine] is not powerful enough to mine this block!</text>
+		<text id="unmineable">This block cannot be mined.</text>
+		<text id="structure_top">Cannot mine this block while a structure is on top of it.</text>
+		<text id="teleportal_disabled">This teleportal is disabled! Would you like to enable it?</text>
+		<text id="upgrade_locked">You need to find a [item=blueprint] to unlock the next upgrade.</text>
+		<text id="no_upgrade">Already at the maximum upgrade.</text>
+		<text id="npc_hungry">[color=ff2222]{name} is hungry and has no food!</text>
+		<text id="npc_trapped">[color=ff2222]{name} is trapped and cannot reach their bunker!</text>
+		<text id="npc_dead">[color=ff2222]{name} has died!</text>
+		<text id="npc_hit">[color=ff2222]{name} is under attack!</text>
+		<text id="professor_lab">I shouldn't mess with the Professor's lab!</text>
+		<text id="no_fuel">Not enough fuel!</text>
+		<text id="no_paint">Cannot paint this block!</text>
+		<text id="has_pilot">This vehicle is being operated by another player!</text>
+		<text id="already_scanned">[color=ff2222][text={name}][/color] has already been scanned!</text>
+	</section>
+	<section id="pai">
+		<text id="intro1">[shake=2]Good morning![/shake] I am PAI - your Personal AI - and I am here to assist you!</text>
+		<text id="intro2">I do apologize for awakening you early, I was programmed to only do so in the most dire of emergencies, but [shake=2]you have slept through the end of the world[/shake].</text>
+		<text id="intro3">I am sure you have many questions, but first I have some good news and bad news - which do you want to hear first?</text>
+		<text id="good_news">The Good News</text>
+		<text id="bad_news">The Bad News</text>
+		<text id="intro4">The good news is that, against all odds, you are alive and mostly intact!</text>
+		<text id="intro5">The bad news is that there was a cave in, your [color=ff2222][text=structure.cryopod][/color] got damaged, and all signals are down.</text>
+		<text id="intro6">This doesn't necessarily mean you are the last human alive - but the last signal I received was about an unknown threat bombarding the surface and causing wanton destruction, which does not bode well for the majority of the human race.</text>
+		<text id="intro7">Before you start worrying about the rest of the human race, first you need to focus on your own predicament.</text>
+		<text id="intro8.keyboard">[if={intro}|I'm a little worried about your lack of movement since your awakening. ]Use [key=up][key=left][key=down][key=right] to walk and move your mouse to look around.</text>
+		<text id="intro8.gamepad">[if={intro}|I'm a little worried about your lack of movement since your awakening. ]Use [key=up no_arrow] to walk and [key=look_up no_arrow] to look around.</text>
+		<text id="intro9">Your protosuit is equipped with a [item=mine], which will allow you to gather resources to deal with your shelter, power and food needs.</text>
+		<text id="intro10.keyboard">Please note the toolbar at the bottom of your display. You can select what tool to use using [key=tool1][key=tool2][key=tool3][key=tool4][key=tool5][key=tool6][key=tool7][key=tool8][key=tool9][key=tool10].</text>
+		<text id="intro10.gamepad">Please note the toolbar at the bottom of your display. You can select what tool to use using [key=prev_tool] and [key=next_tool].</text>
+		<text id="intro11.2">Oh, you already know how to use the [item=mine]!</text>
+		<text id="intro11">To mine, select the [item=mine] and then hold [key=select] to mine a selected wall - this may take time depending on the power of your [item=mine] and the hardness of the cave wall.</text>
+		<text id="intro12">I have detected nearby [item=iron] and [item=gold] - Mine some and I can show you how the [item=craft] works!</text>
+		<text id="intro13">The [item=mine] also has a flashlight which you can use [key=alternate] to turn on and off while it is selected.[if={intro}| If you have any questions, hit [key=help] to talk to me at any time!]</text>
+		<text id="intro14.1">Now that you have raw ores, you have to process them into building materials in the [item=craft]. Let's turn all that [item=iron] and [item=gold] into [item=steel]s and [item=wire]!</text>
+		<text id="intro14.2">Select the [item=craft] and then hit [key=alternate] to craft items directly into your inventory. You can open your inventory using [key=cancel].</text>
+		<text id="intro15">Now lets build a [color=ff2222][text=structure.generator][/color] with those [item=steel]s and [item=wire]s to generate some power! Switch to the [item=build] tool on your toolbar, then hit [key=alternate] to select a structure to place.</text>
+		<text id="intro15.2">Good idea building a [color=ff2222][text=structure.generator][/color] with those [item=steel]s and [item=wire]s!</text>
+		<text id="intro16">I'm sure you guessed this already, but red guidelines means you cannot place a structure there, and blue means you can. Try placing the [color=ff2222][text=structure.generator][/color] anywhere there is space, or mining to make space.</text>
+		<text id="intro17">When you are close to a structure, you'll see green guidelines around it regardless of what tool is selected.</text>
+		<text id="intro18">When these guidelines are visible, hit [key=select] to build or interact with the structure, and [key=alternate] to dismantle the structure. You get 100% of the resources back when you dismantle, but it does take power!</text>
+		<text id="intro19">Well, what are you waiting for? Complete the [color=ff2222][text=structure.generator][/color] by holding [key=select] when the guidelines turns green!</text>
+		<text id="intro20">To ensure your survival, you'll need a steady supply of power and food. The [color=ff2222][text=structure.generator][/color] will produce energy as long as it has [item=coal] to burn, but you'll need a [color=ff2222][text=structure.battery][/color] to store it.</text>
+		<text id="intro21">[color=ff2222][text=structure.hydroponics][/color] will produce [item=tomato default=Tomatoes] as long as it is powered - one should be enough for your personal nutritional needs.</text>
+		<text id="intro22">Build a [color=ff2222][text=structure.battery][/color] and [color=ff2222][text=structure.hydroponics][/color] close to the [color=ff2222][text=structure.generator][/color]. Choose the structure using [key=alternate] when the [item=build] is selected (and there's no green guidelines selecting a structure), and then place and build them the same way you did the [color=ff2222][text=structure.generator][/color].</text>
+		<text id="intro23">To power the [color=ff2222][text=structure.battery][/color] and [color=ff2222][text=structure.hydroponics][/color], you need to connect them to the [color=ff2222][text=structure.generator][/color].</text>
+		<text id="intro24">Buildings adjacent to the generator will auto-connect, but if they are further away you can craft [item=cable]s in the [item=craft] using [item=wire]. You place them from the toolbar, and remove them with [item=mine].</text>
+		<text id="connect_hint">Make sure the [color=ff2222][text=structure.generator][/color] is fueled with [item=coal], and that it is connected to the [color=ff2222][text=structure.battery][/color] and [color=ff2222][text=structure.hydroponics][/color] with [item=cable]s to power them!</text>
+		<text id="intro28">Now that you have food and power, things are looking pretty good. At least if you ignore the fact that you're buried deep underground with little chance of reaching a surface which may already be destroyed.</text>
+		<text id="intro29">But maybe life won't be so bad down here. You can use the [item=build] to improve this cavern, and you might even find other survivors who got buried down here during the cave in.</text>
+		<text id="bunker">Now that you have a place for them to stay, you can wake up a survivor!</text>
+		<text id="research1">Now that we have more hands, it's time to put them to work!</text>
+		<text id="research2">You can assign them to work at [color=ff2222][text=structure.lab][/color]s, which produce tools and upgrades.</text>
+		<text id="research3">Lets build a [color=ff2222][text=structure.lab][/color] and assign our new friend to work there!</text>
+		<text id="research4">The [color=ff2222][text=structure.lab][/color] needs power, materials, and a worker assigned to produce [item=chip]s or tools. That's a lot, but they are worth it!</text>
+		<text id="research5">[item=chip]s can be used by selecting them and hitting [key=alternate], just like the [item=craft].</text>
+		<text id="research6">Take a look at all the different upgrades for your items before choosing one, as each one will require [item=chip]s! [item=mine] [color=ff2222]Strength[/color] will be needed to mine harder stone.</text>
+		<text id="upgrade_tip">You can change what tool you want to upgrade in the upgrade window - try changing it to [item=mine] to upgrade its [color=ff2222]Strength[/color].</text>
+		<text id="hunger1">I'm sure you already know this, but as an organic being you do need to eat to survive. You can select food on your toolbar and hold [key=alternate] to eat it.</text>
+		<text id="hunger2">If you don't have any food handy, you can always turn [item=coal] into [item=nutrient_bar]s with the [item=craft].</text>
+		<text id="hunger3">Made from fossilized plants, [item=nutrient_bar]s are probably safe for human consumption. But, you may prefer real plants grown in [color=ff2222][text=structure.hydroponics][/color].</text>
+		<text id="power1">[if={intro}|Watch out - you're running low on power! ]Without power, you will not be able to use any of your tools! The best way to recharge is to find a [color=ff2222][text=structure.battery][/color] unit and hold the "Retrieve Battery Power" button.</text>
+		<text id="power2">Your protosuit can also extract small amounts of ambient energy, so if you turn off your flashlight, you can slowly recharge your batteries. The amount of energy produced can be upgraded with [item=chip]s.</text>
+		<text id="power3">You can turn your flashlight on and off by selecting your [item=mine] and hitting [key=alternate] .</text>
+		<text id="teleportal1">With an upgraded [item=mine], we can now reach the [color=ff2222][text=map.old_base][/color] where your [color=ff2222][text=structure.cryopod][/color] fell from.</text>
+		<text id="teleportal2">It would be worthwhile to see if the [color=ff2222][text=structure.teleportal][/color] there is still working - it could be your ticket out of here!</text>
+		<text id="teleportal3">You can use [item=ladder]s and the [item=shovel] to work your way up there, and the upgraded [item=mine] to clear the collapsed stones.</text>
+		<text id="teleportal3.1">I marked the last known location of the [color=ff2222][text=structure.teleportal][/color]. Look up and head towards my smiling face, and you will find it!</text>
+		<text id="teleportal4">The [color=ff2222][text=structure.teleportal][/color] seems to still be functioning! Lets see if there are any other [color=ff2222][text=structure.teleportal][/color]s to connect to!</text>
+		<text id="teleportal5">If we're lucky, maybe one of the [color=ff2222][text=structure.teleportal][/color]s at the surface will still be powered and functioning, and we can teleport straight there!</text>
+		<text id="teleportal6">What are you waiting for? Select the [color=ff2222][text=structure.teleportal][/color] and see what you can connect to!</text>
+		<text id="cryopod1">Oh, so you repaired the [color=ff2222][text=structure.cryopod][/color]? Given the situation, it doesn't make sense to return to cold sleep.</text>
+		<text id="cryopod2">However, if you step inside a powered [color=ff2222][text=structure.cryopod][/color] and close the door to activate it, it will stall your hunger and restore your health and batteries.</text>
+		<text id="factory_tip1">While the [item=craft] is portable, it’s not as efficient as a [color=ff2222][text=structure.factory][/color].</text>
+		<text id="factory_tip2">[color=ff2222]Factories[/color] will continue to craft their specified recipe until they run out of materials or power - and they can even request more materials from [color=ff2222][text=structure.storehouse][/color]s connected to them by [item=belt]s.</text>
+		<text id="npc_food_tip">Now that you have more mouths to feed, it might be a good idea to build more [color=ff2222][text=structure.hydroponics][/color] to make sure everyone stays happy and fed.</text>
+		<text id="npcs_dead1">I'm afraid to say that all life signs in the area are gone. Needless to say, this does not bode well for the survival of the human race.</text>
+		<text id="npcs_dead2">Without any workers, you'll need another way to craft [item=chip]s. I'll upgrade your [item=craft] to be able to make them!</text>
+		<text id="outro1">And that ends the demo! Time for you to shut down!</text>
+		<text id="outro2">[shake=2]              Rescue Survivors...\n\n[pause=5]Reach the Surface...[pause=5]\n\n          Rebuild Civilization in...</text>
+		<text id="outro3">Now In Early Access!</text>
+		<text id="wishlist">Get it on [tile=steam ignoreHeight] [b]STEAM[/b]</text>
+
+		<text id="dig_hole">Before you go hog wild digging holes, I would like to warn you that you cannot fill them until you craft a [item=shovel] in an [color=ff2222][text=structure.lab][/color].</text>
+		<text id="bunker_hint">We'll need a [color=ff2222][text=structure.bunker][/color] [item=blueprint] to wake up survivors. Try searching for and dismantling debris from the old base.</text>
+		<text id="bunker1">This looks like debris from a [color=ff2222][text=structure.bunker][/color].</text>
+		<text id="bunker2">There were supposed to be many of these for survivors to live in once they awoke - but it looks like they were destroyed.</text>
+		<text id="bunker3">If you find and dismantle enough debris, I could create a [item=blueprint] for you to build a new [color=ff2222][text=structure.bunker][/color]!</text>
+		<text id="bunker4">Now I’ll fill in the gaps missing from the scanned debris, and [shake=3]voila[/shake]! One [color=ff2222][text=structure.bunker][/color] blueprint ready to be built!</text>
+		<text id="bunker5">Once you build a [color=ff2222][text=structure.bunker][/color], we can start waking up other survivors and get a little underground settlement going!</text>
+
+		<text id="ore_cave">Where did you go? My sensors have gone haywire - perhaps this is an unstable dimension! A place like this will change every time you enter it.</text>
+		<text id="ore_cave2">If you plan to go exploring the unknown, you'll need a [item=shovel]. I'll upgrade your [item=craft] to be able to make them!</text>
+	</section>
+	<section id="intros">
+		<text id="miner1">Hello darkness my old friend.</text>
+		<text id="miner2">My name is PAI, not Darkness, but I’m glad we’re friends!</text>
+		<text id="miner3">Right. Well then, is it time to return to the surface?</text>
+		<text id="miner4">Nope! The surface is destroyed, and we’re stuck down here for the foreseeable future!</text>
+		<text id="miner5">[shake=2]Lovely.[/shake] At least that means I get to spend more time in these beautiful caves.</text>
+		<text id="miner6">You like these caves?</text>
+		<text id="miner7">Of course - they are a miner’s dream, with lots of natural ore!</text>
+		<text id="miner8">In fact, we should set up a [color=ff2222][text=structure.rig][/color]! Assign me to work at one, and I’ll be able to mine an endless amount of ore!</text>
+		<text id="miner9">Well, we’re off to a rocky start!</text>
+		<text id="miner10">Absolutely! Do you have any underground survival experience?</text>
+		<text id="miner11">I’ll see what I can dig up…</text>
+		<text id="miner12">Because I’m a miner? [shake=2]Nobody appreciates a good joke…</text>
+		<text id="miner13">Well, it is the end of the world…</text>
+		<text id="miner14">Nonsense, the world’s still right here! Even if people die, it’s not going anywhere.</text>
+		<text id="miner15">Well, let's try not to let anyone else die…</text>
+		<text id="miner16">That’s the spirit!</text>
+		<text id="miner17">These caves aren’t so bad - if we set up a [color=ff2222][text=structure.rig][/color], I’ll be able to use it to mine an endless amount of ore!</text>
+		<text id="chef1">[shake=3]Gurgle… [size=30][pause=20]Grumble… [shake=4][size=34][pause=20]Gurrgh…</text>
+		<text id="chef2">That’s my hibernation belly speaking. I hope you have something good to eat!</text>
+		<text id="chef3">I could synthesize some [item=nutrient_bar]s!</text>
+		<text id="chef4">Tell me it’s joking!</text>
+		<text id="chef5">We’re also growing some [item=tomato default=Tomatoes]…</text>
+		<text id="chef6">It sounds like I have my work cut out for me! Here, have some [color=ff2222][text=structure.kitchen] Blueprints[/color]!</text>
+		<text id="chef7">With it, I can cook up a variety of delicious meals. Just build a [color=ff2222][text=structure.kitchen][/color], supply the raw ingredients and assign me to cook there!</text>
+		<text id="chef8">We’re setting up a [color=ff2222][text=structure.kitchen][/color], and we’re working on making better food!</text>
+		<text id="chef8.2">Now that we can make [item=milk], I was thinking it's time to expand our menu!</text>
+		<text id="chef9">How about [item=pizza]? One pie makes 6 slices we can share with everyone!</text>
+		<text id="chef10">That oughta lighten the mood around here! But it won’t lighten my belly!</text>
+		<text id="chef11">Hello! What a lovely day, no?</text>
+		<text id="chef12">Is it day? I can never tell down here…</text>
+		<text id="chef13">Me neither, but that doesn’t mean it’s not lovely!</text>
+		<text id="chef14">The only thing missing is a freshly cooked meal!</text>
+		<text id="chef15">But we don’t have a [color=ff2222][text=structure.kitchen][/color] and I don’t know how to cook!</text>
+		<text id="chef16">Fear not, my friend, for I know how to make a [color=ff2222][text=structure.kitchen][/color], and know well how to cook!</text>
+		<text id="chef17">Simply follow the blueprint to build a [color=ff2222][text=structure.kitchen][/color], supply it with raw ingredients and assign me to cook there, and we’ll have delicious meals in no time!</text>
+		<text id="farmer1">Heyo! Is it time to return to the surface?</text>
+		<text id="farmer2">I hate being in dark, enclosed spaces like this!</text>
+		<text id="farmer3">That’s a real shame, as the surface is possibly destroyed and there will be no returning to it any time soon!</text>
+		<text id="farmer4">Your PAI is a whole field of cheer, ain’t he?</text>
+		<text id="farmer5">I suppose everyone will need to chip in. I know a thing or two about crops and [color=ff2222][text=structure.hydroponics][/color].</text>
+		<text id="farmer6">I also have [item=wheat] and [item=sugar] seeds we can use to grow something a little better than [item=nutrient_bar]s.</text>
+		<text id="farmer7">We’re going to survive this - and we’re going to return to the surface.</text>
+		<text id="farmer8">Or die trying!</text>
+		<text id="farmer9">Welcome to the end of the world!</text>
+		<text id="farmer10">Oh bother.</text>
+		<text id="farmer11">[shake=2]Did you have to wake me up?</text>
+		<text id="farmer12">Well, we could have left you until your [color=ff2222][text=structure.cryopod][/color] batteries ran out and you died in your sleep.</text>
+		<text id="farmer13">But being one of the last human survivors, we decided it was better to awaken you and enlist your help!</text>
+		<text id="farmer14">I don’t see what you expect me to do. I was a farmer - [shake=2]I’m useless for underground survival.</text>
+		<text id="farmer15">I’m sure you’re not useless!</text>
+		<text id="farmer16">Hmph. Well, I suppose I have [item=wheat] and [item=sugar] seeds we can grow in [color=ff2222][text=structure.hydroponics][/color].</text>
+		<text id="farmer17">That’s a start!</text>
+		<text id="farmer18">I suppose I can help. Just don’t expect much from me.</text>
+		<text id="scientist1">Well, looks like I’ve awoken to quite a tricky survival situation!</text>
+		<text id="scientist2">Let me assure you, it’s far worse than it appears! The surface is destroyed and I am uncertain how many humans survived!</text>
+		<text id="scientist3">Well, it’s a good thing you found and woke me up - I’m Andromeda, the brightest food scientist in existence!</text>
+		<text id="scientist4">It was me who invented the Meat Trees for the SPLICER project!</text>
+		<text id="scientist5">Meat Trees?</text>
+		<text id="scientist6">A revolutionary invention! We can use it to grow meat in [color=ff2222][text=structure.hydroponics][/color] without the need to harm or take care of animals down here!</text>
+		<text id="amazing">That amazing!</text>
+		<text id="gross">That’s gross!</text>
+		<text id="scientist7">Isn’t it? I’ll make sure we all have a nutritious diet even down here at the end of the world!</text>
+		<text id="scientist8">Psh - you’re just like the ethics committee. Not everyone can appreciate brilliance.</text>
+
+		<text id="soldier1">[shake=3]Whoa there![/shake] Don’t startle me like that, I might shoot!</text>
+		<text id="soldier2">I’ve been looking for survivors!</text>
+		<text id="soldier3">Survivors? You don’t mean we [shake=3]LOST the WAR?!</text>
+		<text id="soldier4">[shake=2]Absolutely![/shake] All traces of human civilization are gone!</text>
+		<text id="soldier5">It’s all my fault! I should’ve been there, fighting!</text>
+		<text id="soldier6">You were a soldier?</text>
+		<text id="soldier7">Sniper. I liked being able to fight from afar, and well hidden.</text>
+		<text id="soldier8">But, I was scared. They had bigger, and better guns. So, I volunteered for the Cryo Reserve.</text>
+		<text id="soldier9">I can help you fight, but first we’ll need weapons. You can craft [item=laser_gun]s in the [color=ff2222][text=structure.lab][/color].</text>
+		<text id="soldier10">You crafted a [item=laser_gun]! Let's show it to [color=ff2222][text=names.soldier][/color] and learn to shoot things!</text>
+		<text id="soldier11">[item=laser_gun]s are great - you can keep your distance, hide behind blocks and run away before enemies even get close!</text>
+		<text id="soldier12">Take advantage of the laser targeting to aim, and upgrade their [color=ff2222]Range[/color] when you get the chance with [item=chip]s.</text>
+		<text id="soldier12.1">Let me upgrade your [item=laser_gun]'s [color=ff2222]Range[/color] now!</text>
+		<text id="soldier13">[item=laser_gun]s also come with a shield that you can deploy by holding [key=alternate]. This can protect you when there’s no good cover, and you can even fire while the shield is active - although this will drain through your battery fast.</text>
+		<text id="soldier14">I will warn you that alien enemies have tough exteriors that laser bolts bounce right off of! You’ll have to find a weak spot if you want to hurt them - you’ll know you got 'em when they flash red!</text>
+		<text id="soldier15">If you have extra, you could give me a [item=laser_gun] - I might not be much in a fight, but I can certainly shoot those pesky bats!</text>
+	</section>
+
+	<section id="snippets">
+		<text id="pizza1">Unfortunately, the [item=pizza] party has been canceled due to not having a bunker. But you can still eat the [item=pizza]!</text>
+		<text id="pizza2">Nothing sadder than a [item=pizza] party when you’re all alone.</text>
+		<text id="pizza3">But I will always be here for you!</text>
+		<text id="pizza4">Let us commemorate this momentous occasion - our first [shake=2]post-apocalyptic [item=pizza] party!</text>
+		<text id="pizza5">I will pretend to eat [item=pizza] and be merry while you organic creatures stuff your faces!</text>
+		<text id="pizza6">[shake=4]This![/shake] This is what I’ve been waiting for! Come to me, oh glorious [item=pizza]!</text>
+		<text id="pizza7">Good food, friendly company, exceptional atmosphere - c’est magnifique!</text>
+		<text id="pizza8">This place is great - we’re surrounded by gems and get free [item=pizza]!</text>
+		<text id="pizza9">All I need is a good drink and this would be perfect - on the rocks of course!</text>
+		<text id="pizza10">[shake=1]I- I guess it feels a little brighter down here with good food and company.</text>
+		<text id="pizza11">The [item=pizza]’s good. Don’t know about the company. Or the surroundings.</text>
+		<text id="pizza12">Mmm… Bio-engineered plant [item=milk] makes for a delicious [item=pizza]. It’s even vegan!</text>
+		<text id="pizza13">This isn’t so bad. Maybe we should just stay down here where it’s safe… [shake=1]forever…</text>
+
+		<text id="connect_work1">It’s nice having my workplace connected to the [color=ff2222][text=structure.storehouse][/color] - it can automatically dispatch items to me without having to get them myself.</text>
+		<text id="connect_work2">If we use [item=belt]s to feed items into the [color=ff2222][text=structure.storehouse][/color] faster than I use them, this base could become self-sufficient!</text>
+		
+		<text id="npc_dead1">What ever happened to {name}?</text>
+		<text id="npc_dead2">They died. It was very sad.</text>
+
+		<text id="fuel_uranium1">Is it safe to have a [item=uranium] reactor so close to the base?</text>
+		<text id="fuel_uranium2">It’s no more dangerous than being stuck in a cave with poor airflow that could collapse any minute!</text>
+		<text id="fuel_uranium3">The [item=coal] fumes trapped underground are dangerous too.</text>
+		<text id="fuel_uranium4">[shake=1]That’s a cheery thought…</text>
+
+		<text id="grow_milk1">Where is all this [item=milk] coming from all of a sudden? Are we raising cows down here?</text>
+		<text id="grow_milk2">You’re better off not knowing.</text>
+
+		<text id="npc_portal1">I see you got a [color=ff2222][text=structure.teleportal][/color] up and running! Does that mean we can return to the surface?</text>
+		<text id="npc_portal2"> Nope - all of the surface [color=ff2222][text=structure.teleportal][/color]s are no longer functioning.</text>
+		<text id="npc_portal3">But we can build a new [color=ff2222][text=structure.teleportal][/color] network to zoom around our base. Isn’t that great?</text>
+	</section>
+	<section id="quests">
+		<text id="blueprint">Place a [color=ff2222][text={structure}][/color] with the [item=build]</text>
+		<text id="build">Build a [color=ff2222][text={structure}][/color]</text>
+		<text id="connect">Connect the [color=ff2222][text={structure}][/color] to a [color=ff2222][text=structure.generator][/color]</text>
+		<text id="rescue_survivor">Find and wake up a [color=ff2222]Survivor[/color]</text>
+		<text id="find">Find a [color=ff2222][text={structure}][/color]</text>
+		<text id="upgrade">Upgrade [item={item}] [color=ff2222][text=upgrades.{upgrade}][/color] level {level}</text>
+		<text id="dismantle_bunker">Dismantle [color=ff2222]Bunker Debris[/color]</text>
+	</section>
+	<section id="upgrades">
+		<text id="mine">Strength</text>
+		<text id="power">Energy</text>
+		<text id="range">Range</text>
+		<text id="light">Flashlight</text>
+		<text id="speed">Speed</text>
+		<text id="defense">Defense</text>
+		<text id="oxygen">Oxygen</text>
+		<text id="cost">Efficiency</text>
+		<text id="storage">Storage</text>
+		<text id="max">Maxed Out</text>
+		<text id="power_gen">Power Gen</text>
+		<text id="attack">Damage</text>
+		<text id="rate">Firing Rate</text>
+		<text id="itemcollect">Item Collect Range</text>
+		<text id="unlocked">{item} level {level} upgrades unlocked!</text>
+		<text id="already_unlocked">{item} [if={level}>0|level {level} upgrades ][if='{recipe}'.length != 0|recipes ]already unlocked.</text>
+	</section>
+	<section id="upgrade.desc">
+		<text id="mine">Increases the drilling power, allowing mining through harder blocks faster.</text>
+		<text id="power">How much power it drains. Each upgrade uses 1 less power per block.</text>
+		<text id="range">How far it can reach. Each upgrade gives +50% range.</text>
+		<text id="light">How bright the flashlight is. Each upgrade gives +66% brightness.</text>
+		<text id="speed">How fast it constructs. Each upgrade makes it 50% faster.</text>
+		<text id="cspeed">How fast you can move. Each upgrade makes you +33% faster.</text>
+		<text id="defense">Reduces damage of all attacks by 2 for each upgrade.</text>
+		<text id="cost">How power efficient it is. Each upgrade reduces the power usage by 33%.</text>
+		<text id="storage">How much it can carry. Each upgrade adds one row.</text>
+		<text id="power_gen">How much power your suit generates. Each upgrade generates +75% more power per second.</text>
+		<text id="attack">How much damage each bolt deals. Each upgrade adds +25% more damage.</text>
+		<text id="shoot_power">How much power it drains. Each upgrade uses 1 less power per bolt.</text>
+		<text id="rate">How fast it fires. Each upgrade makes it fire +33% faster.</text>
+		<text id="itemcollect">How far you can collect items from. Each upgrade adds 1/2 tile radius.</text>
+		<text id="oxygen">Adds 10 to your suit's oxygen storage per upgrade.</text>
+	</section>
+	<section id="achievements">
+		<text id="powered">Powering Up</text>
+		<text id="defeat_bat">Instant Meat</text>
+		<text id="bunker">Shelter</text>
+		<text id="diamonds">Shiny</text>
+		<text id="chip">Upgrade Complete</text>
+		<text id="survivors">Good Morning!</text>
+		<text id="professor">Familiar Face</text>
+		<text id="defeat_wyrm">Wyrmslayer</text>
+		<text id="pizza">Mmm, Cheese</text>
+	</section>
+	<section id="achievement.descriptions">
+		<text id="powered">Power a [color=ff2222]Battery[/color] and [color=ff2222]Hydroponics[/color].</text>
+		<text id="defeat_bat">Defeat a [color=ff2222]Bat[/color].</text>
+		<text id="bunker">Build a [color=ff2222]Bunker[/color].</text>
+		<text id="diamonds">Mine 10 [item=diamond]s.</text>
+		<text id="chip">Use an [item=chip].</text>
+		<text id="survivors">Wake all [color=ff2222]Survivors[/color].</text>
+		<text id="professor">Meet the [color=ff2222]Professor[/color].</text>
+		<text id="defeat_wyrm">Defeat a [color=ff2222]Wyrm[/color].</text>
+		<text id="pizza">Have a [item=pizza] party!</text>
+	</section>
+	<section id="customize">
+		<text id="title">Character Customization</text>
+		<text id="skin">Skin Color</text>
+		<text id="eye">Eye Style</text>
+		<text id="eyec">Eye Color</text>
+		<text id="hair">Hair Style</text>
+		<text id="hairc">Hair Color</text>
+		<text id="suit">Suit Color</text>
+		<text id="name">Name</text>
+		<text id="default_name">Hero</text>
+		<text id="custom">Custom</text>
+		<text id="rotate.keyboard">[key=rotate_left] Rotate [key=rotate_right]</text>
+		<text id="rotate.gamepad">[key=look_left no_arrow] Rotate</text>
+
+		<text id="bowl">Bowl</text>
+		<text id="wavy">Wavy</text>
+		<text id="ponytail">Ponytail</text>
+		<text id="undercut">Undercut</text>
+		<text id="bald">Bald</text>
+
+		<text id="human_eye">Human</text>
+		<text id="cyborg_eye">Cyborg</text>
+
+		<text id="black">Black</text>
+		<text id="brown">Brown</text>
+		<text id="dbrown">Dark Brown</text>
+		<text id="lbrown">Light Brown</text>
+		<text id="blue">Blue</text>
+		<text id="dblue">Dark Blue</text>
+		<text id="lblue">Light Blue</text>
+		<text id="green">Green</text>
+		<text id="lgreen">Light Green</text>
+		<text id="red">Red</text>
+		<text id="yellow">Yellow</text>
+		<text id="orange">Orange</text>
+		<text id="pink">Pink</text>
+		<text id="purple">Purple</text>
+		<text id="white">White</text>
+		<text id="gray">Gray</text>
+		<text id="teal">Teal</text>
+		<text id="blond">Blond</text>
+		<text id="dblond">Dark Blond</text>
+	</section>
+	<section id="help">
+		<text id="notify">Need help or a reminder? Press [key=help]!</text>
+		<text id="intro">How can I help you?</text>
+		<text id="wait">Finish your current conversation before asking for help!</text>
+		<text id="queued">Please finish your current conversation!</text>
+		<text id="tools">Tools</text>
+		<text id="utilities">Utilities</text>
+		<text id="survival">Survival</text>
+		<text id="structures">Structures</text>
+		<text id="controls">Controls</text>
+		<text id="indicators">Locators</text>
+		<text id="what_to_do">What should I do?</text>
+		<text id="stuck">Help, I'm stuck!</text>
+		<text id="mine">[item=mine] (Mining)</text>
+		<text id="craft">[item=craft] (Crafting)</text>
+		<text id="build">[item=build] (Building)</text>
+		<text id="shovel">[item=shovel] (Placing Blocks)</text>
+		<text id="laser_gun">[item=laser_gun] (Combat)</text>
+		<text id="cables">[item=cable]s</text>
+		<text id="belts">[item=belt]s and [item=splitter]s</text>
+		<text id="ladders">[item=ladder]s</text>
+		<text id="chips">[item=chip]s</text>
+		<text id="survivors">Survivors</text>
+		<text id="bombardment">Bombardment</text>
+		<text id="movement">Movement</text>
+		<text id="toolbar">Toolbar</text>
+		<text id="quick_add">Quick Add</text>
+		<text id="nevermind">Nevermind</text>
+		
+		<text id="progress">When the progress bar reaches 100%, the item will be dropped out of the structure at the [tile=target_arrow scale=0.25].</text>
+		<text id="fuel">When the progress bar reaches 100%, one fuel will be consumed.</text>
+
+		<text id="talking">I'm trying to tell {name} something important, but they are ignoring me! Tell them to pay attention!</text>
+		<text id="craft1">The [item=craft] allows you to craft basic necessities using items from your inventory - including [item=nutrient_bar]s for food.</text>
+		<text id="craft2">Select the [item=craft] and then hit [key=alternate] to craft items. However, it can only craft one item at a time, so I recommend building a [color=ff2222][text=structure.factory][/color] as soon as you can!</text>
+		<text id="build1">The [item=build] lets you build, dismantle and repair structures.</text>
+		<text id="build2">When selected, you can hit [key=alternate] to select a structure to build, and [key=select] to place the structure.</text>
+		<text id="build3">If the guidelines are red, it means it won't fit in the selected location - try mining out a bigger area, and don’t forget to mine above for taller structures!</text>
+		<text id="build4">You can also rotate the blueprint using [key=rotate_left] and [key=rotate_right].</text>
+		<text id="shovel1">The [item=shovel] can place infinite amounts of blocks that you have previously mined. It can be crafted at the [color=ff2222][text=structure.lab][/color].</text>
+		<text id="shovel2">When selected, you can hit [key=alternate] to select what material to place, and [key=select] to place the block.</text>
+		<text id="shovel3">This is great for replacing holes you mined in your base, and climbing up ramps. You can also rotate ramps using [key=rotate_left] and [key=rotate_right].</text>
+		<text id="laser_gun1">The [item=laser_gun] goes pew and can kill enemies from afar. It can be crafted at the [color=ff2222][text=structure.lab][/color].</text>
+		<text id="laser_gun2">When selected, you can hit [key=select] to fire the gun, and hold [key=alternate] to bring up a shield that protects you from all harm but drains your battery.</text>
+		<text id="laser_gun3">The [item=laser_gun] also has laser targeting - showing you a small red dot where the projectile will hit.</text>
+		<text id="laser_gun4">Be careful with dangerous weapons though! We wouldn’t want you to hit your friends and kill one of the last human survivors!</text>
+		<text id="cables1">[item=cable]s can be placed to connect structures to [color=ff2222][text=structure.generator][/color]s to provide power.</text>
+		<text id="cables2">They can connect to [item=cable]s above and below them - as well as traveling up ramps and through [item=ladder]s to connect structures vertically.</text>
+		<text id="cables3">If you place one in the wrong spot, you can remove [item=cable]s with the [item=mine].</text>
+		<text id="belts1">[item=belt]s transport items along them in the direction they are pointing. This can be used to transfer items to [color=ff2222][text=structure.storehouse][/color]s, and [color=ff2222][text=structure.storehouse][/color]s will automatically dispatch items onto [item=belt]s to send them to structures that request them.</text>
+		<text id="belts2">[item=belt]s can enter structures from any side, but structures only output items in one location. The direction can be rotated when placing [item=belt]s using [key=rotate_left] and [key=rotate_right].</text>
+		<text id="belts3">[item=splitter]s are like [item=belt]s, but they can rotate in any direction to move items towards the structure that requested them - allowing one [color=ff2222][text=structure.storehouse][/color] to dispatch to many different structures.</text>
+		<text id="belts4">[item=belt]s and [item=splitter]s can also be removed with the [item=mine].</text>
+		<text id="ladder1">[item=ladder]s can be placed on the walls and climbed to reach new heights! They also can carry power vertically if connected to [color=ff2222][text=structure.generator][/color]s with [item=cable]s.</text>
+		<text id="ladder2">[item=ladder]s can also be removed with the [item=mine].</text>
+		<text id="controls1.keyboard">In the inventory, you can Shift+[key=select] to transfer the entire stack of an item, and [key=alternate] a stack to pick up half or place one item.</text>
+		<text id="controls1.gamepad">In the inventory, you can [key=rotate_left]+[key=select] to transfer the entire stack of an item, and [key=alternate] a stack to pick up half or place one item.</text>
+		<text id="controls2.keyboard">You can also hold Shift to walk and disable flight (if enabled).</text>
+		<text id="controls2.gamepad">You can also hold [key=rotate_left] to walk and disable flight (if enabled).</text>
+		<text id="survivors1">[color=ff2222]Survivors[/color] can be found in [color=ff2222][text=structure.cryopod][/color]s, and woken if you have a [color=ff2222][text=structure.bunker][/color] to house them (not full).</text>
+		<text id="survivors2">They can be assigned to work at an [color=ff2222][text=structure.lab][/color], [color=ff2222][text=structure.rig][/color] or [color=ff2222][text=structure.kitchen][/color], and will work faster as their skill with that equipment increases.</text>
+		<text id="survivors3">When they get hungry, they will return to their [color=ff2222][text=structure.bunker][/color] to rest and eat. They will automatically collect food from the ground or [color=ff2222][text=structure.storehouse][/color]s if needed - so make sure to keep a stockpile of food and not block their path to the [color=ff2222][text=structure.bunker][/color].</text>
+		<text id="survivors4">You can also talk to survivors to check in with them, see their stats and skills, and give them items and food.</text>
+		<text id="bombardment1">When the bombardment started and it quickly became clear the surface was lost, humanity began building [color=ff2222][text=structure.bunker][/color]s and [color=ff2222][text=structure.cryopod][/color]s deep underground to protect civilians.</text>
+		<text id="bombardment2">The hope was that after the war was won, the civilians could be woken up and live down there until the surface was terraformed and became habitable again.</text>
+		<text id="bombardment3">However, with all signals down, it appears the war was lost. In addition, the damage was greater than expected - with earthquakes and shifting tectonics, [color=ff2222][text=structure.cryopod][/color]s were separated and [color=ff2222][text=structure.bunker][/color]s destroyed.</text>
+		<text id="bombardment4">On the bright side, it appears the enemy bombers have left, and you’re still alive. Perhaps there’s still hope for humanity to reclaim the surface and recover!</text>
+		<text id="generator1">You can also change the fuel to [item=uranium] or [item=exotic_matter], which are rarer but last longer than [item=coal]. The [color=ff2222][text=structure.generator][/color] can also request fuel from [color=ff2222][text=structure.storehouse][/color]s connected by [item=belt]s.</text>
+		<text id="battery1">[color=ff2222][text=structure.battery][/color] units store excess power from connected [color=ff2222][text=structure.generator][/color]s, and can provide power to connected structures when there is a temporary shortage, keeping everything from shutting down.</text>
+		<text id="battery2">This provides a great buffer for situations where the power requirements increase and decrease, like when [color=ff2222]Factories[/color] turn on and off.</text>
+		<text id="battery3">You can also store and retrieve power to the [color=ff2222][text=structure.battery][/color] Unit by interacting with it - one of the easiest ways to recharge your suit.</text>
+		<text id="kitchen1">Having no digestive system myself, I don’t know what the big deal is, but apparently some foods taste better and are more nutritious than others.</text>
+		<text id="kitchen2">The [color=ff2222][text=structure.kitchen][/color] can cook a variety of meals from raw foods as long as it has power and a worker manning it.</text>
+		<text id="rig1">The [color=ff2222][text=structure.rig][/color] excavates endless ores from deep underground as long as it is powered and has a worker.</text>
+		<text id="rig2">Those ores can be moved to [color=ff2222][text=structure.storehouse][/color]s with [item=belt]s, or directly into [color=ff2222]Factories[/color] and [color=ff2222][text=structure.generator][/color]s to automate your base!</text>
+		<text id="storehouse1">In addition to storing materials, it can also automatically dispatch requested items to structures connected via [item=belt]s. It also displays the first row of items on a screen so you can easily identify and organize your [color=ff2222][text=structure.storehouse][/color]s.</text>
+		<text id="bunker1">The [color=ff2222][text=structure.bunker][/color] allows up to four survivors to rest and recharge. You can view and manage all the survivors assigned to each bunker.</text>
+		<text id="bunker2">[color=ff2222][text=structure.bunker][/color]s also produce [tile=gui.oxygen scale=0.5] Oxygen in their interiors - perfect for underwater or moon bases!</text>
+		<text id="bunker3">You can also use the mirror in the back of the [color=ff2222][text=structure.bunker][/color] to change your appearance.</text>
+		<text id="cryopod1">If you seal yourself inside a powered, repaired [color=ff2222][text=structure.cryopod][/color], you will regain [tile=gui.health scale=0.5] Health and [tile=gui.power scale=0.5] Power, and your [tile=gui.hunger scale=0.5] Hunger will not decrease until you leave.</text>
+		<text id="cryopod2">You can also advance the time of day to any hour, and while that might not matter underground, it could be invaluable on the surface.</text>
+		<text id="teleportal1">[color=ff2222][text=structure.teleportal][/color]s allow you to instantly travel between any powered [color=ff2222][text=structure.teleportal][/color]s, and are a great way to return to your base after a long journey.</text>
+		<text id="teleportal2">[color=ff2222][text=structure.teleportal][/color]s can also take you to any vehicle you have built - but be warned this is a one way trip.</text>
+		<text id="teleportal3">You can even rename [color=ff2222][text=structure.teleportal][/color]s to make it easier to identify which one goes to which location!</text>
+
+		<text id="stuck1">I'm sorry to hear that! Would you like me to teleport you back to where you first woke up?</text>
+	</section>
+	<section id="options">
+		<text id="bgm_vol">Music Volume:</text>
+		<text id="sfx_vol">Sound Volume:</text>
+		<text id="mute">Mute</text>
+		<text id="mute_unfocused">Mute when window loses focus?</text>
+		<text id="fullscreen">Fullscreen</text>
+		<text id="language">Language</text>
+		<text id="fov">Field of View:</text>
+		<text id="fxaa">FXAA</text>
+		<text id="dust">Light Dust</text>
+		<text id="quality">Quality:</text>
+		<text id="high">High</text>
+		<text id="medium">Medium</text>
+		<text id="low">Low</text>
+		<text id="shadows">Surface Shadows</text>
+		<text id="brightness">Brightness:</text>
+		<text id="contrast">Contrast:</text>
+		<text id="lines">Outline Thickness:</text>
+		<text id="bloom">Bloom:</text>
+		<text id="camera_smooth">Camera Smoothing:</text>
+		<text id="mouse_sensitivity">Mouse Sensitivity:</text>
+		<text id="look_sensitivity">Look Sensitivity:</text>
+		<text id="invert_y">Invert Y-Axis.</text>
+		<text id="show_tools">Show Tools in Hand</text>
+		<text id="health_bar">Show enemy health bar when injured.</text>
+		<text id="controls">Controls</text>
+		<text id="graphics">Graphics Settings</text>
+		<text id="auto_eat">Auto eat food when hungry.</text>
+		<text id="mine_reticle">Show reticle when mining.</text>
+		<text id="item_moving">Allow pickup of moving items (like on belts).</text>
+		<text id="show_arrow">Show output arrow on fully built structures.</text>
+		<text id="show_hints">Show hint overlay windows.</text>
+	</section>
+	<section id="controls">
+		<text id="left">Left</text>
+		<text id="right">Right</text>
+		<text id="up">Up</text>
+		<text id="down">Down</text>
+		<text id="select">Select</text>
+		<text id="cancel">Cancel</text>
+		<text id="alternate">Alternate</text>
+		<text id="pause">Pause</text>
+		<text id="inventory">Inventory</text>
+		<text id="help">Help</text>
+		<text id="jump">Jump</text>
+		<text id="mute">Mute</text>
+		<text id="history">History</text>
+		<text id="rotate_left">Rotate Left</text>
+		<text id="rotate_right">Rotate Right</text>
+		<text id="next_tool">Next Tool</text>
+		<text id="prev_tool">Prev Tool</text>
+		<text id="tool1">Tool 1</text>
+		<text id="tool2">Tool 2</text>
+		<text id="tool3">Tool 3</text>
+		<text id="tool4">Tool 4</text>
+		<text id="tool5">Tool 5</text>
+		<text id="tool6">Tool 6</text>
+		<text id="tool7">Tool 7</text>
+		<text id="tool8">Tool 8</text>
+		<text id="tool9">Tool 9</text>
+		<text id="tool10">Tool 10</text>
+		<text id="look_left">Look Left</text>
+		<text id="look_right">Look Right</text>
+		<text id="look_up">Look Up</text>
+		<text id="look_down">Look Down</text>
+		<text id="device">Device:\n[size=16](select to change)</text>
+	</section>
+	<section id="entry">
+		<text id="title">Select Campaign</text>
+		<text id="default">Default</text>
+		<text id="default_desc">The original campaign.</text>
+	</section>
+	<section id="mods">
+		<text id="bad_mod">The .zip file does not have a mod.xml file or is not a valid mod.</text>
+		<text id="import_mod">The mod {modname} was successfully imported!</text>
+		<text id="replace_mod">You have already imported a mod with the same name. Would you like to replace it? Note: you may have to reload the game if the mod image files were edited after replacing.</text>
+	</section>
+	<section id="multiplayer">
+		<text id="join_local">Press [key=select type=keyboard] or [key=select type=gamepad] to join game!</text>
+		<text id="select_player">Select Character</text>
+		<text id="create_player">Create Character</text>
+		<text id="start_game">Begin Game</text>
+		<text id="cancel_game">Would you like to cancel this multiplayer game?</text>
+		<text id="not_ready">All players must select or create a character to begin!</text>
+	</section>
+	<section id="modio">
+		<text id="login">We use mod.io to install and manage mods. Enter your e-mail to begin!</text>
+		<text id="email">E-Mail:</text>
+		<text id="email_error">Not a valid e-mail address!</text>
+		<text id="enter_code">Enter the 5 digit code sent to your e-mail:</text>
+		<text id="bad_email_error">Unable to find your e-maill address on mod.io!</text>
+		<text id="code_error">The code you entered was not correct!</text>
+		<text id="logged_in">You have successfully logged in to mod.io! Your subscribed mods will automatically download!</text>
+		<text id="version">Version</text>
+		<text id="enable">Enable Mod</text>
+		<text id="disable">Disable Mod</text>
+		<text id="upload">Upload to Mod.io</text>
+		<text id="upload_fail">Upload Failed</text>
+		<text id="upload_success">Upload Successful! Don't forget to change the visibility if you want to make it public!</text>
+		<text id="button_login">Login to Mod.io</text>
+		<text id="button_browse">Browse Mods</text>
+		<text id="button_logout">Logout of Mod.io</text>
+		<text id="not_logged_in">Not logged into Mod.io</text>
+		<text id="preview">You must add a preview image as preview.png or preview.jpg in the mod folder before uploading!</text>
+		<text id="preview_large">The preview image must be less than 1 MB!</text>
+		<text id="visit_website">Visit Website</text>
+		<text id="disable_warning">Are you sure you wish to disable {mod}?</text>
+		<text id="bad_mod">The .zip file does not have a mod.xml file or is not a valid mod.</text>
+		<text id="import_mod">The mod {modname} was successfully imported!</text>
+		<text id="replace_mod">You have already imported a mod with the same name. Would you like to replace it? Note: you may have to reload the game if the mod image files were edited after replacing.</text>
+		<text id="confirm_logout">Are you sure you wish to logout?</text>
+		<text id="logged_in_as">Logged in as: {username}</text>
+		<text id="create">Create Account</text>
+	</section>
+	<section id="steam">
+		<text id="upload">Upload to Steam</text>
+		<text id="upload_title">Uploading {name} to Steam Workshop:</text>
+		<text id="notes">Update Notes:</text>
+		<text id="id">Workshop Id:</text>
+		<text id="agreement">Agree to the workshop terms of service.</text>
+		<text id="new_id">Create New</text>
+		<text id="view_item">View Item</text>
+
+		<text id="Items">Items</text>
+		<text id="Areas">Areas</text>
+		<text id="Enemies">Enemies</text>
+		<text id="Structures">Structures</text>
+		<text id="Vehicles">Vehicles</text>
+		<text id="Campaigns">Campaigns</text>
+		<text id="Art">Art</text>
+		<text id="Music">Music</text>
+		<text id="Translation">Translation</text>
+		<text id="Space">Space</text>
+
+		<text id="Items_desc">Adds new items to craft and use.</text>
+		<text id="Areas_desc">Adds new areas to explore.</text>
+		<text id="Enemies_desc">Adds new enemies to fight.</text>
+		<text id="Structures_desc">Adds new structures to build.</text>
+		<text id="Vehicles_desc">Adds new vehicles to ride.</text>
+		<text id="Campaigns_desc">Adds new questlines or beginnings.</text>
+		<text id="Art_desc">Changes the visual appearance of the game.</text>
+		<text id="Music_desc">Changes the music of the game.</text>
+		<text id="Translation_desc">Adds new languages to the game.</text>
+		<text id="Space_desc">Adds new planets or space-related elements.</text>
+	</section>
+</lang>

@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<generateMipmaps id="icons.png" />
+	<include id="icons.xml" includeRoot="true" />
+	<include id="actions.xml" />
+	<include id="quests.xml" />
+
+	<script>
+	function getItemDesc(item){
+		getVars().set("item", item); var desc = eval(item.xml.get("desc")); if(desc != null) return desc;
+		if(item.action != null){desc = eval(item.action.xml.get("desc")); if(desc != null) return desc;}
+		return "item.descriptions>"+item.id;
+	}
+	</script>
+	<defaultItemInfo height="y">
+		<text text="this.getName()" width="width" />
+		<text text="getText('item.types>'+this.info.xml.get('type'))" size="22" color="ffff88" width="width" y="28" />
+		<script>var d = getItemDesc(this.info); desc = getText(d); y = 54;</script>
+		<section if="desc != null"><formattedText text="desc" size="22" color="cccccc" width="width" y="y" /><script>y += Math.ceil(lastTextHeight)+4;</script></section>
+		<script>ar = []; if(this.info.params.upgrades != null) for(i in this.info.params.upgrades){var d = getData("upgrade", i); if(d != null) ar.unshift(d);}</script>
+		<repeat count="ar.length">
+			<script>item = ar.pop();</script><text text="item.getName()" size="16" width="width" y="y" align="left" />
+			<points value="new Static(item.getLevel(this.storage))" max="item.max_level" spacing="13" off="point.off" on="point.on" x="width-13*item.max_level" y="y" />
+			<script>y += 20;</script>
+		</repeat>
+	</defaultItemInfo>
+	<tile id="bolt" sheet="icons.png" x="1" />
+	<tile id="coal" sheet="icons.png" x="34" />
+	<item id="coal" tile="coal" type="material" scale="0.6" cost="10" />
+	<tile id="iron" sheet="icons.png" x="39" />
+	<item id="iron" tile="iron" type="material" scale="0.75" cost="10" />
+	<tile id="gold" sheet="icons.png" x="38" />
+	<item id="gold" tile="gold" type="material" scale="0.5" cost="50" />
+	<tile id="diamond" sheet="icons.png" x="35" />
+	<item id="diamond" tile="diamond" type="material" scale="0.6" cost="200" />
+	<tile id="titanium" sheet="icons.png" x="40" />
+	<item id="titanium" tile="titanium" type="material" scale="0.75" cost="100" />
+	<tile id="uranium" sheet="icons.png" x="41" />
+	<item id="uranium" tile="uranium" type="material" scale="0.6" cost="400" />
+	<tile id="exotic_matter" sheet="icons.png" x="36" />
+	<item id="exotic_matter" tile="exotic_matter" type="material" scale="0.6" cost="3000" />
+	<tile id="cable" sheet="icons.png" x="8" />
+	<item id="cable" tile="cable" action="place_ground" place="CABLE" type="utility" scale="0.6" cost="8" />
+	<tile id="belt" sheet="icons.png" x="11" />
+	<item id="belt" tile="belt" action="place_ground" place="BELT" type="utility" cost="10" />
+	<tile id="splitter" sheet="icons.png" x="10" />
+	<item id="splitter" tile="splitter" action="place_ground" place="BELT|SPLITTER" type="utility" cost="15" />
+	<tile id="drain" sheet="icons.png" x="72" />
+	<item id="drain" tile="drain" action="place_ground" place="DRAIN" type="utility" cost="50" />
+	<tile id="ladder" sheet="icons.png" x="32" />
+	<item id="ladder" tile="ladder" action="place_ladder" type="utility" cost="15" />
+	<tile id="no_blueprint" sheet="icons.png" x="7"><tile sheet="icons.png" x="46" /></tile>
+	<tile id="blueprint" sheet="icons.png" x="7" />
+	<item id="blueprint" tile="blueprint" action="blueprint" type="utility">
+		<infoInit>
+		this.params.getName = function(item){
+			var id = item.storage.get('id').getString(); var level = item.storage.get('lvl').getInt(); if(level == null) level = 1; if(id == null) id = 'suit'; 
+			var map = new StringMap(); var m = getText('items>blueprint'+(level > 0?'_lvl{level:'+level+'}':'_item'));
+			if(level > 0){
+				var i = getItem(id); if(i != null) map.set("{item}", i.getName());
+			} else {
+				var i = getItem(item.storage.get('item').getString());
+				if(i == null){var t = getText(getBlueprintName(id)); if(t != null) map.set("{item}", t);}
+				else map.set("{item}", i.getName());
+			} return new MutableTemplate(m, map);
+		}
+		</infoInit>
+		<renderer>
+			<tile id="item.info.tile" scale="0.5" />
+			<script>lvl = item.storage.get('lvl').getInt(); if(lvl == null) lvl = 1; if(lvl == 0) __item = getItem(item.storage.get('item').getString()); else __item = null;
+			var r = getData("recipe", item.storage.get('recipe').getString(), false); if(r != null &amp;&amp; r.creates.length == 1) __item = getItem(r.creates[0].id);
+			</script>
+			<section if="lvl > 0">
+				<item item="var id = item.storage.get('id').getString(); if(id == null) id = 'suit'; return makeItem(id);" scale="0.5" x="32" y="32" alpha="0.8" />
+				<script>lvl = Std.string(lvl); var f = getFont('default').get(); __w = f.stringWidth(lvl)*20/f.size+4;</script>
+				<rect x="64-__w" y="0" width="__w" height="20" color="66000000" />
+				<text text="lvl" size="20" width="62" align="right" />
+			</section>
+			<item item="__item.create(1)" scale="0.5" x="32" y="32" alpha="0.8" if="__item != null" />
+		</renderer>
+		<info height="y">
+			<text text="this.getName()" width="width" />
+			<text text="getText('item.types>'+this.info.xml.get('type'))" size="22" color="ffff88" width="width" y="28" />
+			<script>var id = this.storage.get('id').getString(); var level = this.storage.get('lvl').getInt(); if(level == null) level = 1;
+			if(id == null) id = 'suit'; if(level > 0){
+				var item = '[item='+id+']'; desc = getText('item.descriptions>blueprint_unlock{item:'+item+'}{level:'+level+'}{recipe:}');
+			} else {
+				var recipe = this.storage.get('recipe').getString(); var i = getItem(this.storage.get('item').getString());
+				desc = getText('item.descriptions>blueprint_unlock{item:'+(i == null?getStructureItemName(id):'[item='+i.id+']')+'}{level:'+level+'}{recipe:'+(recipe == null?'':recipe)+'}');
+			} y = 54;</script>
+			<section if="desc != null"><formattedText text="desc" size="22" color="cccccc" width="width" y="y" /><script>y += Math.ceil(lastTextHeight)+4;</script></section>
+		</info>
+	</item>
+	<tile id="steel" sheet="icons.png" x="6" />
+	<item id="steel" tile="steel" type="processed" scale="0.8" cost="12" />
+	<tile id="wire" sheet="icons.png" x="37" />
+	<item id="wire" tile="wire" type="processed" scale="0.5" cost="15" />
+	<tile id="tomato" sheet="icons.png" x="28" />
+	<item id="tomato" tile="tomato" action="eat" hunger="20" type="food" scale="0.6" cost="5" />
+	<tile id="nutrient_bar" sheet="icons.png" x="23" />
+	<item id="nutrient_bar" tile="nutrient_bar" action="eat" hunger="20" type="food" scale="0.6" cost="10" />
+	<tile id="wheat" sheet="icons.png" x="30" />
+	<item id="wheat" tile="wheat" action="eat" hunger="5" type="food" scale="0.6" cost="5" />
+	<tile id="sugar" sheet="icons.png" x="27" />
+	<item id="sugar" tile="sugar" action="eat" hunger="10" type="food" scale="0.6" cost="10" />
+	<tile id="meat" sheet="icons.png" x="21" />
+	<item id="meat" tile="meat" action="eat" hunger="10" health="5" type="food" scale="0.6" cost="20" />
+	<tile id="milk" sheet="icons.png" x="22" />
+	<item id="milk" tile="milk" action="eat" hunger="10" type="food" scale="0.6" cost="15" />
+	<tile id="soup" sheet="icons.png" x="29" />
+	<item id="soup" tile="soup" action="eat" hunger="40" type="food" scale="0.6" cost="10" />
+	<tile id="steak" sheet="icons.png" x="17" />
+	<item id="steak" tile="steak" action="eat" hunger="20" health="10" type="food" scale="0.6" cost="30" />
+	<tile id="bread" sheet="icons.png" x="13" />
+	<item id="bread" tile="bread" action="eat" hunger="50" type="food" scale="0.6" cost="25" />
+	<tile id="pasta" sheet="icons.png" x="25" />
+	<item id="pasta" tile="pasta" action="eat" hunger="80" health="10" type="food" scale="0.6" cost="30" />
+	<tile id="pancakes" sheet="icons.png" x="24" />
+	<item id="pancakes" tile="pancakes" action="eat" hunger="150" type="food" scale="0.6" cost="60" />
+	<tile id="cheese" sheet="icons.png" x="15" />
+	<item id="cheese" tile="cheese" action="eat" hunger="50" health="5" type="food" scale="0.6" cost="35" />
+	<tile id="hamburger" sheet="icons.png" x="19" />
+	<item id="hamburger" tile="hamburger" action="eat" hunger="150" health="10" type="food" scale="0.6" cost="80" />
+	<tile id="cheeseburger" sheet="icons.png" x="16" />
+	<item id="cheeseburger" tile="cheeseburger" action="eat" hunger="200" health="20" type="food" scale="0.6" cost="120" />
+	<tile id="pizza" sheet="icons.png" x="26" />
+	<item id="pizza" tile="pizza" action="eat" hunger="60" health="10" type="food" scale="0.6" cost="25" />
+	<tile id="ice_cream" sheet="icons.png" x="20" />
+	<item id="ice_cream" tile="ice_cream" action="eat" hunger="70" type="food" scale="0.6" cost="50" />
+	<tile id="cake" sheet="icons.png" x="14" />
+	<item id="cake" tile="cake" action="eat" hunger="50" type="food" scale="0.6" cost="25" />
+	<tile id="dragonblood" sheet="icons.png" x="18" />
+	<item id="dragonblood" tile="dragonblood" action="eat" hunger="100" health="50" type="food" cost="100" />
+	<tile id="mine" sheet="icons.png" x="12" />
+	<item id="mine" model="drill" tile="mine" action="mine" mine="1" power="5" stackable="false" type="tool" uncraft_last="false" />
+	<tile id="build" sheet="icons.png" x="31" />
+	<item id="build" model="build" tile="build" action="build" stackable="false" type="tool" uncraft_last="false" />
+	<item id="paint" extends="build" action="paint" power="4" color="ff33aa" />
+	<tile id="ore_detector" sheet="icons.png" x="76" />
+	<item id="ore_detector" tile="ore_detector" action="ore_detector" stackable="false" type="tool" power="20" />
+	<tile id="craft" sheet="icons.png" x="5" />
+	<lerp id="working"><track type="scale"><key frame="0" sx="1" sy="1" /><key frame="20" sx="1.1" sy="0.9" /><key frame="40" sx="1" sy="1" /></track></lerp>
+	<item id="craft" tile="craft" action="craft" stackable="false" type="tool" craft_sfx="assembler" uncraft_last="false">
+		<recipe type="basic" />
+		<renderer>
+			<script>if(item.params.working == null) item.params.working = new Mutable();</script>
+			<choose>
+				<tile id="craft" scale="0.5" if="!item.params.working.get()"/>
+				<container lerp="working" center_x="32" center_y="32" x="32" y="32"><tile id="craft" scale="0.5" /></container>
+			</choose>
+			<onInit><script>item.params.working.addEventListener("updated", updateInfo);</script></onInit>
+			<onDestroy><script>item.params.working.removeEventListener("updated", updateInfo);</script></onDestroy>
+		</renderer>
+	</item>
+	<tile id="shovel" sheet="icons.png" x="42" />
+	<item id="shovel" model="shovel" tile="shovel" action="shovel" power="5" stackable="false" type="tool" />
+	<tile id="bucket" sheet="icons.png" x="67" />
+	<tile id="bucket_full" sheet="icons.png" x="68" />
+	<item id="bucket" tile="bucket" action="bucket" stackable="false" type="tool" cost="20">
+		<renderer>
+			<tile id="item.storage.get('level').getInt() > 0?'bucket_full':'bucket'" scale="0.5" />
+			<onInit><script>item.storage.get('level').addEventListener("updated", updateInfo);</script></onInit>
+			<onDestroy><script>item.storage.get('level').removeEventListener("updated", updateInfo);</script></onDestroy>
+		</renderer>
+	</item>
+	<tile id="chip" sheet="icons.png" x="9" />
+	<item id="chip" tile="chip" action="upgrade" type="utility" scale="0.5" cost="350" />
+	<tile id="laser_gun" sheet="icons.png" x="33" />
+	<item id="laser_gun" model="laser_gun" tile="laser_gun" action="shoot" attack="8" range="8" rate="3" power="5" shield="20" stackable="false" type="tool" />
+	<tile id="ai_core" sheet="icons.png" x="64" />
+	<item id="ai_core" tile="ai_core" type="material" scale="0.5" cost="400" />
+	<tile id="quest_indicator" sheet="icons.png" x="65" />
+	<tile id="boring" sheet="icons.png" x="69" />
+	<tile id="sub" sheet="icons.png" x="70" />
+	<tile id="seaweed" sheet="icons.png" x="73" />
+	
+	<tile id="torpedo" sheet="icons.png" x="66" />
+	<tile id="chromium" sheet="icons.png" x="71" />
+
+	<tile id="bag" sheet="icons.png" x="43" />
+	<tile id="bag.color" sheet="icons.png" x="44" />
+	<tile id="bag.fly" sheet="icons.png" x="74" />
+	<tile id="bag.fly.color" sheet="icons.png" x="75" />
+	<item id="suit" tile="bag" type="utility">
+		<renderer>
+			<script>
+			bag_id = "bag"; bag_hsv = null;
+			var o = getPlayerForScreen(container); if(o == null) return; if(o.jumpStrength &lt; 1) bag_id += ".fly";
+			var d = getData('customOption', o.storage.get('suit').getString()); if(d != null) bag_hsv = d.hsv;
+			</script>
+			<tile id="bag_id" scale="0.5" />
+			<tile id="bag_id+'.color'" hsv="bag_hsv" scale="0.5" if="bag_hsv != null" />
+		</renderer>
+	</item>
+	<tile id="home" sheet="icons.png" x="45" />
+	<tile id="no" sheet="icons.png" x="46" />
+	<tile id="power" sheet="icons.png" x="47" />
+	<tile id="worker" sheet="icons.png" x="48" />
+	<tile id="target_arrow" sheet="icons.png" x="50" />
+	<tile id="PAI.frame" sheet="icons.png" x="51" />
+	<tile id="PAI" sheet="icons.png" x="52" />
+	<animation id="PAI.happy" count="2" />
+	<animation id="PAI.neutral"><frame x="2" /><frame x="8" /></animation>
+	<animation id="PAI.sad"><frame x="3" /><frame x="11" /></animation>
+	<animation id="PAI.smile"><frame x="7" /><frame x="8" /></animation>
+	<animation id="PAI.angry"><frame x="9" /><frame x="10" /></animation>
+	<animation id="PAI.sleep"><frame x="4" length="10" /><frame x="5" count="2" /><frame x="5" count="2" reverse="true" /><frame x="4" length="10" /></animation>
+
+	<tile id="health_bar" sheet="icons.png" x="49" />
+	<model id="output" primitive="quad" texture="icons.png"><texture eval="getTilesheet('{core}/items/icons.png').getTileRect(50)" /></model>
+
+	<script>function craftItem(r){
+		var i = makeItem(r.id, r.max > r.count?randInt(r.count, r.max+1):r.count);
+		if(r.storage != null) i.storage.copy(r.storage); return i;
+	} function recipeFuncs(this){
+		this.hasRequirements = function(inventory){
+			for(r in this.requirements){
+				if(inventory.getCountById(r.id) &lt; r.count) return false;
+			} return true;
+		}
+		this.useRequirements = function(inventory){
+			var i = 0; for(r in this.requirements) inventory.getItem(i++, 0).count -= r.count;
+		}
+		this.useCreates = function(inventory){
+			var i = 0; for(r in this.creates) inventory.getItem(i++, 0).count -= r.count;
+		}
+		this.getRequirement = function(i){
+			var r = this.requirements[i]; if(r == null) return null; else return makeItem(r.id, r.count);
+		}
+		this.getCreateInfo = function(i){
+			var r = this.creates[i]; if(r == null) return null; else {
+				var ret = makeItem(r.id, r.count); if(r.max > r.count) ret.storage.get("count").setString(r.count+"-"+r.max);
+				if(r.storage != null) ret.storage.copy(r.storage); return ret;
+			}
+		}
+		this.getRequirements = function(?count){
+			if(count == null) count = 1; var ar = []; for(r in this.requirements) ar.push(makeItem(r.id, r.count*count)); return ar;
+		}
+		this.refundRequirements = function(o){
+			for(r in this.requirements){var i = makeItem(r.id, r.count); if(!o.collectItem(i)){playSoundAt(o.area, o, "throw"); o.dropItem(i, 0.25);}}
+		}
+	}
+	</script>
+	<data type="recipe">
+		this.type = this.xml.get("type");
+		this.cost = parseInt(this.xml.get("cost")); this.timePerCost = (this.xml.exists("time")?parseFloat(this.xml.get("time")):this.cost)*60/this.cost;
+		this.requirements = []; for(e in this.xml.elementsNamed("requires")) this.requirements.push({id:e.get("id"), count:parseInt(e.get("count"))});
+		this.creates = []; for(e in this.xml.elementsNamed("creates")) this.creates.push({id:e.get("id"), count:parseInt(e.get("count")), max:parseInt(e.get("max"))});
+		recipeFuncs(this);
+		var o = null; if(this.xml.exists("structure")) o = getStructure(this.xml.get("structure"));
+		else if(this.xml.exists("object")) o = getObject(this.xml.get("object"));
+		else if(this.xml.exists("character")) o = getCharacter(this.xml.get("character"));
+		if(o != null){this.object = o; o.params.recipe = this;}
+	</data>
+	<recipe id="craft_steel" cost="5" time="2" type="basic"><requires id="iron" count="1" /><creates id="steel" count="1" /></recipe>
+	<recipe id="craft_wire" cost="10" time="4" type="basic"><requires id="gold" count="1" /><creates id="wire" count="3" /></recipe>
+	<recipe id="craft_cable" cost="10" time="4" type="basic"><requires id="wire" count="1" /><creates id="cable" count="3" /></recipe>
+	<recipe id="craft_nutrient_bar" cost="5" time="2" type="basic"><requires id="coal" count="1" /><creates id="nutrient_bar" count="1" /></recipe>
+	<recipe id="craft_ladder" cost="10" time="4" type="basic"><requires id="steel" count="1" /><requires id="wire" count="1" /><creates id="ladder" count="2" /></recipe>
+	<recipe id="craft_belt" cost="10" time="4" type="basic"><requires id="steel" count="1" /><requires id="wire" count="1" /><creates id="belt" count="3" /></recipe>
+	<recipe id="craft_splitter" cost="10" time="4" type="basic"><requires id="belt" count="1" /><requires id="cable" count="1" /><creates id="splitter" count="1" /></recipe>
+	<recipe id="craft_mine" cost="20" type="tool"><requires id="steel" count="3" /><requires id="cable" count="9" /><creates id="mine" count="1" /></recipe>
+	<recipe id="craft_build" cost="20" type="tool"><requires id="steel" count="3" /><requires id="cable" count="9" /><creates id="build" count="1" /></recipe>
+	<recipe id="craft_craft" cost="20" type="tool"><requires id="steel" count="3" /><requires id="cable" count="9" /><creates id="craft" count="1" /></recipe>
+	<recipe id="craft_shovel" cost="20" type="tool"><requires id="steel" count="3" /><requires id="cable" count="9" /><creates id="shovel" count="1" /></recipe>
+	<recipe id="craft_laser_gun" cost="20" type="tool"><requires id="steel" count="3" /><requires id="cable" count="9" /><creates id="laser_gun" count="1" /></recipe>
+	<recipe id="craft_paint" cost="20" type="tool"><requires id="steel" count="3" /><requires id="cable" count="9" /><creates id="paint" count="1" /></recipe>
+	<recipe id="craft_ore_detector" cost="20" type="tool"><requires id="chip" count="1" /><requires id="steel" count="3" /><requires id="cable" count="9" /><creates id="ore_detector" count="1" /></recipe>
+	<recipe id="craft_chip" cost="400" time="100" type="lab"><requires id="diamond" count="1" /><requires id="steel" count="5" /><requires id="cable" count="15" /><creates id="chip" count="1" /></recipe>
+	<recipe id="craft_bucket" cost="10" time="3" type="basic"><requires id="steel" count="2" /><creates id="bucket" count="1" /></recipe>
+
+	<recipe id="grow_tomatoes" model="tomatoes" cost="100" type="hydroponics"><creates id="tomato" count="2" max="5" /></recipe>
+	<recipe id="grow_wheat" model="wheat" cost="100"><creates id="wheat" count="2" max="8" /></recipe>
+	<recipe id="grow_sugar" model="sugar" cost="100"><creates id="sugar" count="1" max="3" /></recipe>
+	<recipe id="grow_meat" model="meat" cost="100"><creates id="meat" count="1" /></recipe>
+	<recipe id="grow_milk" model="milk" cost="100"><creates id="milk" count="1" max="3" /></recipe>
+	
+	<recipe id="mine_coal" cost="5" time="20" type="rig"><creates id="coal" count="1" /></recipe>
+	<recipe id="mine_iron" cost="5" time="20" type="rig"><creates id="iron" count="1" /></recipe>
+	<recipe id="mine_gold" cost="30" time="100" type="rig"><creates id="gold" count="1" /></recipe>
+	<recipe id="mine_diamond" cost="100" time="300" type="rig"><creates id="diamond" count="1" /></recipe>
+	<recipe id="mine_titanium" cost="100" time="300"><creates id="titanium" count="1" /></recipe>
+	<recipe id="mine_uranium" cost="300" time="1000"><creates id="uranium" count="1" /></recipe>
+	
+	<recipe id="build_chest" cost="10" time="3"><requires id="steel" count="1" /></recipe>
+	<recipe id="build_storehouse" cost="15" time="4"><requires id="steel" count="5" /><requires id="wire" count="1" /></recipe>
+	<recipe id="build_generator" cost="50" time="6"><requires id="steel" count="5" /><requires id="wire" count="5" /></recipe>
+	<recipe id="build_factory" cost="15" time="4"><requires id="steel" count="3" /><requires id="wire" count="2" /></recipe>
+	<recipe id="build_hydroponics" cost="20" time="6"><requires id="steel" count="5" /><requires id="wire" count="1" /></recipe>
+	<recipe id="build_battery" time="3" cost="10"><requires id="steel" count="1" /><requires id="wire" count="1" /></recipe>
+	<recipe id="build_bunker" cost="100" time="10"><requires id="steel" count="30" /><requires id="wire" count="6" /></recipe>
+	<recipe id="build_lab" cost="50" time="6"><requires id="steel" count="10" /><requires id="wire" count="4" /></recipe>
+	<recipe id="build_kitchen" cost="20" time="6"><requires id="steel" count="5" /><requires id="wire" count="2" /></recipe>
+	<recipe id="build_teleportal" cost="50" time="6"><requires id="chip" count="1" /><requires id="titanium" count="5" /><requires id="uranium" count="1" /></recipe>
+	<recipe id="build_cryopod" cost="10" time="3"><requires id="steel" count="3" /><requires id="wire" count="1" /><requires id="titanium" count="1" /></recipe>
+	<recipe id="repair_cryopod" cost="10" time="3"><requires id="titanium" count="1" /></recipe>
+	<recipe id="build_blueprint_printer" cost="50" time="6"><requires id="ai_core" count="1" /><requires id="titanium" count="15" /><requires id="chip" count="3" /></recipe>
+
+	<recipe id="fuel_coal" cost="100" type="fuel"><requires id="coal" count="1" /></recipe>
+	<recipe id="fuel_uranium" cost="6000" type="fuel"><requires id="uranium" count="1" /></recipe>
+	<recipe id="fuel_exotic_matter" cost="1" time="0" type="fuel"><requires id="exotic_matter" count="1" /></recipe>
+
+	<recipe id="cook_soup" cost="10" type="kitchen"><requires id="tomato" count="1" /><creates id="soup" count="1" /></recipe>
+	<recipe id="cook_steak" cost="5" type="kitchen"><requires id="meat" count="1" /><creates id="steak" count="1" /></recipe>
+	<recipe id="cook_bread" cost="10" type="kitchen"><requires id="wheat" count="2" /><creates id="bread" count="1" /></recipe>
+	<recipe id="cook_pasta" cost="5" type="kitchen"><requires id="wheat" count="2" /><requires id="tomato" count="2" /><creates id="pasta" count="1" /></recipe>
+	<recipe id="cook_pancakes" cost="5" type="kitchen"><requires id="wheat" count="2" /><requires id="milk" count="2" /><creates id="pancakes" count="1" /></recipe>
+	<recipe id="cook_cheese" cost="10" type="kitchen"><requires id="milk" count="2" /><creates id="cheese" count="1" /></recipe>
+	<recipe id="cook_hamburger" cost="5" type="kitchen"><requires id="meat" count="1" /><requires id="tomato" count="1" /><requires id="bread" count="2" /><creates id="hamburger" count="1" /></recipe>
+	<recipe id="cook_cheeseburger" cost="5" type="kitchen"><requires id="hamburger" count="1" /><requires id="cheese" count="1" /><creates id="cheeseburger" count="1" /></recipe>
+	<recipe id="cook_pizza" cost="10" type="kitchen"><requires id="wheat" count="4" /><requires id="tomato" count="2" /><requires id="cheese" count="2" /><creates id="pizza" count="6" /></recipe>
+
+	<recipe id="cook_ice_cream" cost="10" type="kitchen"><requires id="milk" count="1" /><requires id="sugar" count="1" /><creates id="ice_cream" count="1" /></recipe>
+	<recipe id="cook_cake" cost="5" type="kitchen"><requires id="wheat" count="2" /><requires id="milk" count="2" /><requires id="sugar" count="2" /><creates id="cake" count="4" /></recipe>
+
+	<script>
+	function unlockRecipes(object, type, storage, ids, ?item){
+		var d = storage.get("r."+type), ar = d.getArray(); if(ar == null){ar = []; d.setArray(DATA_STRING, ar);}
+		var ct = 0; for(id in ids) if(ar.indexOf(id) == -1){ar.push(id); ct++;}
+		if(ct > 0 &amp;&amp; object != null){
+			object.state.storage.get("r."+type).fireUpdate(ar); object.dispatchEvent(new ObjectEvent("notification", getText(item == null?"structure.recipe{type:"+type+"}":"structure.recipe_item{item:"+item+"}")));
+			object.state.dispatchEvent(new Event("update_indicators")); return true;
+		} else return false;
+	}
+	function hasRecipes(type, storage, ids){
+		var ar = storage.get("r."+type).getArray(); if(ar == null) return false;
+		for(id in ids) if(ar.indexOf(id) == -1) return false; return true;
+	}
+	function getRecipesByTypes(types, storage){
+		var ret = []; for(type in types){
+			for(r in getDataByType("recipe")) if(r.type == type) ret.push(r);
+			if(storage != null){var ar = storage.get("r."+type).getArray(); if(ar != null) for(id in ar){var r = getData("recipe", id); if(r != null) ret.push(r);}}
+		} return ret;
+	}
+	function defaultMineGround(area, ground, x, y, z){
+		if((ground&amp;CABLE) != 0) spawnItem("cable", area, x, y, z);
+		if((ground&amp;SPLITTER) != 0) spawnItem("splitter", area, x, y, z);
+		else if((ground&amp;BELT) != 0) spawnItem("belt", area, x, y, z);
+		if((ground&amp;DRAIN) != 0) spawnItem("drain", area, x, y, z);
+		if((ground&amp;LADDER_L) != 0) spawnItem("ladder", area, x-1, y, z);
+		if((ground&amp;LADDER_R) != 0) spawnItem("ladder", area, x+1, y, z);
+		if((ground&amp;LADDER_U) != 0) spawnItem("ladder", area, x, y+1, z);
+		if((ground&amp;LADDER_D) != 0) spawnItem("ladder", area, x, y-1, z);
+	}
+	</script>
+</data>

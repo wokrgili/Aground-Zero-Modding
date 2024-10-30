@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<script>
+	function isNPC(i){return i.info.self == NPC &amp;&amp; i.info.xml.get('npc') == 'true';}
+	function hasBuiltGenerator(area){
+		for(o in area.objects) if(o.getZ() &lt; 20 &amp;&amp; o.info.id == 'generator') return true; return false;
+	}
+	</script>
+	<procedure id="highlight_item">
+		<script>slot = null; var item = getItem(item_id); for(i in 0...player.inventory.getWidth()) if(player.inventory.getItem(i, 0).info == item) slot = gui.getTool(i);</script>
+		<lerp object="slot" seconds="0.5"><from colorAdd="000000" y="0" /><to colorAdd="333333" y="-5" /></lerp>
+	</procedure>
+	<procedure id="unhighlight_item">
+		<script if="slot != null">slot.clearLerp();</script><applyLerp object="slot" colorAdd="000000" y="0" />
+	</procedure>
+	<quest id="item_quest" width="400" height="this.info.requirements.length*32">
+		<infoInit>this.params.text = this.xml.get("text");</infoInit>
+		<set id="i" value="0" /><repeat count="this.info.requirements.length">
+			<script>req = this.info.requirements[i]; item = getItem(req.id);</script>
+			<check on="checkbox.on" off="checkbox.off" mutable="this.requirementCheck[i]" scale="0.5" x="8" y="i*32" />
+			<text text="concat(intToString(mutables[i]),'/'+req.count)" x="32" y="i*32+2" width="76" align="center" />
+			<tile id="item.tile" scale="0.25" x="112" y="i*32-4" />
+			<formattedText text="this.info.params.text == null?item.getName():getText(this.info.params.text+'{item:'+item.name+'}')" color="ff2222" x="148" y="i*32+2" width="1000" align="left" /><script>i++</script>
+		</repeat>
+		<initQuest>mutables = []; for(r in this.info.requirements) mutables.push(object.inventory.getMutableCountById(r.id));
+		function update_quest(e){
+			var len = this.info.requirements.length; for(i in 0...len) this.requirementCheck[i].set(mutables[i].get() >= this.info.requirements[i].count);
+		} for(m in mutables) m.addEventListener("updated", update_quest);</initQuest>
+		<addQuest>update_quest(null);</addQuest>
+		<removeQuest>for(m in mutables) m.removeEventListener("updated", update_quest);</removeQuest>
+	</quest>
+	<quest id="mine" extends="item_quest" global="true">
+		<requires id="iron" count="5" />
+		<requires id="gold" count="2" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="pai" id="intro14.1" pai="true" expression="smile" />
+				<script>item_id = "craft";</script><run procedure="highlight_item" />
+				<dialogue section="pai" id="intro14.2" pai="true" />
+				<run procedure="unhighlight_item" />
+			</blockingEvent>
+			<script>player.addQuest("craft_steel")</script>
+		</completeQuest>
+	</quest>
+	<quest id="int_quest" width="400" height="this.info.requirements.length*30">
+		<infoInit>this.params.state = this.xml.get("state") == "true";</infoInit>
+		<set id="i" value="0" /><repeat count="this.info.requirements.length">
+			<script>req = this.info.requirements[i];</script>
+			<check on="checkbox.on" off="checkbox.off" mutable="this.requirementCheck[i]" scale="0.5" x="8" y="i*30" />
+			<text text="concat(intToString(mutables[i]),'/'+req.count)" x="32" y="i*30" width="76" align="center" />
+			<formattedText text="getText(this.info.xml.get('title')+'{id:'+req.id+'}')" x="112" y="i*30" width="1000" align="left" /><script>i++</script>
+		</repeat>
+		<initQuest>mutables = []; for(r in this.info.requirements){var d = (this.info.params.state?state:object).storage.get(r.id); if(!d.isInt()) d.setInt(0); mutables.push(d);}
+		function update_quest(e){
+			var len = this.info.requirements.length; for(i in 0...len) this.requirementCheck[i].set(mutables[i].get() >= this.info.requirements[i].count);
+		} for(m in mutables) m.addEventListener("updated", update_quest);</initQuest>
+		<addQuest>update_quest(null);</addQuest>
+		<removeQuest>for(m in mutables) m.removeEventListener("updated", update_quest);</removeQuest>
+	</quest>
+	<quest id="bunker" extends="int_quest" title="quests.dismantle_bunker" state="true" global="true">
+		<requires id="bunker" count="5" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="pai" id="bunker4" pai="true" expression="smile" />
+				<script>unlockBlueprints(state, player, ["bunker_blueprint"]);</script><wait seconds="1" modal="false" />
+				<dialogue section="pai" id="bunker5" pai="true" expression="smile" />
+			</blockingEvent>
+			<script>player.addQuest("build_bunker");</script>
+		</completeQuest>
+	</quest>
+	<quest id="craft_steel" extends="item_quest" global="true">
+		<requires id="steel" count="5" />
+		<requires id="wire" count="5" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<closeWindows />
+				<choose>
+					<dialogue section="pai" id="intro15.2" pai="true" expression="smile" if="hasBuiltGenerator(object.area) || object.area.getById('generator_blueprint') != null" />
+					<section>
+						<script>item_id = "build";</script><run procedure="highlight_item" />
+						<dialogue section="pai" id="intro15" pai="true" expression="smile" />
+						<run procedure="unhighlight_item" />
+						<dialogue section="pai" id="intro16" pai="true" />
+					</section>
+				</choose>
+			</blockingEvent>
+			<script>player.addQuest("place_generator"); if(hasBuiltGenerator(object.area) || object.area.getById('generator_blueprint') != null) player.getQuest("place_generator").requirementCheck[0].set(true);</script>
+		</completeQuest>
+	</quest>
+	<quest id="place_blueprint" width="400" height="this.info.requirements.length*30">
+		<set id="i" value="0" /><repeat count="this.info.requirements.length">
+			<check on="checkbox.on" off="checkbox.off" mutable="this.requirementCheck[i]" scale="0.5" x="8" y="i*30" />
+			<formattedText text="getText('quests.blueprint{structure:'+getStructure(this.info.requirements[i].id).params.name+'}')" x="38" y="i*30" width="1000" align="left" /><script>i++</script>
+		</repeat>
+		<initQuest>function update_quest(e){
+			var i = 0; for(r in this.info.requirements){if(r.id == e.object.info.id) this.requirementCheck[i].set(true); i++;}
+		} object.addEventListener("place_blueprint", update_quest);</initQuest>
+		<removeQuest>object.removeEventListener("place_blueprint", update_quest);</removeQuest>
+	</quest>
+	<quest id="place_generator" extends="place_blueprint" global="true">
+		<requires id="generator_blueprint" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<section if="object.area.getById('generator_blueprint') != null">
+					<section if="object.area.getById('generator_blueprint').health.get() <= 1">
+						<dialogue section="pai" id="intro17" pai="true" />
+						<dialogue section="pai" id="intro18" pai="true" />
+					</section>
+					<dialogue section="pai" id="intro19" pai="true" expression="happy" if="!hasBuiltGenerator(object.area)" />
+				</section>
+			</blockingEvent>
+			<script>player.addQuest("build_generator");</script>
+		</completeQuest>
+	</quest>
+	<quest id="structure" width="400" height="this.info.requirements.length*30">
+		<infoInit>this.params.text = this.xml.get("text");</infoInit>
+		<set id="i" value="0" /><repeat count="this.info.requirements.length">
+			<check on="checkbox.on" off="checkbox.off" mutable="this.requirementCheck[i]" scale="0.5" x="8" y="i*30" />
+			<formattedText text="getText(this.info.params.text+'{structure:'+getStructure(this.info.requirements[i].id).params.name+'}')" x="38" y="i*30" width="1000" align="left" /><script>i++</script>
+		</repeat>
+	</quest>
+	<quest id="build_blueprint" extends="structure" text="quests.build">
+		<initQuest>function update_quest(e){
+			var i = 0; for(r in this.info.requirements){if(r.id == e.object.info.id) this.requirementCheck[i].set(true); i++;}
+		} object.addEventListener("build_blueprint", update_quest);</initQuest>
+		<addQuest>
+		var i = 0, d = object.storage.get("build").getObject(); if(d != null) for(r in this.info.requirements){if(d.get(r.id).isInt()) this.requirementCheck[i].set(true); i++;}
+		</addQuest>
+		<removeQuest>object.removeEventListener("build_blueprint", update_quest);</removeQuest>
+	</quest>
+	<quest id="build_generator" extends="build_blueprint" global="true">
+		<requires id="generator" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="pai" id="intro20" pai="true" />
+				<dialogue section="pai" id="intro21" pai="true" />
+				<script>unlockBlueprints(state, player, ["battery_blueprint", "hydroponics_blueprint"]);</script><wait seconds="1" modal="false" />
+				<script>item_id = "build";</script><run procedure="highlight_item" />
+				<dialogue section="pai" id="intro22" pai="true" />
+				<run procedure="unhighlight_item" />
+			</blockingEvent>
+			<script>player.addQuest("build_battery");</script>
+		</completeQuest>
+	</quest>
+	<quest id="build_battery" extends="build_blueprint" global="true">
+		<requires id="battery" />
+		<requires id="hydroponics" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="pai" id="intro23" pai="true" />
+				<script>item_id = "craft";</script><run procedure="highlight_item" />
+				<dialogue section="pai" id="intro24" pai="true" />
+				<run procedure="unhighlight_item" />
+			</blockingEvent>
+			<script>player.addQuest("connect_generator")</script>
+		</completeQuest>
+	</quest>
+	<quest id="connected" width="400" height="this.info.requirements.length*30">
+		<set id="i" value="0" /><repeat count="this.info.requirements.length">
+			<check on="checkbox.on" off="checkbox.off" mutable="this.requirementCheck[i]" scale="0.5" x="8" y="i*30" />
+			<formattedText text="getText('quests.connect{structure:'+getStructure(this.info.requirements[i].id).params.name+'}')" x="38" y="i*30" width="1000" align="left" /><script>i++</script>
+		</repeat>
+		<initQuest>function isPowered(area, id){
+			for(o in area.getAllById(id)) if(o.power_group.power_gen > 0) return true; return false;
+		} area = null; function update_quest(e){
+			var i = 0; for(r in this.info.requirements) this.requirementCheck[i++].set(isPowered(e == null?area:e.source, r.id));
+		}</initQuest>
+		<onAreaChange>this.runCode("removeQuest"); area = object.area;
+		area.addEventListener("add_object", update_quest);
+		area.addEventListener("rem_object", update_quest);
+		area.addEventListener("update_ground", update_quest); update_quest(null);</onAreaChange>
+		<addQuest>if(area != null) update_quest(null);</addQuest>
+		<removeQuest>if(area != null){
+			area.removeEventListener("add_object", update_quest);
+			area.removeEventListener("rem_object", update_quest);
+			area.removeEventListener("update_ground", update_quest);
+		}</removeQuest>
+	</quest>
+	<quest id="connect_generator" extends="connected" achievement="powered" global="true">
+		<requires id="battery" />
+		<requires id="hydroponics" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="pai" id="intro28" pai="true" expression="happy" />
+				<dialogue section="pai" id="intro29" pai="true" expression="smile" />
+			</blockingEvent>
+			<script>unlockBlueprints(state, player, ["storehouse_blueprint", "factory_blueprint"]);</script>
+		</completeQuest>
+	</quest>
+	<quest id="object_quest" width="400" height="this.info.requirements.length*30">
+		<infoInit>for(r in this.requirements) r.accept = r.xml.exists("accept")?eval(r.xml.get("accept")):function(o){return false;}</infoInit>
+		<set id="i" value="0" /><repeat count="this.info.requirements.length">
+			<check on="checkbox.on" off="checkbox.off" mutable="this.requirementCheck[i]" scale="0.5" x="8" y="i*30" />
+			<formattedText text="getText(this.info.xml.get('title')+'{object:'+this.info.requirements[i].id+'}')" x="38" y="i*30" width="1000" align="left" /><script>i++</script>
+		</repeat>
+		<initQuest>area = null; function update_quest(e){
+			var i = 0; for(r in this.info.requirements) if(r.accept(e.object)) this.requirementCheck[i++].set(true);
+		}</initQuest>
+		<onAreaChange>
+		this.runCode("removeQuest"); area = object.area; area.addEventListener("add_object", update_quest);
+		for(o in area.objects){
+			var i = 0; for(r in this.info.requirements) if(r.accept(o)) this.requirementCheck[i++].set(true);
+		}
+		</onAreaChange>
+		<removeQuest>if(area != null) area.removeEventListener("add_object", update_quest);</removeQuest>
+	</quest>
+	<quest id="rescue_survivor" title="quests.rescue_survivor" extends="object_quest" global="true">
+		<requires id="npc" accept="isNPC"/>
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="pai" id="research1" pai="true" expression="smile" />
+				<dialogue section="pai" id="research2" pai="true" />
+				<script>unlockBlueprints(state, player, ["lab_blueprint"]);</script><wait seconds="1" modal="false" />
+				<dialogue section="pai" id="research3" pai="true" expression="happy" />
+			</blockingEvent>
+			<script>player.addQuest("build_research");</script>
+		</completeQuest>
+	</quest>
+	<quest id="build_bunker" extends="build_blueprint" achievement="bunker" global="true">
+		<requires id="bunker" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent><dialogue section="pai" id="bunker" pai="true" expression="happy" /></blockingEvent>
+			<script>player.addQuest("rescue_survivor");</script>
+		</completeQuest>
+	</quest>
+	<quest id="build_research" extends="build_blueprint" global="true">
+		<requires id="lab" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent><dialogue section="pai" id="research4" pai="true" expression="smile" /></blockingEvent>
+			<script>player.addQuest("craft_chip");</script>
+		</completeQuest>
+	</quest>
+	<quest id="craft_chip" extends="item_quest" global="true">
+		<requires id="chip" count="1" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<script>item_id = "chip";</script><run procedure="highlight_item" />
+				<dialogue section="pai" id="research5" pai="true" />
+				<run procedure="unhighlight_item" />
+				<dialogue section="pai" id="research6" pai="true" />
+			</blockingEvent>
+			<script>player.addQuest("mine1");</script>
+		</completeQuest>
+	</quest>
+	<quest id="upgrade" width="400" height="this.info.requirements.length*30">
+		<set id="i" value="0" /><repeat count="this.info.requirements.length">
+			<check on="checkbox.on" off="checkbox.off" mutable="this.requirementCheck[i]" scale="0.5" x="8" y="i*30" />
+			<formattedText text="var s = this.info.requirements[i].id, idx = s.indexOf('>'); return getText('quests.upgrade{item:'+s.substr(0,idx)+'}{upgrade:'+s.substr(idx+1)+'}{level:'+this.info.requirements[i].count+'}')" x="38" y="i*30" width="1000" align="left" /><script>i++</script>
+		</repeat>
+		<initQuest>function update_quest(e){
+			var id = ((e.object.item == object)?"suit":e.object.item.info.id)+">"+e.object.upgrade.id; var complete = true;
+			var i = 0; for(r in this.info.requirements){
+				if(r.id == id &amp;&amp; e.object.level >= r.count) this.requirementCheck[i].set(true);
+				if(!this.requirementCheck[i].get()) complete = false; i++;
+			} if(complete) e.object.window.close();
+		} object.addEventListener("upgrade", update_quest);</initQuest>
+		<addQuest>var i = 0; for(r in this.info.requirements){
+			var s = r.id, idx = s.indexOf('>'), id = s.substr(0,idx), upgrade = s.substr(idx+1), ar = [];
+			if(id == 'suit') ar.push(object); else object.inventory.getAllById(id, ar);
+			for(o in ar) if(o.storage.get(upgrade).get() >= r.count) this.requirementCheck[i].set(true); i++;
+		}</addQuest>
+		<removeQuest>object.removeEventListener("upgrade", update_quest);</removeQuest>
+	</quest>
+	<quest id="mine1" extends="upgrade" global="true">
+		<requires id="mine>mine" count="1" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<dialogue section="pai" id="teleportal1" pai="true" />
+				<dialogue section="pai" id="teleportal2" pai="true" expression="happy" />
+				<dialogue section="pai" id="teleportal3" pai="true" />
+				<dialogue section="pai" id="teleportal3.1" pai="true" expression="happy" />
+			</blockingEvent>
+			<script>player.addQuest("teleportal");</script>
+		</completeQuest>
+	</quest>
+	<quest id="find_structure" extends="structure" text="quests.find">
+		<initQuest>area = null; function update_quest(e){
+			var i = 0; for(r in this.info.requirements){if(r.id == e.object.info.id){this.requirementCheck[i].set(true); e.cancel();} i++;}
+		} object.addEventListener("select_object", update_quest); object.addEventListener("alternate_object", update_quest);
+		billboards = [];
+		function removeIndicators(){for(b in billboards) b.lerp(b.objectX, b.objectY, b.objectZ, 0, 10, remove); Utils.clear(billboards);}
+		function addIndicators(){
+			for(r in this.info.requirements){var t = getTile(r.xml.get("tile")); if(t != null) for(s in area.getAllById(r.id)){
+				var b = s.addBillboard(Icon.fromTile(t,TYPE_INDICATOR,1.5), 0, 0, 0);
+				b.alpha = 0; b.lerp(0,0,0,0.75,10); billboards.push(b);
+			}}
+		}</initQuest>
+		<onAreaChange>if(area != null) removeIndicators(); area = object.area; addIndicators();</onAreaChange>
+		<removeQuest>if(area != null) removeIndicators(); object.removeEventListener("select_object", update_quest); object.removeEventListener("alternate_object", update_quest);</removeQuest>
+	</quest>
+	<quest id="teleportal" extends="find_structure" global="true">
+		<requires id="teleportal" tile="PAI" />
+		<completeQuest>
+			<script>object.completeQuest(this); state.createArea("lab")</script>
+			<blockingEvent>
+				<dialogue section="pai" id="teleportal4" pai="true" expression="smile" />
+				<dialogue section="pai" id="teleportal5" pai="true" expression="smile" />
+			</blockingEvent>
+			<script>unlockBlueprints(state, player, ["teleportal_blueprint"]);</script>
+		</completeQuest>
+	</quest>
+	<quest id="laser_gun" extends="item_quest">
+		<requires id="laser_gun" count="1" />
+		<completeQuest>
+			<script>object.completeQuest(this); npc = state.areas[0].getById('soldier');</script>
+			<blockingEvent if="npc != null">
+				<dialogue section="intros" id="soldier10" pai="true" expression="happy" />
+				<script>npc.storage.get('event').setString("laserGun");</script>
+			</blockingEvent>
+		</completeQuest>
+	</quest>
+	<quest id="pizza" extends="item_quest" achievement="pizza">
+		<initQuest>function canComplete(){return object.area == state.areas[0];}</initQuest>
+		<requires id="pizza" count="6" />
+		<completeQuest>
+			<script>object.completeQuest(this);</script>
+			<blockingEvent>
+				<closeWindows />
+				<script>bunker = state.areas[0].getById("bunker")</script>
+				<dialogue section="snippets" id="pizza1" pai="true" expression="sad" if="bunker == null" />
+				<break if="bunker == null" />
+				<script with="fade">
+				ids = ['chef1','chef2','miner1','miner2','farmer1','farmer2','scientist','soldier']; npcs = [];
+				var bunker_pos = [new Point(0.75,-0.125),new Point(-0.75, -0.125),new Point(-0.5,0.75),new Point(0.85,-1),new Point(0.5,0.75),new Point(-0.85,-1)];
+				billboards = [];
+				var setPos = function(o){
+					o.body.setType(BODY_STATIC); o.vars.set("talking", true);
+					var p = bunker_pos.pop(); bunker.invTransformPoint(p); o.setPosition(p.x, p.y, bunker.getZ()-o.info.aabb.min_z+bunker.info.aabb.min_z);
+					o.facePos(bunker.getX(), bunker.getY(), 0);
+					var b = o.addBillboard(getItem("pizza").getIcon(), 0, 0, -0.6); billboards.push(b);
+					b.alpha = 0; b.lerp(0, (o == object)?-0.6:-0.4, (o == object)?-0.5:-0.25, 1, 20);
+				} for(id in ids){
+					var n = state.areas[0].getById(id); if(n != null) npcs.push(n);
+				} while(npcs.length > 5) npcs.remove(selectRandom(npcs));
+				object.stop(); object.saveTransform = object.getTransformCopy(); setPos(object); for(n in npcs){
+					n.clearTracks();
+					if(n.vars.get("atWork").get()) n.vars.get("exit")(n.vars.get("work").get(), null, true);
+					if(n.vars.get("atHome").get()) n.vars.get("exit")(n.vars.get("home").get(), null, true);
+					n.vars.get("playIdle")(); n.saveTransform = n.getTransformCopy(); setPos(n);
+				} cobj = container.object; container.setObject(null); var p = new Point(0, -2); bunker.invTransformPoint(p); var f = bunker.vars.get("openDoor"); if(f != null) f(); 
+				container.camera.lookTo(p.x, p.y, bunker.getZ()+0.25, bunker.getX(), bunker.getY(), bunker.getZ()-0.25);
+				</script>
+				<choose>
+					<section if="npcs.length == 0">
+						<dialogue section="snippets" id="pizza2" pai="true" expression="sad" />
+						<dialogue section="snippets" id="pizza3" pai="true" expression="happy" />
+					</section>
+					<section>
+						<dialogue section="snippets" id="pizza4" pai="true" expression="smile" />
+						<dialogue section="snippets" id="pizza5" pai="true" expression="happy" />
+						<script>i = 0</script>
+						<repeat count="npcs.length">
+							<dialogue text="getText('snippets>pizza'+(6+ids.indexOf(npcs[i].info.id)))" speaker="npcs[i]" /><script>i++</script>
+						</repeat>
+					</section>
+				</choose>
+				<sound id="eat" />
+				<script modal="true">
+				for(b in billboards) b.lerp(0,0,0,0,20, function(billboard){billboard.remove(); if(b == billboards[0]) onComplete();});
+				</script>
+				<script>
+				var h = getItem("pizza").params.hunger; if(h != 0){object.addHunger(h); for(n in npcs) n.addHunger(h);}
+				</script>
+				<wait seconds="1" modal="false" />
+				<script with="fade">
+				container.setObject(cobj); cobj = null;
+				object.setTransform(object.saveTransform); object.saveTransform = null; object.body.setType(BODY_DYNAMIC); for(n in npcs){
+					n.setTransform(n.saveTransform); n.saveTransform = null; n.body.setType(BODY_DYNAMIC); n.vars.set("talking", false);
+				}</script>
+			</blockingEvent>
+		</completeQuest>
+	</quest>
+</data>
