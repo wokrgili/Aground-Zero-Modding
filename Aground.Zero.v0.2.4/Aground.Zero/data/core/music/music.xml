@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<script>
+	function distSqToWyrm(o){
+		var a = o.area; var min = POSITIVE_INFINITY; if(a == null) return min;
+		for(w in a.getObjects(function(w){return w.health.get() > 0 &amp;&amp; w.info.id == "wyrm";}, makeBounds(o.getX()-10, o.getY()-10, o.getZ()-10, 20, 20, 20))){
+			var dx = o.getX()-w.getX(), dy = o.getY()-w.getY(), dz = (o.getZ()-w.getZ())*2;
+			var v = dx*dx+dy*dy+dz*dz; if(v &lt; min) min = v;
+		} return min;
+	}
+	</script>
+	<music id="main">
+		<track id="floor1a" lead="2" />
+		<track id="floor1b" lead="2" />
+		<track id="floor1c" lead="2.2" />
+		<track id="floor1d" lead="2" />
+		<track id="floor1e" lead="2" />
+		<track id="floor1f" lead="2" />
+		<track id="floor1g" lead="2" />
+		<track id="floor1h" lead="2.2" />
+		
+		<track id="floor2a" lead="1.11" />
+		<track id="floor2b" lead="2.21" />
+		<track id="floor2c" lead="2.6" />
+		<track id="floor2d" lead="2.3" />
+		<track id="floor2e" lead="2.02" />
+		<track id="floor2f" lead="4.56" />
+		<track id="floor2g" lead="3.4" />
+		<track id="floor2h" lead="6.477" />
+		<init>
+		START = "floor1a"; var def = ["floor1d", "floor1e", "floor1f"]; var floor2 = ["floor2a","floor2b","silence40"];
+		none = [def, floor2, def, def, def];
+		map = new StringMap(); var bc = ["floor1b", "floor1c"]; map.set("build0", bc); map.set("craft0", bc); map.set("place_ground0", bc);
+		map.set("place_ladder0", bc); var gh = ["floor1g", "floor1h"]; map.set("mine0", gh); map.set("shovel0", gh); map.set("paint0", gh);
+		map.set("shoot1", ["floor2g","floor2h"]); map.set("old_base", ["floor2c","floor2d","silence40"]); map.set("wyrm", ["floor2e","floor2f"]);
+		cur_map = new StringMap(); last_id = START; silence = 0;
+		function checkSilence(){
+			if(silence > 0) this.playNextTrack();
+		}
+		function getId(c, p, floor){
+			var a = c.gui.getSelectedAction(); var id = (a == null)?Std.string(floor):a.id+floor;
+			if(a != Action.get("shoot") &amp;&amp; distSqToWyrm(p) &lt; 110) id = "wyrm"; return id;
+		}
+		function getDefault(c, p, floor){
+			if(floor == 1){
+				var dx = p.getX()-32, dy = p.getY()-32; if(dx*dx+dy*dy &lt; 40) return map.get("old_base");
+			} return none[floor];
+		}
+		</init>
+		<onStart>current = null;</onStart>
+		<selectTrack>
+		if(state == null || state.localPlayers.length == 0){last_id = START; return START;} var p = state.localPlayers[0], c = getScreenForPlayer(p);
+		if(c == null || c.gui == null){last_id = START; return START;}
+		var floor = 0, z = p.getZ(); if(z >= 57) floor = 4; else if(z >= 35) floor = 3; else if(z >= 24) floor = 2; else if(z >= 16) floor = 1;
+		var id = getId(c, p, floor);
+		if((id == last_id || !map.exists(id)) &amp;&amp; silence > 0){
+			silence--; if(silence > 0){invokeLater(checkSilence, 60); return null;}
+		} var ar = cur_map.get(id); if(ar == null || ar.length == 0){
+			var orig = map.get(id); if(orig == null) orig = getDefault(c, p, floor); ar = orig.copy();
+			shuffle(ar); cur_map.set(id, ar); if(floor == 0 &amp;&amp; last_id == id){last_id = START; return START;}
+		} last_id = id; var ret = ar.pop(); if(StringTools.startsWith(ret, "silence")){
+			silence = parseInt(ret.substring(7)); invokeLater(checkSilence, 60); return null;
+		} else {silence = 0; return ret;}
+		</selectTrack>
+	</music>
+	<music id="earth_ruins" />
+	<music id="title" />
+	<music id="ore_cave" />
+</data>
