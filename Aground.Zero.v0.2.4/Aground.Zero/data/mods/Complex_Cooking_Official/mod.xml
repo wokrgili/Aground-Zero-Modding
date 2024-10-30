@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<name>Fossil Mod</name>
+	<description>Extract fossils from the depth and create good things.</description>
+	<author>Volectrik</author>
+	<version>0.1</version>
+	<website>http://fancyfishgames.com/</website>
+	<init>
+
+
+    //RESSOURCE
+    <tilesheet id="watergem.png" width="200" height="200" />
+    <tile id="watergem" sheet="watergem.png"/>
+    <tilesheet id="plantgem.png" width="200" height="200" />
+    <tile id="plantgem" sheet="plantgem.png"/>
+    <tilesheet id="icegem.png" width="200" height="200" />
+    <tile id="icegem" sheet="icegem.png"/>
+    <tilesheet id="earthgem.png" width="200" height="200" />
+    <tile id="earthgem" sheet="earthgem.png"/>
+    <tilesheet id="firegem.png" width="200" height="200" />
+    <tile id="firegem" sheet="firegem.png"/>
+    <tilesheet id="fossil.png" width="200" height="200" />
+    <tile id="fossil" sheet="fossil.png"/>
+    <tilesheet id="petrol.png" width="200" height="200" />
+    <tile id="petrol" sheet="petrol.png"/>
+    <tilesheet id="watergun.png" width="200" height="200" />
+    <tile id="watergun" sheet="watergun.png"/>
+        <tilesheet id="icegun.png" width="200" height="200" />
+    <tile id="icegun" sheet="icegun.png"/>
+        <tilesheet id="plantgun.png" width="200" height="200" />
+    <tile id="plantgun" sheet="plantgun.png"/>
+        <tilesheet id="earthgun.png" width="200" height="200" />
+    <tile id="earthgun" sheet="earthgun.png"/>
+    <tilesheet id="flamethrower.png" width="200" height="200" />
+    <tile id="flamethrower" sheet="flamethrower.png"/>
+    <tilesheet id="image.png" width="500" height="500" />
+    <tile id="whole_pizza" sheet="image.png"/>
+
+
+
+
+
+    //ITEMS
+    <item id="whole_pizza" tile="whole_pizza" action="eat" hunger="360" health="60" type="food" scale="0.6" />
+    <item id="dragonburger" tile="cheeseburger" action="eat" hunger="200" health="50" type="food" scale="0.6" />
+    <item id="fossil" tile="fossil" type="material" scale="0.5" />
+    <item id="petrol" tile="petrol" type="material" scale="0.5" />
+    <item id="firegem" tile="firegem" type="material" scale="0.5" />
+    <item id="watergem" tile="watergem" type="material" scale="0.5" />
+    <item id="icegem" tile="icegem" type="material" scale="0.5" />
+    <item id="plantgem" tile="plantgem" type="material" scale="0.5" />
+    <item id="earthgem" tile="earthgem" type="material" scale="0.5" />
+    <item id="flamethrower" model="hddh" tile="flamethrower" action="shoot" attack="5" range="15" rate="32767" power="1" shield="2" stackable="false" type="tool" />
+    <item id="watergun" model="water" tile="watergun" action="shoot" attack="5" range="15" rate="30" power="10" shield="2" stackable="false" type="tool" />
+    <item id="icegun" model="water" tile="icegun" action="shoot" attack="10" range="30" rate="10" power="5" shield="2" stackable="false" type="tool" />
+    <item id="plantgun" model="water" tile="plantgun" action="shoot" attack="15" range="15" rate="10" power="10" shield="2" stackable="false" type="tool" />
+    <item id="earthgun" model="water" tile="earthgun" action="shoot" attack="25" range="25" rate="1" power="20" shield="2" stackable="false" type="tool" />
+
+
+    //TEXT
+    <lang id="en_US">   
+      <section id="items">
+        <text id="fossil">Fossil</text>
+        <text id="petrol">Petrol</text>
+        <text id="firegem">Fire Gem</text>
+        <text id="watergem">Water Gem</text>
+        <text id="icegem">Ice Gem</text>
+        <text id="plantgem">Plant Gem</text>
+        <text id="earthgem">Earth Gem</text>
+        <text id="dragonburger">DragonBurger</text>
+        <text id="flamethrower">Flamethrower</text>
+        <text id="watergun">Water Gun</text>
+        <text id="icegun">Ice Gun</text>
+        <text id="plantgun">Plant Gun</text>
+        <text id="earthgun">Earth Gun</text>
+
+     //extra
+     <text id="whole_pizza">Whole Pizza</text>
+     </section>
+    </lang>
+    
+    //RECIPE
+    <recipe id="mine_uranium" cost="100" time="300" type="rig"><creates id="uranium" count="1" /></recipe>
+    <recipe id="mine_titanium" cost="100" time="500" type="rig"><creates id="titanium" count="1" /></recipe>
+    <recipe id="mine_exotic_matter" cost="200" time="1000" type="rig"> <creates id="exotic_matter" count="1" /></recipe>
+    <recipe id="mine_fossil" cost="50" time="100" type="rig"><creates id="fossil" count="1" /></recipe>
+    <recipe id="craft_petrol" cost="5" time="2" type="lab"><requires id="fossil" count="3" /><creates id="petrol" count="1" /> </recipe>
+    <recipe id="craft_dragonblood" cost="5" time="2" type="lab"><requires id="fossil" count="1" /><creates id="dragonblood" count="1" /></recipe>
+    <recipe id="fuel_petrol" cost="3000" type="fuel"><requires id="petrol" count="1" /></recipe>
+    <recipe id="craft_dragonburger" cost="5" time="15" type="kitchen"><requires id="dragonblood" count="1" /><requires id="cheeseburger" count="1" /><creates id="dragonburger" count="1" /></recipe>
+    <recipe id="craft_firegem" cost="25" time="50" type="lab"><requires id="fossil" count="10" /><creates id="firegem" count="1" /></recipe>
+    <recipe id="craft_watergem" cost="25" time="50" type="lab"><requires id="fossil" count="10" /><creates id="watergem" count="1" /></recipe>
+    <recipe id="craft_icegem" cost="25" time="50" type="lab"><requires id="fossil" count="10" /><creates id="icegem" count="1" /></recipe>
+    <recipe id="craft_plantgem" cost="25" time="50" type="lab"><requires id="fossil" count="10" /><creates id="plantgem" count="1" /></recipe>
+    <recipe id="craft_earthgem" cost="25" time="50" type="lab"><requires id="fossil" count="10" /><creates id="earthgem" count="1" /></recipe>
+    <recipe id="craft_flamethrower" cost="50" time="100" type="lab"><requires id="firegem" count="1" /><requires id="petrol" count="5" /><creates id="flamethrower" count="1" /></recipe>
+    <recipe id="craft_watergun" cost="50" time="100" type="lab"><requires id="watergem" count="1" /><requires id="diamond" count="5" /><creates id="watergun" count="1" /></recipe>
+    <recipe id="craft_icegun" cost="50" time="100" type="lab"><requires id="icegem" count="1" /><requires id="diamond" count="5" /><creates id="icegun" count="1" /></recipe>
+    <recipe id="craft_plantgun" cost="50" time="100" type="lab"><requires id="plantgem" count="1" /><requires id="wheat" count="50" /><creates id="plantgun" count="1" /></recipe>
+    <recipe id="craft_earthgun" cost="50" time="100" type="lab"><requires id="earthgem" count="1" /><requires id="steel" count="25" /><creates id="earthgun" count="1" /></recipe>
+    <recipe id="cook_whole_pizza" cost="5" type="kitchen"><requires id="pizza" count="6" /><creates id="whole_pizza" count="1" /></recipe>
+
+
+
+
+
+  </init>
+</data>
