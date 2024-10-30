@@ -75,32 +75,64 @@
         <text id="earthgun">Earth Gun</text>
 
      //extra
-     <text id="whole_pizza">Whole Pizza</text>
-     </section>
+      <text id="1x_tomato">1X Compressed Bundle of Tomatos</text>
+      <text id="1x_wheat">1X Compressed Bundle of Wheat</text>
+      <text id="1x_sugar">1X Compressed Bundle of Sugar</text>
+      <text id="1x_meat">1X Compressed Bundle of Meat</text>
+      <text id="1x_milk">1X Compressed Bundle of Milk</text>
+
+      <text id="1x_tomato_soup">1X Compressed Bundle of Tomato Soup</text>
+      <text id="1x_steak">1X Compressed Bundle of Steak</text>
+      <text id="1x_bread">1X Compressed Bundle of Bread</text>
+      <text id="1x_pasta">1X Compressed Bundle of Pasta</text>
+      <text id="1x_pancakes">1X Compressed Bundle of Pancakes</text>
+      <text id="1x_cheese">1X Compressed Bundle of Cheese</text>
+      <text id="1x_hamburger">1X Compressed Bundle of Hamburger</text>
+      <text id="1x_cheeseburger">1X Compressed Bundle of Cheeseburger</text>
+      <text id="1x_pizza">1X Compressed Bundle of Pizza</text>
+      <text id="1x_ice_cream">1X Compressed Bundle of Ice Cream</text>
+      <text id="1x_cake">1X Compressed Bundle of Cake</text>
+      <text id="1x_dragonburger">1X Compressed Bundle of DragonBurger</text>
+
+      <text id="whole_pizza">Whole Pizza</text>
+      
+      </section>
     </lang>
     
     //RECIPE
-    <recipe id="mine_uranium" cost="100" time="300" type="rig"><creates id="uranium" count="1" /></recipe>
-    <recipe id="mine_titanium" cost="100" time="500" type="rig"><creates id="titanium" count="1" /></recipe>
-    <recipe id="mine_exotic_matter" cost="200" time="1000" type="rig"> <creates id="exotic_matter" count="1" /></recipe>
-    <recipe id="mine_fossil" cost="50" time="100" type="rig"><creates id="fossil" count="1" /></recipe>
-    <recipe id="craft_petrol" cost="5" time="2" type="lab"><requires id="fossil" count="3" /><creates id="petrol" count="1" /> </recipe>
-    <recipe id="craft_dragonblood" cost="5" time="2" type="lab"><requires id="fossil" count="1" /><creates id="dragonblood" count="1" /></recipe>
-    <recipe id="fuel_petrol" cost="3000" type="fuel"><requires id="petrol" count="1" /></recipe>
-    <recipe id="craft_dragonburger" cost="5" time="15" type="kitchen"><requires id="dragonblood" count="1" /><requires id="cheeseburger" count="1" /><creates id="dragonburger" count="1" /></recipe>
-    <recipe id="craft_firegem" cost="25" time="50" type="lab"><requires id="fossil" count="10" /><creates id="firegem" count="1" /></recipe>
-    <recipe id="craft_watergem" cost="25" time="50" type="lab"><requires id="fossil" count="10" /><creates id="watergem" count="1" /></recipe>
-    <recipe id="craft_icegem" cost="25" time="50" type="lab"><requires id="fossil" count="10" /><creates id="icegem" count="1" /></recipe>
-    <recipe id="craft_plantgem" cost="25" time="50" type="lab"><requires id="fossil" count="10" /><creates id="plantgem" count="1" /></recipe>
-    <recipe id="craft_earthgem" cost="25" time="50" type="lab"><requires id="fossil" count="10" /><creates id="earthgem" count="1" /></recipe>
-    <recipe id="craft_flamethrower" cost="50" time="100" type="lab"><requires id="firegem" count="1" /><requires id="petrol" count="5" /><creates id="flamethrower" count="1" /></recipe>
-    <recipe id="craft_watergun" cost="50" time="100" type="lab"><requires id="watergem" count="1" /><requires id="diamond" count="5" /><creates id="watergun" count="1" /></recipe>
-    <recipe id="craft_icegun" cost="50" time="100" type="lab"><requires id="icegem" count="1" /><requires id="diamond" count="5" /><creates id="icegun" count="1" /></recipe>
-    <recipe id="craft_plantgun" cost="50" time="100" type="lab"><requires id="plantgem" count="1" /><requires id="wheat" count="50" /><creates id="plantgun" count="1" /></recipe>
-    <recipe id="craft_earthgun" cost="50" time="100" type="lab"><requires id="earthgem" count="1" /><requires id="steel" count="25" /><creates id="earthgun" count="1" /></recipe>
+    
+
+
+    //craft
+    <recipe id="craft_1x_tomato" cost="495" time="4" type="basic"><requires id="tomatoes" count="99" /><creates id="1x_tomato" count="1" /></recipe>
+    <recipe id="craft_1x_wheat" cost="495" time="4" type="basic"><requires id="wheat" count="99" /><creates id="1x_wheat" count="1" /></recipe>
+    <recipe id="craft_1x_sugar" cost="990" time="4" type="basic"><requires id="sugar" count="99" /><creates id="1x_tomato" count="1" /></recipe>
+    <recipe id="craft_1x_meat" cost="1485" time="4" type="basic"><requires id="meat" count="99" /><creates id="1x_tomato" count="1" /></recipe>
+    <recipe id="craft_1x_milk" cost="1980" time="4" type="basic"><requires id="milk" count="99" /><creates id="1x_tomato" count="1" /></recipe>
+
+
+
+    
+    <recipe id="craft_1x_tomato_soup" cost="5" time="3" type="basic"><requires id="tom" count="99" /><creates id="steel" count="1" /></recipe>
+
+    //grow
+    <!--
+    tomato = 5
+    wheat = 5
+    sugar = 10
+    meat = 20
+    milk = 15
+    -->
+    <recipe id="grow_tomatoes" model="tomatoes" cost="100" type="hydroponics"><creates id="tomato" count="2" max="5" /></recipe>
+    <recipe id="grow_wheat" model="wheat" cost="100"><creates id="wheat" count="2" max="8" /></recipe>
+    <recipe id="grow_sugar" model="sugar" cost="100"><creates id="sugar" count="1" max="3" /></recipe>
+    <recipe id="grow_meat" model="meat" cost="100"><creates id="meat" count="1" /></recipe>
+    <recipe id="grow_milk" model="milk" cost="100"><creates id="milk" count="1" max="3" /></recipe>
+
+
+
+    //cook
     <recipe id="cook_whole_pizza" cost="5" type="kitchen"><requires id="pizza" count="6" /><creates id="whole_pizza" count="1" /></recipe>
-
-
 
 
 
