@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <texture id="black" color="black.png" normal="{core}/world/materials/no_normal.png" />
+    <material id="black" texture="black" paint="true" />
+    <texture id="blue" color="blue.png" normal="{core}/world/materials/no_normal.png" />
+    <material id="blue" texture="blue" paint="true" />
+    <texture id="dblue" color="dblue.png" normal="{core}/world/materials/no_normal.png" />
+    <material id="dblue" texture="dblue" paint="true" />
+    <texture id="green" color="green.png" normal="{core}/world/materials/no_normal.png" />
+    <material id="green" texture="green" paint="true" />
+    <texture id="orange" color="orange.png" normal="{core}/world/materials/no_normal.png" />
+    <material id="orange" texture="orange" paint="true" />
+    <texture id="pink" color="pink.png" normal="{core}/world/materials/no_normal.png" />
+    <material id="pink" texture="pink" paint="true" />
+    <texture id="purple" color="purple.png" normal="{core}/world/materials/no_normal.png" />
+    <material id="purple" texture="purple" paint="true" />
+    <texture id="red" color="red.png" normal="{core}/world/materials/no_normal.png" />
+    <material id="red" texture="red" paint="true" />
+    <texture id="white" color="white.png" normal="{core}/world/materials/no_normal.png" />
+    <material id="white" texture="white" paint="true" />
+    <texture id="yellow" color="yellow.png" normal="{core}/world/materials/no_normal.png" />
+    <material id="yellow" texture="yellow" paint="true" />
+    <material id="clear" texture="white" paint="true" />
+
+    <material id="white_ramp" texture="white" ramp="true" />
+</data>
