@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <include id="footsteps/footsteps.xml" />
+
+    <sound id="bot_arm" />
+    <sound id="bot_death" />
+    <sound id="bot_target" />
+	<sound id="torpedo" />
+	<sound id="torpedo_launcher" />
+	<sound id="sub_move" />
+    <sound id="sub_hit" />
+    <sound id="hatch_open" />
+    <sound id="boring" />
+    <sound id="sonar_ping" />
+    <sound id="anti_grav" />
+
+    <volume name="bot_arm" value="70" />
+    <volume name="bot_death" value="150" />
+	<volume name="torpedo" value="200" />
+</data>
