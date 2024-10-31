@@ -39,50 +39,50 @@
     -->
     //requirements
     <!--
-    <tile id="steel" sheet="icons(1X).png" x="6" />
+    <tile id="steel" sheet="icons1x.png" x="6" />
     <item id="steel" tile="steel" type="processed" scale="0.8" cost="12" />
-    <tile id="wire" sheet="icons(1X).png" x="37" />
+    <tile id="wire" sheet="icons1x.png" x="37" />
     <item id="wire" tile="wire" type="processed" scale="0.5" cost="15" />
-    <tile id="tomato" sheet="icons(1X).png" x="28" />
+    <tile id="tomato" sheet="icons1x.png" x="28" />
     <item id="tomato" tile="tomato" action="eat" hunger="20" type="food" scale="0.6" cost="5" />
-    <tile id="nutrient_bar" sheet="icons(1X).png" x="23" />
+    <tile id="nutrient_bar" sheet="icons1x.png" x="23" />
     <item id="nutrient_bar" tile="nutrient_bar" action="eat" hunger="20" type="food" scale="0.6" cost="10" />
-    <tile id="wheat" sheet="icons(1X).png" x="30" />
+    <tile id="wheat" sheet="icons1x.png" x="30" />
     <item id="wheat" tile="wheat" action="eat" hunger="5" type="food" scale="0.6" cost="5" />
-    <tile id="sugar" sheet="icons(1X).png" x="27" />
+    <tile id="sugar" sheet="icons1x.png" x="27" />
     <item id="sugar" tile="sugar" action="eat" hunger="10" type="food" scale="0.6" cost="10" />
-    <tile id="meat" sheet="icons(1X).png" x="21" />
+    <tile id="meat" sheet="icons1x.png" x="21" />
     <item id="meat" tile="meat" action="eat" hunger="10" health="5" type="food" scale="0.6" cost="20" />
-    <tile id="milk" sheet="icons(1X).png" x="22" />
+    <tile id="milk" sheet="icons1x.png" x="22" />
     <item id="milk" tile="milk" action="eat" hunger="10" type="food" scale="0.6" cost="15" />
-    <tile id="soup" sheet="icons(1X).png" x="29" />
+    <tile id="soup" sheet="icons1x.png" x="29" />
     <item id="soup" tile="soup" action="eat" hunger="40" type="food" scale="0.6" cost="10" />
-    <tile id="steak" sheet="icons(1X).png" x="17" />
+    <tile id="steak" sheet="icons1x.png" x="17" />
     <item id="steak" tile="steak" action="eat" hunger="20" health="10" type="food" scale="0.6" cost="30" />
-    <tile id="bread" sheet="icons(1X).png" x="13" />
+    <tile id="bread" sheet="icons1x.png" x="13" />
     <item id="bread" tile="bread" action="eat" hunger="50" type="food" scale="0.6" cost="25" />
-    <tile id="pasta" sheet="icons(1X).png" x="25" />
+    <tile id="pasta" sheet="icons1x.png" x="25" />
     <item id="pasta" tile="pasta" action="eat" hunger="80" health="10" type="food" scale="0.6" cost="30" />
-    <tile id="pancakes" sheet="icons(1X).png" x="24" />
+    <tile id="pancakes" sheet="icons1x.png" x="24" />
     <item id="pancakes" tile="pancakes" action="eat" hunger="150" type="food" scale="0.6" cost="60" />
-    <tile id="cheese" sheet="icons(1X).png" x="15" />
+    <tile id="cheese" sheet="icons1x.png" x="15" />
     <item id="cheese" tile="cheese" action="eat" hunger="50" health="5" type="food" scale="0.6" cost="35" />
-    <tile id="hamburger" sheet="icons(1X).png" x="19" />
+    <tile id="hamburger" sheet="icons1x.png" x="19" />
     <item id="hamburger" tile="hamburger" action="eat" hunger="150" health="10" type="food" scale="0.6" cost="80" />
-    <tile id="cheeseburger" sheet="icons(1X).png" x="16" />
+    <tile id="cheeseburger" sheet="icons1x.png" x="16" />
     <item id="cheeseburger" tile="cheeseburger" action="eat" hunger="200" health="20" type="food" scale="0.6" cost="120" />
-    <tile id="pizza" sheet="icons(1X).png" x="26" />
+    <tile id="pizza" sheet="icons1x.png" x="26" />
     <item id="pizza" tile="pizza" action="eat" hunger="60" health="10" type="food" scale="0.6" cost="25" />
-    <tile id="ice_cream" sheet="icons(1X).png" x="20" />
+    <tile id="ice_cream" sheet="icons1x.png" x="20" />
     <item id="ice_cream" tile="ice_cream" action="eat" hunger="70" type="food" scale="0.6" cost="50" />
-    <tile id="cake" sheet="icons(1X).png" x="14" />
+    <tile id="cake" sheet="icons1x.png" x="14" />
     <item id="cake" tile="cake" action="eat" hunger="50" type="food" scale="0.6" cost="25" />
-    <tile id="dragonblood" sheet="icons(1X).png" x="18" />
+    <tile id="dragonblood" sheet="icons1x.png" x="18" />
     <item id="dragonblood" tile="dragonblood" action="eat" hunger="100" health="50" type="food" cost="100" />
 -->
-    <tile id="1x_steel" sheet="icons(1X).png" x="6" />
-    <item id="1x_steel" tile="steel" type="processed" scale="0.8" cost="1188" />
-    <tile id="1x_wire" sheet="icons(1X).png" x="37" />
+    <tile id="1x_steel" sheet="icons1x.png" x="6" />
+    <item id="1x_steel" tile="1x_steel" type="processed" scale="0.8" cost="1188" />
+    <tile id="1x_wire" sheet="icons1x.png" x="37" />
     <item id="1x_wire" tile="wire" type="processed" scale="0.5" cost="1485" />
 
 
