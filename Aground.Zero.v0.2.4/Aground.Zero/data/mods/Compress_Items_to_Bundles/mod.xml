@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<name>Compress Items to Bundles</name>
+	<description>Compress Items to a single slot</description>
+	<author>KillOrDeath</author>
+	<version>0.1</version>
+	<website>http://fancyfishgames.com/</website>
+	<init>
+	<include id="1x_icons.xml" includeRoot="true" />
+
+    //RESSOURCE
+    <!--
+    <tilesheet id="watergem.png" width="200" height="200" />
+    <tile id="watergem" sheet="watergem.png"/>
+    
+    -->
+    <!--
+    <tilesheet id="1x_steel.png" width="240" height="240" />
+    <tile id="1x_steel" sheet="1x_steel.png"/>
+    <item id="1x_steel" tile="1x_steel" type="processed" scale="0.5" />
+    -->
+    
+   
+    <tile id="1x_steel" sheet="1x_icons.png" x="6" />
+    <item id="1x_steel" tile="1x_steel" type="processed" scale="0.8" />
+    <tile id="1x_wire" sheet="1x_icons.png" x="37" />
+    <item id="1x_wire" tile="1x_wire" type="processed" scale="0.5" cost="1485" />
+    <tile id="1x_cable" sheet="1x_icons.png" x="8" />
+    <item id="1x_cable" tile="1x_cable"  type="processed" scale="0.6" cost="792" />
+    //ITEMS
+    
+
+    //TEXT
+    <lang id="en_US">   
+    <section id="items">
+    <text id="1x_steel">1X Compressed Bundle of Steel</text>
+    <text id="1x_wire">1X Compressed Bundle of Wire</text>
+    <text id="1x_cable">1X Compressed Bundle of Cable</text>
+      
+
+
+
+      </section>
+    </lang>
+    
+    //RECIPE
+    
+
+
+    //craft
+    <recipe id="craft_1x_steel" cost="1188" time="0.0001" type="basic"><requires id="steel" count="99" /><creates id="1x_steel" count="1" /></recipe>
+    <recipe id="craft_1x_wire" cost="1485" time="0.0001" type="basic"><requires id="wire" count="99" /><creates id="1x_wire" count="1" /></recipe>
+    <recipe id="craft_1x_cable" cost="792" time="0.0001" type="basic"><requires id="cable" count="99" /><creates id="1x_cable" count="1" /></recipe>
+    
+
+    
+    //grow
+    <!--
+    tomato = 5
+    wheat = 5
+    sugar = 10
+    meat = 20
+    milk = 15
+    -->
+    
+
+
+
+
+  </init>
+</data>

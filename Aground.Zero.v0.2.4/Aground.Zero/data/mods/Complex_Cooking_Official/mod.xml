@@ -8,41 +8,10 @@
 	<init>
 
 
-    //RESSOURCE
-    <!--
-    <tilesheet id="watergem.png" width="200" height="200" />
-    <tile id="watergem" sheet="watergem.png"/>
-    <tilesheet id="plantgem.png" width="200" height="200" />
-    <tile id="plantgem" sheet="plantgem.png"/>
-    <tilesheet id="icegem.png" width="200" height="200" />
-    <tile id="icegem" sheet="icegem.png"/>
-    <tilesheet id="earthgem.png" width="200" height="200" />
-    <tile id="earthgem" sheet="earthgem.png"/>
-    <tilesheet id="firegem.png" width="200" height="200" />
-    <tile id="firegem" sheet="firegem.png"/>
-    <tilesheet id="fossil.png" width="200" height="200" />
-    <tile id="fossil" sheet="fossil.png"/>
-    <tilesheet id="petrol.png" width="200" height="200" />
-    <tile id="petrol" sheet="petrol.png"/>
-    <tilesheet id="watergun.png" width="200" height="200" />
-    <tile id="watergun" sheet="watergun.png"/>
-        <tilesheet id="icegun.png" width="200" height="200" />
-    <tile id="icegun" sheet="icegun.png"/>
-        <tilesheet id="plantgun.png" width="200" height="200" />
-    <tile id="plantgun" sheet="plantgun.png"/>
-        <tilesheet id="earthgun.png" width="200" height="200" />
-    <tile id="earthgun" sheet="earthgun.png"/>
-    <tilesheet id="flamethrower.png" width="200" height="200" />
-    <tile id="flamethrower" sheet="flamethrower.png"/>
-    <tilesheet id="image.png" width="500" height="500" />
-    <tile id="whole_pizza" sheet="image.png"/>
-    -->
+    //RESOURCE
     
     
-    <tile id="1x_steel" sheet="icons1 x.png" x="6" />
-    <item id="1x_steel" tile="1x_steel" type="processed" scale="0.8" cost="1188" />
-    <tile id="1x_wire" sheet="icons1 x.png" x="37" />
-    <item id="1x_wire" tile="wire" type="processed" scale="0.5" cost="1485" />
+
 
 
     //ITEMS
@@ -51,23 +20,21 @@
     //TEXT
     <lang id="en_US">   
       <section id="items">
-        <text id="fossil">Fossil</text>
-        <text id="petrol">Petrol</text>
-        <text id="firegem">Fire Gem</text>
-        <text id="watergem">Water Gem</text>
-        <text id="icegem">Ice Gem</text>
-        <text id="plantgem">Plant Gem</text>
-        <text id="earthgem">Earth Gem</text>
-        <text id="dragonburger">DragonBurger</text>
-        <text id="flamethrower">Flamethrower</text>
-        <text id="watergun">Water Gun</text>
-        <text id="icegun">Ice Gun</text>
-        <text id="plantgun">Plant Gun</text>
-        <text id="earthgun">Earth Gun</text>
+        
+
+
+
+
+
+
+
+
+
+
 
      //extra
 
-
+<!--
       <text id="1x_steel">1X Compressed Bundle of Steel</text>
       <text id="1x_wire">1X Compressed Bundle of Wire</text>
 
@@ -91,7 +58,7 @@
       <text id="1x_dragonburger">1X Compressed Bundle of DragonBurger</text>
 
       <text id="whole_pizza">Whole Pizza</text>
-      
+      -->
       </section>
     </lang>
     
