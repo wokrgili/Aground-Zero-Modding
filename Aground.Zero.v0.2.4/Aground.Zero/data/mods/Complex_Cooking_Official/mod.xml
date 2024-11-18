@@ -5,16 +5,20 @@
 	<author>KillOrDeath</author>
 	<version>0.1</version>
 	<website>http://fancyfishgames.com/</website>
+  <include id="icons.xml" includeRoot="true" />
 	<init>
 
 
     //RESOURCE
+    
+    ///Images
     
     
 
 
 
     //ITEMS
+    //What do they do
     
 
     //TEXT
@@ -87,8 +91,13 @@
     meat = 20
     milk = 15
     -->
-    
-
+    <!--
+    <recipe id="grow_tomatoes" model="tomatoes" cost="100" type="hydroponics"><creates id="tomato" count="2" max="5" /></recipe>
+    <recipe id="grow_wheat" model="wheat" cost="100"><creates id="wheat" count="2" max="8" /></recipe>
+    <recipe id="grow_sugar" model="sugar" cost="100"><creates id="sugar" count="1" max="3" /></recipe>
+    <recipe id="grow_meat" model="meat" cost="100"><creates id="meat" count="1" /></recipe>
+    <recipe id="grow_milk" model="milk" cost="100"><creates id="milk" count="1" max="3" /></recipe>
+-->
 
     //cook
     <recipe id="cook_whole_pizza" cost="5" type="kitchen"><requires id="pizza" count="6" /><creates id="whole_pizza" count="1" /></recipe>
