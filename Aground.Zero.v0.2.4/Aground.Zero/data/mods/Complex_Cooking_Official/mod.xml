@@ -37,71 +37,16 @@
     <tilesheet id="image.png" width="500" height="500" />
     <tile id="whole_pizza" sheet="image.png"/>
     -->
-    //requirements
-    <!--
-    <tile id="steel" sheet="icons1x.png" x="6" />
-    <item id="steel" tile="steel" type="processed" scale="0.8" cost="12" />
-    <tile id="wire" sheet="icons1x.png" x="37" />
-    <item id="wire" tile="wire" type="processed" scale="0.5" cost="15" />
-    <tile id="tomato" sheet="icons1x.png" x="28" />
-    <item id="tomato" tile="tomato" action="eat" hunger="20" type="food" scale="0.6" cost="5" />
-    <tile id="nutrient_bar" sheet="icons1x.png" x="23" />
-    <item id="nutrient_bar" tile="nutrient_bar" action="eat" hunger="20" type="food" scale="0.6" cost="10" />
-    <tile id="wheat" sheet="icons1x.png" x="30" />
-    <item id="wheat" tile="wheat" action="eat" hunger="5" type="food" scale="0.6" cost="5" />
-    <tile id="sugar" sheet="icons1x.png" x="27" />
-    <item id="sugar" tile="sugar" action="eat" hunger="10" type="food" scale="0.6" cost="10" />
-    <tile id="meat" sheet="icons1x.png" x="21" />
-    <item id="meat" tile="meat" action="eat" hunger="10" health="5" type="food" scale="0.6" cost="20" />
-    <tile id="milk" sheet="icons1x.png" x="22" />
-    <item id="milk" tile="milk" action="eat" hunger="10" type="food" scale="0.6" cost="15" />
-    <tile id="soup" sheet="icons1x.png" x="29" />
-    <item id="soup" tile="soup" action="eat" hunger="40" type="food" scale="0.6" cost="10" />
-    <tile id="steak" sheet="icons1x.png" x="17" />
-    <item id="steak" tile="steak" action="eat" hunger="20" health="10" type="food" scale="0.6" cost="30" />
-    <tile id="bread" sheet="icons1x.png" x="13" />
-    <item id="bread" tile="bread" action="eat" hunger="50" type="food" scale="0.6" cost="25" />
-    <tile id="pasta" sheet="icons1x.png" x="25" />
-    <item id="pasta" tile="pasta" action="eat" hunger="80" health="10" type="food" scale="0.6" cost="30" />
-    <tile id="pancakes" sheet="icons1x.png" x="24" />
-    <item id="pancakes" tile="pancakes" action="eat" hunger="150" type="food" scale="0.6" cost="60" />
-    <tile id="cheese" sheet="icons1x.png" x="15" />
-    <item id="cheese" tile="cheese" action="eat" hunger="50" health="5" type="food" scale="0.6" cost="35" />
-    <tile id="hamburger" sheet="icons1x.png" x="19" />
-    <item id="hamburger" tile="hamburger" action="eat" hunger="150" health="10" type="food" scale="0.6" cost="80" />
-    <tile id="cheeseburger" sheet="icons1x.png" x="16" />
-    <item id="cheeseburger" tile="cheeseburger" action="eat" hunger="200" health="20" type="food" scale="0.6" cost="120" />
-    <tile id="pizza" sheet="icons1x.png" x="26" />
-    <item id="pizza" tile="pizza" action="eat" hunger="60" health="10" type="food" scale="0.6" cost="25" />
-    <tile id="ice_cream" sheet="icons1x.png" x="20" />
-    <item id="ice_cream" tile="ice_cream" action="eat" hunger="70" type="food" scale="0.6" cost="50" />
-    <tile id="cake" sheet="icons1x.png" x="14" />
-    <item id="cake" tile="cake" action="eat" hunger="50" type="food" scale="0.6" cost="25" />
-    <tile id="dragonblood" sheet="icons1x.png" x="18" />
-    <item id="dragonblood" tile="dragonblood" action="eat" hunger="100" health="50" type="food" cost="100" />
--->
-    <tile id="1x_steel" sheet="icons1x.png" x="6" />
+    
+    
+    <tile id="1x_steel" sheet="icons1 x.png" x="6" />
     <item id="1x_steel" tile="1x_steel" type="processed" scale="0.8" cost="1188" />
-    <tile id="1x_wire" sheet="icons1x.png" x="37" />
+    <tile id="1x_wire" sheet="icons1 x.png" x="37" />
     <item id="1x_wire" tile="wire" type="processed" scale="0.5" cost="1485" />
 
 
     //ITEMS
-    <item id="whole_pizza" tile="whole_pizza" action="eat" hunger="360" health="60" type="food" scale="0.6" />
-    <item id="dragonburger" tile="cheeseburger" action="eat" hunger="200" health="50" type="food" scale="0.6" />
-    <item id="fossil" tile="fossil" type="material" scale="0.5" />
-    <item id="petrol" tile="petrol" type="material" scale="0.5" />
-    <item id="firegem" tile="firegem" type="material" scale="0.5" />
-    <item id="watergem" tile="watergem" type="material" scale="0.5" />
-    <item id="icegem" tile="icegem" type="material" scale="0.5" />
-    <item id="plantgem" tile="plantgem" type="material" scale="0.5" />
-    <item id="earthgem" tile="earthgem" type="material" scale="0.5" />
-    <item id="flamethrower" model="hddh" tile="flamethrower" action="shoot" attack="5" range="15" rate="32767" power="1" shield="2" stackable="false" type="tool" />
-    <item id="watergun" model="water" tile="watergun" action="shoot" attack="5" range="15" rate="30" power="10" shield="2" stackable="false" type="tool" />
-    <item id="icegun" model="water" tile="icegun" action="shoot" attack="10" range="30" rate="10" power="5" shield="2" stackable="false" type="tool" />
-    <item id="plantgun" model="water" tile="plantgun" action="shoot" attack="15" range="15" rate="10" power="10" shield="2" stackable="false" type="tool" />
-    <item id="earthgun" model="water" tile="earthgun" action="shoot" attack="25" range="25" rate="1" power="20" shield="2" stackable="false" type="tool" />
-
+    
 
     //TEXT
     <lang id="en_US">   
@@ -175,12 +120,7 @@
     meat = 20
     milk = 15
     -->
-    <!--<recipe id="grow_tomatoes" model="tomatoes" cost="100" type="hydroponics"><creates id="tomato" count="2" max="5" /></recipe>
-    <recipe id="grow_wheat" model="wheat" cost="100"><creates id="wheat" count="2" max="8" /></recipe>
-    <recipe id="grow_sugar" model="sugar" cost="100"><creates id="sugar" count="1" max="3" /></recipe>
-    <recipe id="grow_meat" model="meat" cost="100"><creates id="meat" count="1" /></recipe>
-    <recipe id="grow_milk" model="milk" cost="100"><creates id="milk" count="1" max="3" /></recipe>
-    -->
+    
 
 
     //cook

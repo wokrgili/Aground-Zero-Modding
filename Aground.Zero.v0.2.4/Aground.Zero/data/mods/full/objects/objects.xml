@@ -71,7 +71,7 @@
 		} else o = this; this.remove(); if(this.inventory != null) for(i in this.inventory) if(i.count > 0) o.dropItem(i, 0.25);</script></window></onAlternate>
 		<onHungry><script>npcWarning(state, getTextTemplate('warning.robot_power', {name:getName()}));</script><stop /></onHungry>
 	</character>
-	<structure id="build_bot" extends="build_object" character="worker_bot" npc="true">
+	<structure id="build_bot" extends="build_object" character="worker_bot" npc="true" electronics="10" mining="10" cooking="10" >
 		<infoInit>this.params.robot = true;</infoInit>
 		<init><script>
 		var n = this.storage.get("name"); if(!n.isString()) n.setString(createRobotName());
